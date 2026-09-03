@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Superadmin;
+namespace App\Http\Controllers\Operativo;
 
 use App\Http\Controllers\Controller;
 use App\Models\LogAuditoria;
@@ -12,14 +12,14 @@ use Illuminate\Support\Facades\DB;
 
 class VentaController extends Controller
 {
-    private function soloSuperadmin()
+    private function soloOperativo()
     {
-        if (auth()->user()->role_id !== 1) abort(403);
+        if (!in_array(auth()->user()->role_id, [1, 2])) abort(403);
     }
 
     public function index(Request $request)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $query = Venta::with(['items.producto', 'usuario'])->orderByDesc('fechaVenta')->orderByDesc('id');
 
@@ -61,21 +61,21 @@ class VentaController extends Controller
         $anios = Venta::selectRaw('YEAR(fechaVenta) as anio')
                       ->whereNotNull('fechaVenta')->distinct()->orderByDesc('anio')->pluck('anio');
 
-        return view('superadmin.ventas.index', compact('ventas', 'productos', 'stats', 'ventasMes', 'anios'));
+        return view('operativo.ventas.index', compact('ventas', 'productos', 'stats', 'ventasMes', 'anios'));
     }
 
     public function store(Request $request)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $request->validate([
-            'fechaVenta'              => 'required|date',
-            'cliente'                 => 'nullable|string|max:255',
-            'observaciones'           => 'nullable|string|max:500',
-            'items'                   => 'required|array|min:1',
-            'items.*.idProducto'      => 'required|exists:producto,id',
-            'items.*.cantidad'        => 'required|integer|min:1',
-            'items.*.precioUnitario'  => 'required|numeric|min:0',
+            'fechaVenta'             => 'required|date',
+            'cliente'                => 'nullable|string|max:255',
+            'observaciones'          => 'nullable|string|max:500',
+            'items'                  => 'required|array|min:1',
+            'items.*.idProducto'     => 'required|exists:producto,id',
+            'items.*.cantidad'       => 'required|integer|min:1',
+            'items.*.precioUnitario' => 'required|numeric|min:0',
         ]);
 
         DB::transaction(function () use ($request) {
@@ -92,7 +92,6 @@ class VentaController extends Controller
                     'subtotal'       => $subtotal,
                 ];
 
-                // Descontar stock
                 $producto = Producto::find($item['idProducto']);
                 if ($producto && $producto->stockActual !== null) {
                     $producto->decrement('stockActual', $item['cantidad']);
@@ -115,26 +114,25 @@ class VentaController extends Controller
 
         LogAuditoria::registrar('Ventas', 'Creación', "Se registró una nueva venta al cliente: " . ($request->cliente ?: 'Sin nombre'));
 
-        return redirect()->route('superadmin.ventas.index')
+        return redirect()->route('operativo.ventas.index')
                          ->with('success', 'Venta registrada correctamente.');
     }
 
     public function update(Request $request, Venta $venta)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $request->validate([
-            'fechaVenta'              => 'required|date',
-            'cliente'                 => 'nullable|string|max:255',
-            'observaciones'           => 'nullable|string|max:500',
-            'items'                   => 'required|array|min:1',
-            'items.*.idProducto'      => 'required|exists:producto,id',
-            'items.*.cantidad'        => 'required|integer|min:1',
-            'items.*.precioUnitario'  => 'required|numeric|min:0',
+            'fechaVenta'             => 'required|date',
+            'cliente'                => 'nullable|string|max:255',
+            'observaciones'          => 'nullable|string|max:500',
+            'items'                  => 'required|array|min:1',
+            'items.*.idProducto'     => 'required|exists:producto,id',
+            'items.*.cantidad'       => 'required|integer|min:1',
+            'items.*.precioUnitario' => 'required|numeric|min:0',
         ]);
 
         DB::transaction(function () use ($request, $venta) {
-            // Revertir stock de ítems anteriores
             foreach ($venta->items as $item) {
                 $producto = Producto::find($item->idProducto);
                 if ($producto && $producto->stockActual !== null) {
@@ -142,10 +140,9 @@ class VentaController extends Controller
                 }
             }
 
-            // Eliminar ítems anteriores
             $venta->items()->delete();
-
             $total = 0;
+
             foreach ($request->items as $item) {
                 $subtotal = $item['cantidad'] * $item['precioUnitario'];
                 $total   += $subtotal;
@@ -158,7 +155,6 @@ class VentaController extends Controller
                     'subtotal'       => $subtotal,
                 ]);
 
-                // Descontar nuevo stock
                 $producto = Producto::find($item['idProducto']);
                 if ($producto && $producto->stockActual !== null) {
                     $producto->decrement('stockActual', $item['cantidad']);
@@ -173,13 +169,13 @@ class VentaController extends Controller
             ]);
         });
 
-        return redirect()->route('superadmin.ventas.index')
+        return redirect()->route('operativo.ventas.index')
                          ->with('success', 'Venta actualizada correctamente.');
     }
 
     public function destroy(Venta $venta)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         DB::transaction(function () use ($venta) {
             foreach ($venta->items as $item) {
@@ -188,10 +184,16 @@ class VentaController extends Controller
                     $producto->increment('stockActual', $item->cantidad);
                 }
             }
-            $venta->delete(); // cascade elimina items
+            $venta->delete();
         });
 
-        return redirect()->route('superadmin.ventas.index')
+        return redirect()->route('operativo.ventas.index')
                          ->with('success', 'Venta eliminada y stock revertido.');
+    }
+
+    public function precioProducto(Producto $producto)
+    {
+        $this->soloOperativo();
+        return response()->json(['precio' => $producto->precio ?? 0]);
     }
 }

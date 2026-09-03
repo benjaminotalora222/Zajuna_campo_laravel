@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Superadmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LogAuditoria;
 use App\Models\Proveedor;
 use App\Models\Role;
 use App\Models\User;
@@ -86,6 +87,8 @@ class UsuarioController extends Controller
             return response()->json(['ok' => true, 'message' => 'Usuario creado correctamente.']);
         }
 
+        LogAuditoria::registrar('Usuarios', 'Creación', "Se creó el usuario: {$usuario->name} ({$usuario->email})");
+
         return redirect()->route('superadmin.usuarios.index')
                          ->with('success', 'Usuario creado correctamente.');
     }
@@ -140,6 +143,8 @@ class UsuarioController extends Controller
         if ($request->expectsJson()) {
             return response()->json(['ok' => true, 'message' => 'Usuario actualizado correctamente.']);
         }
+
+        LogAuditoria::registrar('Usuarios', 'Actualización', "Se actualizó el usuario: {$usuario->name} ({$usuario->email})");
 
         return redirect()->route('superadmin.usuarios.index')
                          ->with('success', 'Usuario actualizado correctamente.');

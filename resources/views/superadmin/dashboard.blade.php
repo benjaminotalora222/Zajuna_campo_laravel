@@ -238,7 +238,7 @@
                     ['icono' => 'M4 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 2-1.6L21 8H6|circle cx=9 cy=20 r=1.5|circle cx=18 cy=20 r=1.5', 'label' => 'Ventas',       'bg' => '#fffbeb', 'color' => '#d97706', 'route' => route('superadmin.ventas.index')],
                     ['icono' => 'M3 17v-2a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v2|circle cx=8.5 cy=7 r=3', 'label' => 'Usuarios',     'bg' => '#eff6ff', 'color' => '#2563eb', 'route' => route('superadmin.usuarios.index')],
                     ['icono' => 'M9.5 3h5l1 5-3.5 9h0l-3.5-9 1-5Z|M6 21h12', 'label' => 'Proyectos',    'bg' => '#f0fdf4', 'color' => '#39a900', 'route' => route('superadmin.proyectos.index')],
-                    ['icono' => 'M4 6h16M4 6l1 13a2 2 0 0 0 2 1.8h10A2 2 0 0 0 19 19L20 6M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2', 'label' => 'Auditoría',    'bg' => '#fff1f2', 'color' => '#e11d48', 'route' => '#'],
+                    ['icono' => 'M4 6h16M4 6l1 13a2 2 0 0 0 2 1.8h10A2 2 0 0 0 19 19L20 6M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2', 'label' => 'Auditoría',    'bg' => '#fff1f2', 'color' => '#e11d48', 'route' => route('superadmin.auditoria.index')],
                 ];
                 @endphp
 
@@ -269,7 +269,7 @@
         <div class="lg:col-span-3 bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div class="flex items-center justify-between mb-5">
                 <h2 class="text-sm font-bold" style="color:#1c2b16;">Actividad reciente</h2>
-                <a href="#" class="text-xs font-semibold hover:underline" style="color:#71277a;">Ver registro →</a>
+                <a href="{{ route('superadmin.auditoria.index') }}" class="text-xs font-semibold hover:underline" style="color:#71277a;">Ver registro →</a>
             </div>
 
             @forelse($logs ?? [] as $log)

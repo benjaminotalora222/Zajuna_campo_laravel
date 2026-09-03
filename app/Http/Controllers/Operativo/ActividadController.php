@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Superadmin;
+namespace App\Http\Controllers\Operativo;
 
 use App\Http\Controllers\Controller;
 use App\Models\Actividad;
@@ -11,14 +11,14 @@ use Illuminate\Http\Request;
 
 class ActividadController extends Controller
 {
-    private function soloSuperadmin()
+    private function soloOperativo()
     {
-        if (auth()->user()->role_id !== 1) abort(403);
+        if (!in_array(auth()->user()->role_id, [1, 2])) abort(403);
     }
 
     public function index(Request $request)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $query = Actividad::with(['proyecto', 'responsableUser'])->latest();
 
@@ -46,12 +46,12 @@ class ActividadController extends Controller
         $proyectos   = ProyectoInvestigacion::orderBy('nombre')->get();
         $usuarios    = User::where('activo', true)->orderBy('name')->get();
 
-        return view('superadmin.actividades.index', compact('actividades', 'proyectos', 'usuarios'));
+        return view('operativo.actividades.index', compact('actividades', 'proyectos', 'usuarios'));
     }
 
     public function store(Request $request)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $data = $request->validate([
             'tema'           => 'required|string|max:255',
@@ -66,16 +66,15 @@ class ActividadController extends Controller
         ]);
 
         Actividad::create($data);
-
         LogAuditoria::registrar('Actividades', 'Creación', "Se creó la actividad: {$data['tema']}");
 
-        return redirect()->route('superadmin.actividades.index')
+        return redirect()->route('operativo.actividades.index')
                          ->with('success', 'Actividad creada correctamente.');
     }
 
     public function update(Request $request, Actividad $actividad)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $data = $request->validate([
             'tema'           => 'required|string|max:255',
@@ -90,20 +89,19 @@ class ActividadController extends Controller
         ]);
 
         $actividad->update($data);
-
         LogAuditoria::registrar('Actividades', 'Actualización', "Se actualizó la actividad: {$actividad->tema}");
 
-        return redirect()->route('superadmin.actividades.index')
+        return redirect()->route('operativo.actividades.index')
                          ->with('success', 'Actividad actualizada correctamente.');
     }
 
     public function destroy(Actividad $actividad)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
         $actividad->delete();
         LogAuditoria::registrar('Actividades', 'Eliminación', "Se eliminó la actividad: {$actividad->tema}");
 
-        return redirect()->route('superadmin.actividades.index')
+        return redirect()->route('operativo.actividades.index')
                          ->with('success', 'Actividad eliminada.');
     }
 }

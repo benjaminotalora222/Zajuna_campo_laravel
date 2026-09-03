@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Superadmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LogAuditoria;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
 
@@ -56,6 +57,8 @@ class ProveedorController extends Controller
         $data['estado'] = $request->boolean('estado', true);
         Proveedor::create($data);
 
+        LogAuditoria::registrar('Proveedores', 'Creación', "Se creó el proveedor: {$data['nombre']}");
+
         return redirect()->route('superadmin.proveedores.index')
                          ->with('success', 'Proveedor creado correctamente.');
     }
@@ -75,6 +78,8 @@ class ProveedorController extends Controller
         $data['estado'] = $request->boolean('estado');
         $proveedor->update($data);
 
+        LogAuditoria::registrar('Proveedores', 'Actualización', "Se actualizó el proveedor: {$proveedor->nombre}");
+
         return redirect()->route('superadmin.proveedores.index')
                          ->with('success', 'Proveedor actualizado correctamente.');
     }
@@ -90,6 +95,7 @@ class ProveedorController extends Controller
     {
         $this->soloSuperadmin();
         $proveedor->delete();
+        LogAuditoria::registrar('Proveedores', 'Eliminación', "Se eliminó el proveedor: {$proveedor->nombre}");
         return redirect()->route('superadmin.proveedores.index')
                          ->with('success', 'Proveedor eliminado correctamente.');
     }

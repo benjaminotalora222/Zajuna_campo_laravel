@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Superadmin;
+namespace App\Http\Controllers\Operativo;
 
 use App\Http\Controllers\Controller;
 use App\Models\LogAuditoria;
@@ -11,14 +11,14 @@ use Illuminate\Http\Request;
 
 class EjecucionController extends Controller
 {
-    private function soloSuperadmin()
+    private function soloOperativo()
     {
-        if (auth()->user()->role_id !== 1) abort(403);
+        if (!in_array(auth()->user()->role_id, [1, 2])) abort(403);
     }
 
     public function index(Request $request)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $query = Tarea::with(['responsable', 'proyecto']);
 
@@ -55,12 +55,12 @@ class EjecucionController extends Controller
         $proyectos = ProyectoInvestigacion::orderBy('nombre')->get();
         $usuarios  = User::where('activo', true)->orderBy('name')->get();
 
-        return view('superadmin.ejecucion.index', compact('columnas', 'stats', 'proyectos', 'usuarios'));
+        return view('operativo.ejecucion.index', compact('columnas', 'stats', 'proyectos', 'usuarios'));
     }
 
     public function store(Request $request)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $data = $request->validate([
             'nombre'         => 'required|string|max:255',
@@ -73,7 +73,6 @@ class EjecucionController extends Controller
         ]);
 
         $tarea = Tarea::create($data);
-
         LogAuditoria::registrar('Tareas', 'Creación', "Se creó la tarea: {$data['nombre']}");
 
         return response()->json(['ok' => true, 'tarea' => $tarea->load(['responsable', 'proyecto'])]);
@@ -81,13 +80,13 @@ class EjecucionController extends Controller
 
     public function show(Tarea $tarea)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
         return response()->json($tarea->load(['responsable', 'proyecto']));
     }
 
     public function update(Request $request, Tarea $tarea)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
 
         $data = $request->validate([
             'nombre'         => 'required|string|max:255',
@@ -106,7 +105,7 @@ class EjecucionController extends Controller
 
     public function moverEstado(Request $request, Tarea $tarea)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
         $request->validate(['estado' => 'required|in:por_iniciar,en_progreso,completada']);
         $tarea->update(['estado' => $request->estado]);
         return response()->json(['ok' => true]);
@@ -114,7 +113,7 @@ class EjecucionController extends Controller
 
     public function destroy(Tarea $tarea)
     {
-        $this->soloSuperadmin();
+        $this->soloOperativo();
         $tarea->delete();
         return response()->json(['ok' => true]);
     }

@@ -201,6 +201,8 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
                     <option value="productos">Productos</option>
                     <option value="ejecucion">Ejecución de Actividades</option>
                     <option value="tareas">Tareas y Avances</option>
+                    <option value="proyectos">Proyectos de Investigación</option>
+                    <option value="inventario">Inventario</option>
                 </select>
             </div>
 
@@ -387,9 +389,6 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
         </div>
     </div>
 
-</div>
-</x-superadmin-layout>
-
 <script>
 function toggleFechas(val) {
     const show = val === 'mensual';
@@ -398,4 +397,6 @@ function toggleFechas(val) {
 }
 document.addEventListener('DOMContentLoaded', () => toggleFechas(document.getElementById('selectPeriodo').value));
 </script>
+
+</div>
 </x-superadmin-layout>

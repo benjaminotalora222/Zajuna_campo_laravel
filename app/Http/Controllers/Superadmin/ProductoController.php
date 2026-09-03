@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Categoria;
+use App\Models\LogAuditoria;
 use App\Models\Producto;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -85,6 +86,8 @@ class ProductoController extends Controller
 
         Producto::create($data);
 
+        LogAuditoria::registrar('Productos', 'Creación', "Se creó el producto: {$data['nombre']}");
+
         return redirect()->route('superadmin.productos.index')
                          ->with('success', 'Producto creado correctamente.');
     }
@@ -114,6 +117,8 @@ class ProductoController extends Controller
         $data['activo'] = $request->input('activo') == '1' || $request->input('activo') === true;
         $producto->update($data);
 
+        LogAuditoria::registrar('Productos', 'Actualización', "Se actualizó el producto: {$producto->nombre}");
+
         return redirect()->route('superadmin.productos.index')
                          ->with('success', 'Producto actualizado correctamente.');
     }
@@ -123,6 +128,7 @@ class ProductoController extends Controller
         $this->soloSuperadmin();
         if ($producto->imagen) Storage::disk('public')->delete($producto->imagen);
         $producto->delete();
+        LogAuditoria::registrar('Productos', 'Eliminación', "Se eliminó el producto: {$producto->nombre}");
         return redirect()->route('superadmin.productos.index')
                          ->with('success', 'Producto eliminado correctamente.');
     }

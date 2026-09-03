@@ -15,14 +15,17 @@
     .report-title { font-size:20px; font-weight:bold; color:#1c2b16; margin-bottom:3px; }
     .report-sub   { font-size:9px; color:#888; margin-bottom:20px; }
 
+    /* KPIs */
     .kpi-row { display:flex; gap:14px; margin-bottom:22px; }
     .kpi { flex:1; border:1.5px solid #d4d4d4; border-radius:8px; padding:14px 16px; background:#fff; }
     .kpi .lbl { font-size:8px; font-weight:bold; text-transform:uppercase; color:#888; letter-spacing:0.5px; margin-bottom:6px; }
-    .kpi .val { font-size:22px; font-weight:bold; color:#71277a; }
+    .kpi .val        { font-size:22px; font-weight:bold; color:#71277a; }
+    .kpi .val.green  { color:#39a900; }
     .kpi .val.warn   { color:#d97706; }
     .kpi .val.danger { color:#ef4444; }
     .kpi .val.dark   { color:#1c2b16; }
 
+    /* Sección */
     .section-title { font-size:13px; font-weight:bold; color:#1c2b16;
                      border-left:4px solid #71277a; padding-left:9px; margin-bottom:12px; }
 
@@ -33,12 +36,13 @@
     .alert-row { font-size:8.5px; color:#7f1d1d; padding:3px 0; border-bottom:1px dashed #fecaca; }
     .alert-row:last-child { border-bottom:none; }
 
-    /* Chips categoría */
+    /* Chips ubicaciones */
     .chips { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:22px; }
     .chip { border:1.5px solid #d4d4d4; border-radius:8px; padding:8px 14px; background:#fff; }
     .chip .chip-lbl { font-size:8px; color:#888; margin-bottom:3px; }
     .chip .chip-val { font-size:13px; font-weight:bold; color:#71277a; }
 
+    /* Tablas */
     table { width:100%; border-collapse:collapse; margin-bottom:22px; }
     th { text-align:left; padding:8px 10px; font-size:8.5px; text-transform:uppercase;
          color:#888; font-weight:bold; letter-spacing:0.4px; border-bottom:1.5px solid #e5e5e5; }
@@ -46,12 +50,14 @@
     .td-right  { text-align:right; }
     .td-center { text-align:center; }
 
+    /* Badges */
     .badge { display:inline-block; padding:2px 8px; border-radius:12px; font-size:8px; font-weight:bold; }
     .badge-ok      { background:#f0fdf4; color:#166534; }
     .badge-bajo    { background:#fffbeb; color:#d97706; }
     .badge-agotado { background:#fef2f2; color:#ef4444; }
     .badge-inactivo{ background:#f3f4f6; color:#6b7280; }
 
+    /* Barra stock */
     .bar-wrap { background:#e5e5e5; border-radius:3px; height:5px; width:55px; display:inline-block; vertical-align:middle; }
     .bar-fill  { border-radius:3px; height:5px; display:block; }
 
@@ -73,17 +79,18 @@
 </div>
 <hr class="divider-top">
 
-<div class="report-title">Reporte de Inventario y Productos</div>
-<div class="report-sub">Estado general del inventario · Generado el {{ now()->locale('es')->isoFormat('D [de] MMMM [de] YYYY, HH:mm') }}</div>
+<div class="report-title">Reporte de Inventario</div>
+<div class="report-sub">Estado actual del inventario · Generado el {{ now()->locale('es')->isoFormat('D [de] MMMM [de] YYYY, HH:mm') }}</div>
 
+{{-- KPIs --}}
 <div class="kpi-row">
     <div class="kpi">
-        <div class="lbl">Total productos</div>
-        <div class="val dark">{{ $stats['total'] }}</div>
+        <div class="lbl">Registros inventario</div>
+        <div class="val dark">{{ $stats['total_items'] }}</div>
     </div>
     <div class="kpi">
-        <div class="lbl">Activos</div>
-        <div class="val">{{ $stats['activos'] }}</div>
+        <div class="lbl">Productos totales</div>
+        <div class="val">{{ $stats['total_prod'] }}</div>
     </div>
     <div class="kpi">
         <div class="lbl">Stock bajo</div>
@@ -94,8 +101,8 @@
         <div class="val danger">{{ $stats['agotado'] }}</div>
     </div>
     <div class="kpi">
-        <div class="lbl">Categorías</div>
-        <div class="val dark">{{ $productos->whereNotNull('categoria')->unique('categoria')->count() }}</div>
+        <div class="lbl">Productos activos</div>
+        <div class="val green">{{ $productos->where('activo', true)->count() }}</div>
     </div>
 </div>
 
@@ -116,29 +123,22 @@
 </div>
 @endif
 
-{{-- Por categoría --}}
-<div class="section-title">Por Categoría</div>
-<div class="chips">
-    @foreach($productos->groupBy('categoria') as $cat => $items)
-    <div class="chip">
-        <div class="chip-lbl">{{ $cat ?: 'Sin categoría' }}</div>
-        <div class="chip-val">{{ $items->count() }} prod.</div>
-    </div>
-    @endforeach
-</div>
+{{-- Por ubicación --}}
+{{-- La tabla de inventario no tiene datos de movimientos aún --}}
 
-<div class="section-title">Listado de Productos</div>
+{{-- Resumen basado en productos --}}
+<div class="section-title">Estado del Stock por Producto</div>
 <table>
     <thead>
         <tr>
-            <th>Nombre</th>
+            <th>Producto</th>
             <th>Categoría</th>
             <th>Cód. Barras</th>
-            <th class="td-right">Precio</th>
-            <th class="td-right">Stock</th>
-            <th class="td-right">Mín.</th>
+            <th class="td-right">Stock actual</th>
+            <th class="td-right">Stock mín.</th>
             <th>Nivel</th>
             <th>Estado</th>
+            <th>Precio</th>
         </tr>
     </thead>
     <tbody>
@@ -153,15 +153,19 @@
         <td>
             <strong>{{ $p->nombre }}</strong>
             @if($p->descripcion)
-            <br><span style="font-size:8px; color:#aaa;">{{ Str::limit($p->descripcion, 45) }}</span>
+            <br><span style="font-size:8px; color:#aaa;">{{ Str::limit($p->descripcion, 40) }}</span>
             @endif
         </td>
-        <td>{{ $p->categoria ?: '—' }}</td>
+        <td style="color:#888; font-size:9px;">{{ $p->categoria ?: '—' }}</td>
         <td style="font-size:8.5px; color:#888;">{{ $p->codigoBarras ?: '—' }}</td>
-        <td class="td-right">${{ number_format($p->precio ?? 0, 0, ',', '.') }}</td>
-        <td class="td-right" style="font-weight:bold;">{{ $p->stockActual ?? 0 }} <span style="font-size:8px; color:#aaa;">{{ $p->unidad }}</span></td>
+        <td class="td-right" style="font-weight:bold;">
+            {{ $p->stockActual ?? 0 }}
+            <span style="font-size:8px; color:#aaa;">{{ $p->unidad }}</span>
+        </td>
         <td class="td-right" style="color:#888;">{{ $p->stockMinimo ?? '—' }}</td>
-        <td><div class="bar-wrap"><div class="bar-fill" style="width:{{ $pct }}%; background:{{ $barColor }};"></div></div></td>
+        <td>
+            <div class="bar-wrap"><div class="bar-fill" style="width:{{ $pct }}%; background:{{ $barColor }};"></div></div>
+        </td>
         <td>
             @if(!$p->activo)
                 <span class="badge badge-inactivo">Inactivo</span>
@@ -169,9 +173,10 @@
                 <span class="badge badge-{{ $est }}">{{ $label }}</span>
             @endif
         </td>
+        <td class="td-right">${{ number_format($p->precio ?? 0, 0, ',', '.') }}</td>
     </tr>
     @empty
-    <tr><td colspan="8" style="text-align:center; color:#aaa; padding:20px;">Sin productos registrados</td></tr>
+    <tr><td colspan="8" style="text-align:center; color:#aaa; padding:18px;">Sin productos registrados</td></tr>
     @endforelse
     </tbody>
 </table>

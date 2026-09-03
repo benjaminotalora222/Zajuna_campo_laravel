@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Superadmin\ActividadController;
+use App\Http\Controllers\Superadmin\AuditoriaController;
 use App\Http\Controllers\Superadmin\CategoriaController;
 use App\Http\Controllers\Superadmin\ReporteController;
 use App\Http\Controllers\Superadmin\ConsignacionController;
@@ -11,6 +12,13 @@ use App\Http\Controllers\Superadmin\ProyectoController;
 use App\Http\Controllers\Superadmin\ProductoController;
 use App\Http\Controllers\Superadmin\ProveedorController;
 use App\Http\Controllers\Superadmin\UsuarioController;
+use App\Http\Controllers\Operativo\ActividadController as OperativoActividadController;
+use App\Http\Controllers\Operativo\ConsignacionController as OperativoConsignacionController;
+use App\Http\Controllers\Operativo\CronogramaController as OperativoCronogramaController;
+use App\Http\Controllers\Operativo\EjecucionController as OperativoEjecucionController;
+use App\Http\Controllers\Operativo\ProyectoController as OperativoProyectoController;
+use App\Http\Controllers\Operativo\VentaController as OperativoVentaController;
+use App\Http\Controllers\Superadmin\ConfiguracionController;
 use App\Http\Controllers\Superadmin\VentaController;
 use Illuminate\Support\Facades\Route;
 
@@ -103,6 +111,13 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     Route::put('cronograma/{evento}', [CronogramaController::class, 'update'])->name('cronograma.update');
     Route::delete('cronograma/{evento}', [CronogramaController::class, 'destroy'])->name('cronograma.destroy');
 
+    // ── Módulo Auditoría ──
+    Route::get('auditoria', [AuditoriaController::class, 'index'])->name('auditoria.index');
+
+    // ── Módulo Configuración ──
+    Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
+    Route::post('configuracion', [ConfiguracionController::class, 'update'])->name('configuracion.update');
+
     // ── Módulo Reportes ──
     Route::get('reportes', [ReporteController::class, 'index'])->name('reportes.index');
     Route::get('reportes/pdf', [ReporteController::class, 'exportarPdf'])->name('reportes.pdf');
@@ -117,7 +132,7 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     // ── Módulo Tareas y Avances (Kanban) ──
     Route::get('ejecucion', [EjecucionController::class, 'index'])->name('ejecucion.index');
     Route::get('tareas', [EjecucionController::class, 'index'])->name('tareas.index'); // alias para sidebar
-    Route::post('ejecucion', [EjecucionController::class, 'store'])->name('ejecucion.store');
+    Route::post('ejecuci    on', [EjecucionController::class, 'store'])->name('ejecucion.store');
     Route::get('ejecucion/{tarea}', [EjecucionController::class, 'show'])->name('ejecucion.show');
     Route::put('ejecucion/{tarea}', [EjecucionController::class, 'update'])->name('ejecucion.update');
     Route::patch('ejecucion/{tarea}/estado', [EjecucionController::class, 'moverEstado'])->name('ejecucion.estado');
@@ -130,6 +145,31 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
         if (auth()->user()->role_id !== 2) abort(403);
         return view('operativo.dashboard');
     })->name('dashboard');
+
+    // Minimarket
+    Route::resource('consignacion', OperativoConsignacionController::class)->except(['show', 'create', 'edit']);
+    Route::resource('ventas', OperativoVentaController::class)->except(['show', 'create', 'edit'])->parameters(['ventas' => 'venta']);
+    Route::get('ventas/producto/{producto}/precio', [OperativoVentaController::class, 'precioProducto'])->name('ventas.precio');
+
+    // Transferencias y shows
+    Route::get('cronograma', [OperativoCronogramaController::class, 'index'])->name('cronograma.index');
+    Route::post('cronograma', [OperativoCronogramaController::class, 'store'])->name('cronograma.store');
+    Route::get('cronograma/{evento}', [OperativoCronogramaController::class, 'show'])->name('cronograma.show');
+    Route::put('cronograma/{evento}', [OperativoCronogramaController::class, 'update'])->name('cronograma.update');
+    Route::delete('cronograma/{evento}', [OperativoCronogramaController::class, 'destroy'])->name('cronograma.destroy');
+
+    Route::resource('actividades', OperativoActividadController::class)->except(['show', 'create', 'edit']);
+
+    // Investigación
+    Route::resource('proyectos', OperativoProyectoController::class)->except(['show', 'create', 'edit']);
+
+    Route::get('ejecucion', [OperativoEjecucionController::class, 'index'])->name('ejecucion.index');
+    Route::get('tareas', [OperativoEjecucionController::class, 'index'])->name('tareas.index');
+    Route::post('ejecucion', [OperativoEjecucionController::class, 'store'])->name('ejecucion.store');
+    Route::get('ejecucion/{tarea}', [OperativoEjecucionController::class, 'show'])->name('ejecucion.show');
+    Route::put('ejecucion/{tarea}', [OperativoEjecucionController::class, 'update'])->name('ejecucion.update');
+    Route::patch('ejecucion/{tarea}/estado', [OperativoEjecucionController::class, 'moverEstado'])->name('ejecucion.estado');
+    Route::delete('ejecucion/{tarea}', [OperativoEjecucionController::class, 'destroy'])->name('ejecucion.destroy');
 });
 
 // ── Proveedor (rol 3) ───────────────────────────────────────

@@ -8,6 +8,7 @@ use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\Tarea;
 use App\Models\Actividad;
+use App\Models\Inventario;
 use App\Models\ProyectoInvestigacion;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -116,22 +117,28 @@ class ReporteController extends Controller
         [$inicio, $fin] = $this->calcularRango($periodo, $anio, $mes);
 
         $datos = match ($modulo) {
-            'productos'  => $this->datosProductos(),
-            'ejecucion'  => $this->datosActividades($inicio, $fin),
-            'tareas'     => $this->dareasTareas($inicio, $fin),
-            default      => $this->datosVentas($inicio, $fin),
+            'productos'   => $this->datosProductos(),
+            'ejecucion'   => $this->datosActividades($inicio, $fin),
+            'tareas'      => $this->dareasTareas($inicio, $fin),
+            'proyectos'   => $this->datosProyectos(),
+            'inventario'  => $this->datosInventario(),
+            default       => $this->datosVentas($inicio, $fin),
         };
 
         $nombresMes = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Junio',
                        7=>'Julio',8=>'Agosto',9=>'Septiembre',10=>'Octubre',11=>'Noviembre',12=>'Diciembre'];
 
+        $usuario = auth()->user();
+
         $pdf = Pdf::loadView("superadmin.reportes.pdf.{$modulo}", array_merge($datos, [
-            'inicio'  => $inicio,
-            'fin'     => $fin,
-            'periodo' => $periodo,
-            'anio'    => $anio,
-            'mes'     => $mes,
+            'inicio'     => $inicio,
+            'fin'        => $fin,
+            'periodo'    => $periodo,
+            'anio'       => $anio,
+            'mes'        => $mes,
             'nombresMes' => $nombresMes,
+            'usuario'    => $usuario,
+            'logoPath'   => public_path('img/logo-zajuna-campo.png'),
         ]))->setPaper('a4', 'portrait');
 
         $nombreArchivo = "reporte-{$modulo}-{$periodo}-{$inicio->format('Y-m-d')}.pdf";
@@ -188,6 +195,38 @@ class ReporteController extends Controller
             'pendiente'    => $actividades->where('estado','pendiente')->count(),
         ];
         return compact('actividades','stats');
+    }
+
+    private function datosProyectos(): array
+    {
+        $proyectos = ProyectoInvestigacion::with(['responsable', 'tareas'])
+            ->orderByDesc('created_at')
+            ->get();
+
+        $stats = [
+            'total'       => $proyectos->count(),
+            'en_progreso' => $proyectos->where('estado', 'en_progreso')->count(),
+            'finalizado'  => $proyectos->where('estado', 'finalizado')->count(),
+            'pendiente'   => $proyectos->where('estado', 'pendiente')->count(),
+        ];
+
+        return compact('proyectos', 'stats');
+    }
+
+    private function datosInventario(): array
+    {
+        $inventario = \App\Models\Inventario::with('producto')->get();
+
+        $productos = Producto::orderBy('nombre')->get();
+
+        $stats = [
+            'total_items' => $inventario->count(),
+            'total_prod'  => $productos->count(),
+            'bajo'        => $productos->filter(fn($p) => $p->stockMinimo && $p->stockActual <= $p->stockMinimo)->count(),
+            'agotado'     => $productos->where('stockActual', '<=', 0)->count(),
+        ];
+
+        return compact('inventario', 'productos', 'stats');
     }
 
     private function dareasTareas($inicio, $fin): array

@@ -35,7 +35,7 @@ Route::get('/dashboard', function () {
         1 => redirect()->route('superadmin.dashboard'),
         2 => redirect()->route('operativo.dashboard'),
         3 => redirect()->route('proveedor.dashboard'),
-        default => redirect()->route('superadmin.dashboard'),
+        default => abort(403, 'Tu cuenta no tiene un rol asignado. Contacta al administrador.'),
     };
 })->middleware(['auth'])->name('dashboard');
 

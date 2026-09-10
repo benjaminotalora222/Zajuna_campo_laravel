@@ -34,7 +34,7 @@ class AuthenticatedSessionController extends Controller
             1 => redirect()->route('superadmin.dashboard'),
             2 => redirect()->route('operativo.dashboard'),
             3 => redirect()->route('proveedor.dashboard'),
-            default => redirect()->route('superadmin.dashboard'),
+            default => redirect()->route('dashboard'),
         };
     }
 

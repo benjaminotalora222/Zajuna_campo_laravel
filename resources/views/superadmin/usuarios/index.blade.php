@@ -297,10 +297,11 @@
             {{-- Contraseñas --}}
             <div class="grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">
+                    <label class="block text-sm font-semibold mb-1" style="color:#1c2b16;">
                         Contraseña <span id="passRequired" style="color:#ef4444;">*</span>
                     </label>
-                    <p id="passHint" class="text-xs mb-1.5 hidden" style="color:#9a9a8a;">Deja en blanco para no cambiar.</p>
+                    <p id="passHint" class="text-xs mb-1 hidden" style="color:#9a9a8a;">Deja en blanco para no cambiar.</p>
+                    <div id="passHintPlaceholder" class="text-xs mb-1" style="color:transparent;">-</div>
                     <input type="password" name="password" id="inputPassword" placeholder="Mínimo 8 caracteres"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
@@ -308,8 +309,8 @@
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Confirmar</label>
-                    <p id="passHint2" class="text-xs mb-1.5 hidden" style="color:#9a9a8a;">-</p>
+                    <label class="block text-sm font-semibold mb-1" style="color:#1c2b16;">Confirmar contraseña</label>
+                    <div class="text-xs mb-1" style="color:transparent;">-</div>
                     <input type="password" name="password_confirmation" id="inputPasswordConfirm" placeholder="Repite la contraseña"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
@@ -463,6 +464,7 @@ function abrirModalCrear() {
     document.getElementById('inputPassword').required = true;
     document.getElementById('passRequired').classList.remove('hidden');
     document.getElementById('passHint').classList.add('hidden');
+    document.getElementById('passHintPlaceholder').style.display = '';
     abrirModal('modalForm');
 }
 
@@ -481,6 +483,7 @@ function abrirModalEditar(usuario, rol) {
     document.getElementById('inputPassword').required = false;
     document.getElementById('passRequired').classList.add('hidden');
     document.getElementById('passHint').classList.remove('hidden');
+    document.getElementById('passHintPlaceholder').style.display = 'none';
     abrirModal('modalForm');
 }
 

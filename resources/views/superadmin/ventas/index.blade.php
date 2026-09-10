@@ -488,7 +488,7 @@ $productosJs = $productos->map(function($p) {
         'nombre' => $p->nombre,
         'precio' => (float)$p->precio,
         'unidad' => $p->unidad,
-        'stock'  => $p->stockActual,
+        'stock'  => $p->stock_calculado,
     ];
 })->values()->toJson();
 @endphp

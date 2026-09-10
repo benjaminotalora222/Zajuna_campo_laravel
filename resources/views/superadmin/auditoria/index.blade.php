@@ -204,10 +204,10 @@
                             </div>
                             <div>
                                 <p class="text-xs font-semibold" style="color:#1c2b16;">
-                                    {{ $log->fechaHora ? $log->fechaHora->format('d/m/Y') : ($log->created_at ? $log->created_at->format('d/m/Y') : '—') }}
+                                    {{ $log->fechaHora ? $log->fechaHora->tz('America/Bogota')->format('d/m/Y') : ($log->created_at ? $log->created_at->tz('America/Bogota')->format('d/m/Y') : '—') }}
                                 </p>
                                 <p class="text-xs" style="color:#9a9a8a;">
-                                    {{ $log->fechaHora ? $log->fechaHora->format('H:i:s') : ($log->created_at ? $log->created_at->format('H:i:s') : '') }}
+                                    {{ $log->fechaHora ? $log->fechaHora->tz('America/Bogota')->format('H:i:s') : ($log->created_at ? $log->created_at->tz('America/Bogota')->format('H:i:s') : '') }}
                                 </p>
                             </div>
                         </div>

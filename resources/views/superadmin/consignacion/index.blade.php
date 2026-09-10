@@ -1,16 +1,20 @@
-@php $title = 'Inventario y Consignación'; @endphp
+@php $title = 'Inventario'; @endphp
 
 <x-superadmin-layout :title="$title">
 <div class="px-8 py-8 max-w-screen-xl mx-auto" style="color:#1c2b16;">
 
     {{-- ENCABEZADO --}}
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-extrabold leading-tight">Inventario en Consignación</h1>
-            <p class="text-sm mt-1" style="color:#5a5a4f;">Consulta el stock disponible en consignación con tus proveedores.</p>
+            <h1 class="text-2xl font-extrabold leading-tight">Inventario</h1>
+            <p class="text-sm mt-1" style="color:#5a5a4f;">Catálogo de productos con lotes y trazabilidad · Consignaciones de proveedores</p>
         </div>
-        <button onclick="abrirModalCrear()"
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
+        {{-- Botón contextual según tab --}}
+        <div id="btnTabCatalogo" class="{{ $tab === 'catalogo' ? '' : 'hidden' }}">
+            {{-- El stock se registra desde el detalle del producto --}}
+        </div>
+        <button id="btnTabConsignacion" onclick="abrirModalCrear()"
+                class="{{ $tab === 'consignacion' ? '' : 'hidden' }} inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
                 style="background:#fdc300; color:#71277a;">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
@@ -23,9 +27,6 @@
     @if(session('success'))
     <div class="flex items-center gap-3 px-4 py-3 rounded-xl mb-6 text-sm font-semibold"
          style="background:#f0fdf4; border:1px solid #86efac; color:#166534;">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
-        </svg>
         {{ session('success') }}
     </div>
     @endif
@@ -39,9 +40,9 @@
                 </svg>
             </div>
             <div>
-                <p class="text-xs font-bold uppercase tracking-wider mb-0.5" style="color:#39a900;">Total Productos</p>
+                <p class="text-xs font-bold uppercase tracking-wider mb-0.5" style="color:#39a900;">Productos</p>
                 <p class="text-2xl font-extrabold" style="color:#1c2b16;">{{ $stats['total_productos'] }}</p>
-                <p class="text-xs" style="color:#9a9a8a;">SKU registrados</p>
+                <p class="text-xs" style="color:#9a9a8a;">En catálogo activo</p>
             </div>
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
@@ -51,9 +52,9 @@
                 </svg>
             </div>
             <div>
-                <p class="text-xs font-bold uppercase tracking-wider mb-0.5" style="color:#71277a;">Stock Disponible</p>
+                <p class="text-xs font-bold uppercase tracking-wider mb-0.5" style="color:#71277a;">Stock total</p>
                 <p class="text-2xl font-extrabold" style="color:#1c2b16;">{{ number_format($stats['stock_total']) }}</p>
-                <p class="text-xs" style="color:#9a9a8a;">Unidades disponibles</p>
+                <p class="text-xs" style="color:#9a9a8a;">Unidades en lotes</p>
             </div>
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
@@ -64,15 +65,16 @@
                 </svg>
             </div>
             <div>
-                <p class="text-xs font-bold uppercase tracking-wider mb-0.5" style="color:#d97706;">Próximos a Vencer</p>
+                <p class="text-xs font-bold uppercase tracking-wider mb-0.5" style="color:#d97706;">Próx. a vencer</p>
                 <p class="text-2xl font-extrabold" style="color:#1c2b16;">{{ $stats['proximo_vencer'] }}</p>
-                <p class="text-xs" style="color:#9a9a8a;">Requieren atención</p>
+                <p class="text-xs" style="color:#9a9a8a;">Lotes en 30 días</p>
             </div>
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
             <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style="background:#f0fdf4;">
                 <svg class="w-6 h-6" style="color:#39a900;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
             </div>
             <div>
@@ -83,13 +85,27 @@
         </div>
     </div>
 
+    {{-- TABS --}}
+    <div class="flex gap-1 mb-6 bg-gray-100 p-1 rounded-xl w-fit">
+        <a href="{{ route('superadmin.consignacion.index', array_merge(request()->except('tab','page','pag_prod','pag_consig'), ['tab'=>'catalogo'])) }}"
+           class="px-5 py-2 rounded-lg text-sm font-bold transition {{ $tab === 'catalogo' ? 'bg-white shadow text-purple-700' : 'text-gray-500 hover:text-gray-700' }}">
+            Catálogo / Lotes
+        </a>
+        <a href="{{ route('superadmin.consignacion.index', array_merge(request()->except('tab','page','pag_prod','pag_consig'), ['tab'=>'consignacion'])) }}"
+           class="px-5 py-2 rounded-lg text-sm font-bold transition {{ $tab === 'consignacion' ? 'bg-white shadow text-purple-700' : 'text-gray-500 hover:text-gray-700' }}">
+            Consignaciones
+        </a>
+    </div>
+
     {{-- FILTROS --}}
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
         <form method="GET" action="{{ route('superadmin.consignacion.index') }}" class="flex flex-wrap gap-3 items-end">
+            <input type="hidden" name="tab" value="{{ $tab }}">
             <div class="flex-1 min-w-[200px]">
-                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Buscar producto o proveedor</label>
+                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Buscar</label>
                 <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Nombre, SKU o proveedor..."
+                    <input type="text" name="search" value="{{ request('search') }}"
+                           placeholder="{{ $tab === 'catalogo' ? 'Nombre o código de barras...' : 'Nombre, SKU o proveedor...' }}"
                            class="w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color:#9a9a8a;"
@@ -102,11 +118,12 @@
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Proveedor</label>
                 <select name="proveedor_id" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none" style="border-color:#e7e0cc; background:#fafafa;">
                     <option value="">Todos</option>
-                    @foreach($proveedores as $p)
-                        <option value="{{ $p->id }}" {{ request('proveedor_id') == $p->id ? 'selected' : '' }}>{{ $p->nombre }}</option>
+                    @foreach($proveedores as $prov)
+                        <option value="{{ $prov->id }}" {{ request('proveedor_id') == $prov->id ? 'selected' : '' }}>{{ $prov->nombre }}</option>
                     @endforeach
                 </select>
             </div>
+            @if($tab === 'consignacion')
             <div class="min-w-[140px]">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Estado</label>
                 <select name="estado" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none" style="border-color:#e7e0cc; background:#fafafa;">
@@ -116,14 +133,119 @@
                     <option value="agotado"        {{ request('estado') === 'agotado'        ? 'selected' : '' }}>Agotado</option>
                 </select>
             </div>
+            @endif
             <button type="submit" class="px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:opacity-90" style="background:#39a900;">Filtrar</button>
             @if(request()->hasAny(['search','proveedor_id','estado']))
-                <a href="{{ route('superadmin.consignacion.index') }}" class="px-5 py-2.5 rounded-xl font-bold text-sm border hover:bg-gray-50" style="border-color:#e7e0cc; color:#5a5a4f;">Limpiar</a>
+                <a href="{{ route('superadmin.consignacion.index', ['tab' => $tab]) }}"
+                   class="px-5 py-2.5 rounded-xl font-bold text-sm border hover:bg-gray-50"
+                   style="border-color:#e7e0cc; color:#5a5a4f;">Limpiar</a>
             @endif
         </form>
     </div>
 
-    {{-- TABLA --}}
+    {{-- ══ TAB: CATÁLOGO / LOTES ══════════════════════════════════ --}}
+    @if($tab === 'catalogo')
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        @if($productos->isEmpty())
+            <div class="py-16 text-center" style="color:#9a9a8a;">
+                <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+                </svg>
+                <p class="text-sm font-semibold">No hay productos en el catálogo activo.</p>
+                <p class="text-xs mt-1">Agrega productos en el módulo <a href="{{ route('superadmin.productos.index') }}" class="underline" style="color:#71277a;">Productos</a>.</p>
+            </div>
+        @else
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr style="background:#fafafa; border-bottom:2px solid #f3f0e8;">
+                            <th class="text-left px-5 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Producto</th>
+                            <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Proveedor</th>
+                            <th class="text-right px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Stock total</th>
+                            <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Lote próx. vencer</th>
+                            <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Estado</th>
+                            <th class="text-right px-5 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($productos as $p)
+                        @php
+                            $stock = $p->stock_calculado;
+                            $estado = $p->stock_estado;
+                            $loteProximo = $p->lote_proximo_vencer;
+                            $badgeColor = match($estado) {
+                                'agotado' => ['bg:#fee2e2','color:#991b1b','Agotado'],
+                                'bajo'    => ['bg:#fef9c3','color:#854d0e','Stock bajo'],
+                                default   => ['bg:#dcfce7','color:#166534','Disponible'],
+                            };
+                        @endphp
+                        <tr class="border-b last:border-0 hover:bg-gray-50 transition" style="border-color:#f3f0e8;">
+                            <td class="px-5 py-4">
+                                <p class="font-semibold" style="color:#1c2b16;">{{ $p->nombre }}</p>
+                                @if($p->codigoBarras)
+                                    <p class="text-xs font-mono mt-0.5" style="color:#9a9a8a;">{{ $p->codigoBarras }}</p>
+                                @endif
+                            </td>
+                            <td class="px-4 py-4 text-sm" style="color:#5a5a4f;">
+                                {{ $p->proveedor?->nombre ?? '—' }}
+                            </td>
+                            <td class="px-4 py-4 text-right">
+                                <span class="font-extrabold text-base" style="color:#1c2b16;">{{ number_format($stock) }}</span>
+                                <span class="text-xs ml-1" style="color:#9a9a8a;">{{ $p->unidad }}</span>
+                            </td>
+                            <td class="px-4 py-4">
+                                @if($loteProximo)
+                                    <p class="text-sm font-semibold">
+                                        {{ $loteProximo->fecha_vencimiento?->locale('es')->isoFormat('D MMM YYYY') }}
+                                    </p>
+                                    <p class="text-xs" style="color:#9a9a8a;">
+                                        {{ $loteProximo->cantidad_disponible }} {{ $p->unidad }} disponibles
+                                    </p>
+                                    @if($loteProximo->proximo_vencer)
+                                        <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                              style="background:#fef9c3; color:#854d0e;">⚠ Próx. vencer</span>
+                                    @elseif($loteProximo->vencido)
+                                        <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                              style="background:#fee2e2; color:#991b1b;">Vencido</span>
+                                    @endif
+                                @else
+                                    <span style="color:#9a9a8a;">—</span>
+                                @endif
+                            </td>
+                            <td class="px-4 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+                                      style="background:{{ str_replace('bg:','',$badgeColor[0]) }}; color:{{ str_replace('color:','',$badgeColor[1]) }};">
+                                    <span class="w-1.5 h-1.5 rounded-full" style="background:{{ str_replace('color:','',$badgeColor[1]) }};"></span>
+                                    {{ $badgeColor[2] }}
+                                </span>
+                            </td>
+                            <td class="px-5 py-4 text-right">
+                                <a href="{{ route('superadmin.inventario.show', $p) }}"
+                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
+                                   style="background:#71277a;">
+                                    Ver lotes / movimientos
+                                </a>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            @if($productos->hasPages())
+                <div class="px-6 py-4 border-t" style="border-color:#f3f0e8;">
+                    {{ $productos->links() }}
+                </div>
+            @else
+                <div class="px-6 py-4 border-t text-xs" style="border-color:#f3f0e8; color:#9a9a8a;">
+                    Mostrando {{ $productos->count() }} producto{{ $productos->count() != 1 ? 's' : '' }}
+                </div>
+            @endif
+        @endif
+    </div>
+    @endif
+
+    {{-- ══ TAB: CONSIGNACIONES ════════════════════════════════════ --}}
+    @if($tab === 'consignacion')
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <table class="w-full text-sm">
             <thead>
@@ -152,7 +274,7 @@
                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
                                 </svg>
                             </div>
-                            <span class="text-sm" style="color:#5a5a4f;">{{ $c->proveedor->nombre ?? '—' }}</span>
+                            <span class="text-sm" style="color:#5a5a4f;">{{ $c->proveedor?->nombre ?? '—' }}</span>
                         </div>
                     </td>
                     <td class="px-4 py-4 text-right">
@@ -216,38 +338,22 @@
                 @endforelse
             </tbody>
         </table>
-
-        {{-- Paginación --}}
         @if($consignaciones->hasPages())
-        <div class="flex items-center justify-between px-6 py-4 border-t" style="border-color:#f3f0e8;">
-            <p class="text-xs" style="color:#9a9a8a;">Mostrando {{ $consignaciones->firstItem() }} a {{ $consignaciones->lastItem() }} de {{ $consignaciones->total() }} productos</p>
-            <div class="flex items-center gap-1">
-                @if($consignaciones->onFirstPage())
-                    <span class="w-8 h-8 rounded-lg flex items-center justify-center opacity-30 cursor-not-allowed" style="border:1px solid #e7e0cc;"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></span>
-                @else
-                    <a href="{{ $consignaciones->previousPageUrl() }}" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-50" style="border:1px solid #e7e0cc; color:#5a5a4f;"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></a>
-                @endif
-                @foreach($consignaciones->getUrlRange(max(1,$consignaciones->currentPage()-2), min($consignaciones->lastPage(),$consignaciones->currentPage()+2)) as $page => $url)
-                    @if($page == $consignaciones->currentPage())
-                        <span class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold text-white" style="background:#71277a;">{{ $page }}</span>
-                    @else
-                        <a href="{{ $url }}" class="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-semibold hover:bg-gray-50" style="border:1px solid #e7e0cc; color:#5a5a4f;">{{ $page }}</a>
-                    @endif
-                @endforeach
-                @if($consignaciones->hasMorePages())
-                    <a href="{{ $consignaciones->nextPageUrl() }}" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-50" style="border:1px solid #e7e0cc; color:#5a5a4f;"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></a>
-                @else
-                    <span class="w-8 h-8 rounded-lg flex items-center justify-center opacity-30 cursor-not-allowed" style="border:1px solid #e7e0cc;"><svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></span>
-                @endif
+            <div class="flex items-center justify-between px-6 py-4 border-t" style="border-color:#f3f0e8;">
+                <p class="text-xs" style="color:#9a9a8a;">Mostrando {{ $consignaciones->firstItem() }} a {{ $consignaciones->lastItem() }} de {{ $consignaciones->total() }}</p>
+                {{ $consignaciones->links() }}
             </div>
-        </div>
         @else
-        <div class="px-6 py-4 border-t text-xs" style="border-color:#f3f0e8; color:#9a9a8a;">Mostrando {{ $consignaciones->count() }} producto{{ $consignaciones->count() != 1 ? 's' : '' }}</div>
+            <div class="px-6 py-4 border-t text-xs" style="border-color:#f3f0e8; color:#9a9a8a;">
+                Mostrando {{ $consignaciones->count() }} registro{{ $consignaciones->count() != 1 ? 's' : '' }}
+            </div>
         @endif
     </div>
+    @endif
+
 </div>
 
-{{-- ══ MODAL CREAR / EDITAR ══════════════════════════════════ --}}
+{{-- ══ MODAL CREAR / EDITAR CONSIGNACIÓN ══════════════════════ --}}
 <div id="modalForm" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[95vh] overflow-y-auto" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between px-7 py-5 border-b sticky top-0 bg-white z-10" style="border-color:#f3f0e8;">
@@ -283,8 +389,8 @@
                             class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
                             style="border-color:#e7e0cc; background:#fafafa;">
                         <option value="">Selecciona proveedor...</option>
-                        @foreach($proveedores as $p)
-                            <option value="{{ $p->id }}">{{ $p->nombre }}</option>
+                        @foreach($proveedores as $prov)
+                            <option value="{{ $prov->id }}">{{ $prov->nombre }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -302,7 +408,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Unidad</label>
-                    <input type="text" name="unidad" id="inputUnidad" placeholder="Ej: sacos, unidades, kg"
+                    <input type="text" name="unidad" id="inputUnidad" placeholder="Ej: sacos, kg"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
                 </div>

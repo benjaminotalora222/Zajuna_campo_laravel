@@ -374,24 +374,15 @@
                     </select>
                 </div>
 
-                {{-- Stock actual --}}
-                <div>
-                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Stock actual <span style="color:#ef4444;">*</span></label>
-                    <input type="number" name="stockActual" id="inputStockActual" placeholder="0" min="0" required
-                           class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                           style="border-color:#e7e0cc; background:#fafafa;"
-                           onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
-                           onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
-                </div>
-
-                {{-- Stock mínimo --}}
-                <div>
-                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Stock mínimo</label>
+                {{-- Stock mínimo (alertas) — el stock real viene de lotes/movimientos --}}
+                <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Stock mínimo de alerta</label>
                     <input type="number" name="stockMinimo" id="inputStockMinimo" placeholder="0" min="0"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                    <p class="text-xs mt-1" style="color:#9a9a8a;">El stock real se gestiona desde el módulo de Inventario.</p>
                 </div>
 
                 {{-- Categoría --}}
@@ -424,6 +415,21 @@
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                </div>
+
+                {{-- Proveedor --}}
+                <div class="col-span-2">
+                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Proveedor <span style="color:#ef4444;">*</span></label>
+                    <select name="proveedor_id" id="inputProveedorId" required
+                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                            style="border-color:#e7e0cc; background:#fafafa;"
+                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
+                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                        <option value="">Selecciona un proveedor...</option>
+                        @foreach($proveedores as $prov)
+                            <option value="{{ $prov->id }}">{{ $prov->nombre }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
                 {{-- Código de barras --}}
@@ -539,6 +545,15 @@ function cerrarModal(id) {
     });
 });
 
+// Prevenir doble submit
+document.getElementById('formProducto').addEventListener('submit', function () {
+    const btn = document.getElementById('btnGuardar');
+    btn.disabled = true;
+    btn.textContent = 'Guardando...';
+    btn.style.opacity = '0.6';
+    btn.style.cursor = 'not-allowed';
+});
+
 function previewImagen(input) {
     if (input.files && input.files[0]) {
         const reader = new FileReader();
@@ -578,11 +593,11 @@ function abrirModalCrear() {
     document.getElementById('inputDescripcion').value = '';
     document.getElementById('inputPrecio').value = '';
     document.getElementById('inputUnidad').value = 'kg';
-    document.getElementById('inputStockActual').value = '';
     document.getElementById('inputStockMinimo').value = '';
     document.getElementById('inputCodigoBarras').value = '';
     document.getElementById('inputDiasPerecedero').value = '';
     document.getElementById('inputActivo').checked = true;
+    document.getElementById('inputProveedorId').value = '';
     resetForm();
     abrirModal('modalForm');
 }
@@ -596,12 +611,12 @@ function abrirModalEditar(p) {
     document.getElementById('inputDescripcion').value    = p.descripcion || '';
     document.getElementById('inputPrecio').value         = p.precio || '';
     document.getElementById('inputUnidad').value         = p.unidad || 'kg';
-    document.getElementById('inputStockActual').value    = p.stockActual !== null ? p.stockActual : '';
     document.getElementById('inputStockMinimo').value    = p.stockMinimo !== null ? p.stockMinimo : '';
     document.getElementById('inputCodigoBarras').value   = p.codigoBarras || '';
     document.getElementById('inputDiasPerecedero').value = p.diasPerecederoMax !== null ? p.diasPerecederoMax : '';
     document.getElementById('inputActivo').checked       = p.activo == 1 || p.activo === true;
     document.getElementById('inputCategoria').value      = p.categoria || '';
+    document.getElementById('inputProveedorId').value    = p.proveedor_id || '';
 
     // Sincronizar select con la categoría
     const sel = document.getElementById('selectCategoria');

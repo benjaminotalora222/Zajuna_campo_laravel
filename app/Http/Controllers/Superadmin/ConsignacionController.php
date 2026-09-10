@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Superadmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Consignacion;
+use App\Models\Lote;
 use App\Models\Proveedor;
 use Illuminate\Http\Request;
 
@@ -18,35 +19,61 @@ class ConsignacionController extends Controller
     {
         $this->soloSuperadmin();
 
-        $query = Consignacion::with('proveedor')->latest();
+        $tab = $request->input('tab', 'catalogo'); // 'catalogo' | 'consignacion'
+
+        // ── TAB CATÁLOGO: productos con lotes ────────────────────────
+        $queryProductos = \App\Models\Producto::with([
+            'proveedor',
+            'lotes' => fn($q) => $q->where('cantidad_disponible', '>', 0)->orderBy('fecha_vencimiento'),
+        ])->where('activo', true);
 
         if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
-                $q->where('nombre_producto', 'like', "%{$search}%")
-                  ->orWhere('sku', 'like', "%{$search}%")
-                  ->orWhereHas('proveedor', fn($p) => $p->where('nombre', 'like', "%{$search}%"));
-            });
+            $queryProductos->where(fn($q) => $q
+                ->where('nombre', 'like', "%{$search}%")
+                ->orWhere('codigoBarras', 'like', "%{$search}%")
+            );
+        }
+        if ($prv = $request->input('proveedor_id')) {
+            $queryProductos->where('proveedor_id', $prv);
         }
 
+        $productos = $queryProductos->paginate(10, ['*'], 'pag_prod')->withQueryString();
+
+        // ── TAB CONSIGNACIÓN ─────────────────────────────────────────
+        $queryConsig = Consignacion::with('proveedor')->latest();
+
+        if ($search = $request->input('search')) {
+            $queryConsig->where(fn($q) => $q
+                ->where('nombre_producto', 'like', "%{$search}%")
+                ->orWhere('sku', 'like', "%{$search}%")
+                ->orWhereHas('proveedor', fn($p) => $p->where('nombre', 'like', "%{$search}%"))
+            );
+        }
         if ($estado = $request->input('estado')) {
-            $query->where('estado', $estado);
+            $queryConsig->where('estado', $estado);
+        }
+        if ($prv = $request->input('proveedor_id')) {
+            $queryConsig->where('proveedor_id', $prv);
         }
 
-        if ($proveedorId = $request->input('proveedor_id')) {
-            $query->where('proveedor_id', $proveedorId);
-        }
+        $consignaciones = $queryConsig->paginate(10, ['*'], 'pag_consig')->withQueryString();
 
-        $consignaciones = $query->paginate(10)->withQueryString();
-        $proveedores    = Proveedor::where('estado', true)->orderBy('nombre')->get();
+        $proveedores = Proveedor::orderBy('nombre')->get();
 
         $stats = [
-            'total_productos'  => Consignacion::count(),
-            'stock_total'      => Consignacion::sum('stock_disponible'),
-            'proximo_vencer'   => Consignacion::where('estado', 'proximo_vencer')->count(),
+            'total_productos'  => \App\Models\Producto::where('activo', true)->count(),
+            'stock_total'      => \App\Models\Lote::sum('cantidad_disponible'),
+            'proximo_vencer'   => \App\Models\Lote::where('cantidad_disponible', '>', 0)
+                                    ->whereNotNull('fecha_vencimiento')
+                                    ->whereRaw('DATEDIFF(fecha_vencimiento, CURDATE()) <= 30')
+                                    ->whereRaw('fecha_vencimiento >= CURDATE()')
+                                    ->count(),
             'proveedores'      => Proveedor::where('estado', true)->count(),
         ];
 
-        return view('superadmin.consignacion.index', compact('consignaciones', 'proveedores', 'stats'));
+        return view('superadmin.consignacion.index', compact(
+            'tab', 'productos', 'consignaciones', 'proveedores', 'stats'
+        ));
     }
 
     public function store(Request $request)

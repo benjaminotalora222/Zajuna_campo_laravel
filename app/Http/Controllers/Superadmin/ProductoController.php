@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use App\Models\LogAuditoria;
 use App\Models\Producto;
+use App\Models\Proveedor;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -35,30 +36,38 @@ class ProductoController extends Controller
         }
 
         if ($request->input('stock') === 'bajo') {
-            $query->whereRaw('stockActual <= stockMinimo')->whereNotNull('stockMinimo');
+            // Stock bajo: productos cuyo stock calculado desde lotes <= stockMinimo
+            $query->whereHas('lotes', fn($q) => $q->where('cantidad_disponible', '>', 0))
+                  ->whereNotNull('stockMinimo')
+                  ->whereRaw('(SELECT COALESCE(SUM(cantidad_disponible),0) FROM lotes WHERE lotes.producto_id = producto.id) <= stockMinimo');
         } elseif ($request->input('stock') === 'agotado') {
-            $query->where('stockActual', '<=', 0);
+            $query->whereDoesntHave('lotes', fn($q) => $q->where('cantidad_disponible', '>', 0));
         }
 
         if ($request->input('activo') !== null && $request->input('activo') !== '') {
             $query->where('activo', (bool) $request->input('activo'));
         }
 
-        $productos    = $query->paginate(12)->withQueryString();
+        $productos    = $query->paginate(10)->withQueryString();
 
         // Combina categorías registradas + las ya usadas en productos
         $categoriasRegistradas = Categoria::orderBy('nombre')->pluck('nombre');
         $categoriasEnUso       = Producto::whereNotNull('categoria')->distinct()->pluck('categoria');
         $categorias            = $categoriasRegistradas->merge($categoriasEnUso)->unique()->sort()->values();
 
+        $proveedores = Proveedor::orderBy('nombre')->get(['id', 'nombre']);
+
         $stats = [
             'total'   => Producto::count(),
             'activos' => Producto::where('activo', true)->count(),
-            'bajo'    => Producto::whereRaw('stockActual <= stockMinimo')->whereNotNull('stockMinimo')->count(),
-            'agotado' => Producto::where('stockActual', '<=', 0)->count(),
+            'bajo'    => Producto::whereNotNull('stockMinimo')
+                            ->whereRaw('(SELECT COALESCE(SUM(cantidad_disponible),0) FROM lotes WHERE lotes.producto_id = producto.id) <= stockMinimo')
+                            ->whereRaw('(SELECT COALESCE(SUM(cantidad_disponible),0) FROM lotes WHERE lotes.producto_id = producto.id) > 0')
+                            ->count(),
+            'agotado' => Producto::whereDoesntHave('lotes', fn($q) => $q->where('cantidad_disponible', '>', 0))->count(),
         ];
 
-        return view('superadmin.productos.index', compact('productos', 'categorias', 'stats'));
+        return view('superadmin.productos.index', compact('productos', 'categorias', 'stats', 'proveedores'));
     }
 
     public function store(Request $request)
@@ -66,16 +75,16 @@ class ProductoController extends Controller
         $this->soloSuperadmin();
 
         $data = $request->validate([
-            'nombre'            => 'required|string|max:255',
+            'nombre'            => 'required|string|max:255|unique:producto,nombre',
             'descripcion'       => 'nullable|string|max:1000',
             'precio'            => 'required|numeric|min:0',
             'unidad'            => 'required|string|max:50',
-            'stockActual'       => 'required|integer|min:0',
             'stockMinimo'       => 'nullable|integer|min:0',
             'categoria'         => 'required|string|max:100',
             'codigoBarras'      => 'nullable|string|max:255',
             'diasPerecederoMax' => 'nullable|integer|min:0',
             'imagen'            => 'nullable|image|max:2048',
+            'proveedor_id'      => 'required|exists:proveedor,id',
         ]);
 
         if ($request->hasFile('imagen')) {
@@ -97,16 +106,16 @@ class ProductoController extends Controller
         $this->soloSuperadmin();
 
         $data = $request->validate([
-            'nombre'            => 'required|string|max:255',
+            'nombre'            => 'required|string|max:255|unique:producto,nombre,' . $producto->id,
             'descripcion'       => 'nullable|string|max:1000',
             'precio'            => 'required|numeric|min:0',
             'unidad'            => 'required|string|max:50',
-            'stockActual'       => 'required|integer|min:0',
             'stockMinimo'       => 'nullable|integer|min:0',
             'categoria'         => 'required|string|max:100',
             'codigoBarras'      => 'nullable|string|max:255',
             'diasPerecederoMax' => 'nullable|integer|min:0',
             'imagen'            => 'nullable|image|max:2048',
+            'proveedor_id'      => 'required|exists:proveedor,id',
         ]);
 
         if ($request->hasFile('imagen')) {

@@ -59,7 +59,7 @@ class AuditoriaController extends Controller
             });
         }
 
-        $logs     = $query->paginate(20)->withQueryString();
+        $logs     = $query->paginate(10)->withQueryString();
         $usuarios = User::orderBy('name')->get();
 
         // Opciones únicas para filtros

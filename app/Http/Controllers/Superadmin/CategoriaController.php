@@ -36,7 +36,7 @@ class CategoriaController extends Controller
             }
         }
 
-        $productos = $query->paginate(12)->withQueryString();
+        $productos = $query->paginate(10)->withQueryString();
 
         $stats = [
             'total'   => Producto::where('categoria', $categoria->nombre)->count(),

@@ -25,21 +25,36 @@
     </script>
     <style>
         #sidebar { transition: width 0.3s cubic-bezier(.4,0,.2,1); }
-        #sidebar .sidebar-label { transition: opacity 0.2s ease, width 0.3s ease; white-space: nowrap; overflow: hidden; }
-        #sidebar .sidebar-section-label { transition: opacity 0.2s ease, height 0.2s ease; overflow: hidden; }
-        #sidebar .sidebar-badge { transition: opacity 0.2s ease; }
+        #sidebar .sidebar-label { transition: opacity 0.15s ease; white-space: nowrap; overflow: hidden; }
+        #sidebar .sidebar-section-label { transition: opacity 0.15s ease, height 0.3s ease; overflow: hidden; }
+        #sidebar .sidebar-badge { transition: opacity 0.15s ease; }
         #sidebar-toggle-arrow { transition: transform 0.3s cubic-bezier(.4,0,.2,1); }
-        #sidebar.collapsed .sidebar-label { opacity: 0; width: 0; }
-        #sidebar.collapsed .sidebar-section-label { opacity: 0; height: 0; padding: 0; }
-        #sidebar.collapsed .sidebar-badge { opacity: 0; pointer-events: none; }
+        #sidebar-toggle-arrow.rotated { transform: rotate(180deg); }
+
+        /* Collapsed state */
         #sidebar.collapsed { width: 4rem; }
+        #sidebar.collapsed .sidebar-label { opacity: 0; width: 0; display: none; }
+        #sidebar.collapsed .sidebar-section-label { opacity: 0; height: 0 !important; padding: 0 !important; margin: 0 !important; }
+        #sidebar.collapsed .sidebar-badge { opacity: 0; width: 0; overflow: hidden; margin: 0; padding: 0; }
         #sidebar.collapsed #sidebar-brand-full { display: none; }
         #sidebar.collapsed #sidebar-brand-icon { display: flex; }
         #sidebar:not(.collapsed) #sidebar-brand-icon { display: none; }
         #sidebar.collapsed #sidebar-footer-text { display: none; }
         #sidebar.collapsed #sidebar-footer-logout { display: none; }
-        .sidebar-nav-link { min-width: 0; }
-        #sidebar.collapsed .sidebar-nav-link { justify-content: center; padding-left: 0; padding-right: 0; }
+
+        /* Center icons when collapsed */
+        #sidebar.collapsed nav { padding-left: 0; padding-right: 0; }
+        #sidebar.collapsed .sidebar-nav-link {
+            justify-content: center !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+            gap: 0 !important;
+        }
+
+        /* Footer center */
+        #sidebar.collapsed > div:last-child { justify-content: center; padding-left: 0; padding-right: 0; }
+
+        /* Hide scrollbar */
         #sidebar nav::-webkit-scrollbar { display: none; }
         #sidebar nav { scrollbar-width: none; -ms-overflow-style: none; }
     </style>

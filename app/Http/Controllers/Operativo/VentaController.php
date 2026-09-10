@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operativo;
 
 use App\Http\Controllers\Controller;
 use App\Models\LogAuditoria;
+use App\Models\MovimientoInventario;
 use App\Models\Producto;
 use App\Models\Venta;
 use App\Models\VentaItem;
@@ -15,6 +16,57 @@ class VentaController extends Controller
     private function soloOperativo()
     {
         if (!in_array(auth()->user()->role_id, [1, 2])) abort(403);
+    }
+
+    private function descontarStockFefo(Producto $producto, int $cantidad, string $motivo = 'Venta'): bool
+    {
+        $stockTotal = $producto->lotes()->where('cantidad_disponible', '>', 0)->sum('cantidad_disponible');
+
+        if ($cantidad > $stockTotal) {
+            return false;
+        }
+
+        $pendiente = $cantidad;
+        $lotes = $producto->lotes()
+            ->where('cantidad_disponible', '>', 0)
+            ->orderByRaw('ISNULL(fecha_vencimiento), fecha_vencimiento ASC')
+            ->get();
+
+        foreach ($lotes as $lote) {
+            if ($pendiente <= 0) break;
+            $descuento = min($lote->cantidad_disponible, $pendiente);
+            $lote->decrement('cantidad_disponible', $descuento);
+            MovimientoInventario::create([
+                'producto_id'     => $producto->id,
+                'lote_id'         => $lote->id,
+                'user_id'         => auth()->id(),
+                'tipo'            => 'salida',
+                'cantidad'        => $descuento,
+                'motivo'          => $motivo,
+                'fechaMovimiento' => now(),
+            ]);
+            $pendiente -= $descuento;
+        }
+
+        return true;
+    }
+
+    private function revertirStockFefo(Producto $producto, int $cantidad, string $motivo = 'Reverso de venta'): void
+    {
+        $lote = $producto->lotes()->orderByDesc('id')->first();
+
+        if ($lote) {
+            $lote->increment('cantidad_disponible', $cantidad);
+            MovimientoInventario::create([
+                'producto_id'     => $producto->id,
+                'lote_id'         => $lote->id,
+                'user_id'         => auth()->id(),
+                'tipo'            => 'entrada',
+                'cantidad'        => $cantidad,
+                'motivo'          => $motivo,
+                'fechaMovimiento' => now(),
+            ]);
+        }
     }
 
     public function index(Request $request)
@@ -38,7 +90,7 @@ class VentaController extends Controller
             $query->whereYear('fechaVenta', $anio);
         }
 
-        $ventas    = $query->paginate(15)->withQueryString();
+        $ventas    = $query->paginate(10)->withQueryString();
         $productos = Producto::where('activo', true)->orderBy('nombre')->get();
 
         $hoy   = now();
@@ -93,8 +145,8 @@ class VentaController extends Controller
                 ];
 
                 $producto = Producto::find($item['idProducto']);
-                if ($producto && $producto->stockActual !== null) {
-                    $producto->decrement('stockActual', $item['cantidad']);
+                if ($producto) {
+                    $this->descontarStockFefo($producto, $item['cantidad'], 'Venta - ' . ($request->cliente ?: 'Sin nombre'));
                 }
             }
 
@@ -135,8 +187,8 @@ class VentaController extends Controller
         DB::transaction(function () use ($request, $venta) {
             foreach ($venta->items as $item) {
                 $producto = Producto::find($item->idProducto);
-                if ($producto && $producto->stockActual !== null) {
-                    $producto->increment('stockActual', $item->cantidad);
+                if ($producto) {
+                    $this->revertirStockFefo($producto, $item->cantidad, 'Reverso de venta (edición)');
                 }
             }
 
@@ -156,8 +208,8 @@ class VentaController extends Controller
                 ]);
 
                 $producto = Producto::find($item['idProducto']);
-                if ($producto && $producto->stockActual !== null) {
-                    $producto->decrement('stockActual', $item['cantidad']);
+                if ($producto) {
+                    $this->descontarStockFefo($producto, $item['cantidad'], 'Venta (edición) - ' . ($request->cliente ?: 'Sin nombre'));
                 }
             }
 
@@ -180,8 +232,8 @@ class VentaController extends Controller
         DB::transaction(function () use ($venta) {
             foreach ($venta->items as $item) {
                 $producto = Producto::find($item->idProducto);
-                if ($producto && $producto->stockActual !== null) {
-                    $producto->increment('stockActual', $item->cantidad);
+                if ($producto) {
+                    $this->revertirStockFefo($producto, $item->cantidad, 'Reverso de venta (eliminación)');
                 }
             }
             $venta->delete();

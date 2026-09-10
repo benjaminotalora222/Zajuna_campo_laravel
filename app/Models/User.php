@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role_id', 'activo'])]
+#[Fillable(['name', 'email', 'password', 'role_id', 'activo', 'proveedor_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -32,5 +32,13 @@ class User extends Authenticatable
     public function rol()
     {
         return $this->belongsTo(\App\Models\Role::class, 'role_id');
+    }
+
+    /**
+     * Relación con el proveedor asociado (solo para usuarios con role_id = 3).
+     */
+    public function proveedor()
+    {
+        return $this->belongsTo(\App\Models\Proveedor::class, 'proveedor_id');
     }
 }

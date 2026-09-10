@@ -8,6 +8,7 @@ use App\Http\Controllers\Superadmin\ReporteController;
 use App\Http\Controllers\Superadmin\ConsignacionController;
 use App\Http\Controllers\Superadmin\CronogramaController;
 use App\Http\Controllers\Superadmin\EjecucionController;
+use App\Http\Controllers\Superadmin\InventarioController as SuperadminInventarioController;
 use App\Http\Controllers\Superadmin\ProyectoController;
 use App\Http\Controllers\Superadmin\ProductoController;
 use App\Http\Controllers\Superadmin\ProveedorController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Operativo\ActividadController as OperativoActividadCont
 use App\Http\Controllers\Operativo\ConsignacionController as OperativoConsignacionController;
 use App\Http\Controllers\Operativo\CronogramaController as OperativoCronogramaController;
 use App\Http\Controllers\Operativo\EjecucionController as OperativoEjecucionController;
+use App\Http\Controllers\Operativo\InventarioController as OperativoInventarioController;
 use App\Http\Controllers\Operativo\ProyectoController as OperativoProyectoController;
 use App\Http\Controllers\Operativo\VentaController as OperativoVentaController;
 use App\Http\Controllers\Superadmin\ConfiguracionController;
@@ -45,9 +47,9 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
         $stats = [
             'proveedores'  => \Illuminate\Support\Facades\DB::table('proveedor')->where('estado', true)->count(),
             'productos'    => \Illuminate\Support\Facades\DB::table('producto')->count(),
-            'stock_bajo'   => \Illuminate\Support\Facades\DB::table('producto')
-                                ->whereRaw('stockActual <= stockMinimo')
-                                ->whereNotNull('stockMinimo')
+            'stock_bajo'   => \App\Models\Producto::whereNotNull('stockMinimo')
+                                ->whereRaw('(SELECT COALESCE(SUM(cantidad_disponible),0) FROM lotes WHERE lotes.producto_id = producto.id) <= stockMinimo')
+                                ->whereRaw('(SELECT COALESCE(SUM(cantidad_disponible),0) FROM lotes WHERE lotes.producto_id = producto.id) > 0')
                                 ->count(),
             'ventas_mes'   => \Illuminate\Support\Facades\DB::table('venta')
                                 ->whereMonth('fechaVenta', now()->month)
@@ -104,6 +106,13 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     // ── Módulo Inventario y Consignación ──
     Route::resource('consignacion', ConsignacionController::class)->except(['show', 'create', 'edit']);
 
+    // ── Módulo Inventario (lotes + movimientos) ──
+    Route::get('inventario', [SuperadminInventarioController::class, 'index'])->name('inventario.index');
+    Route::get('inventario/{producto}', [SuperadminInventarioController::class, 'show'])->name('inventario.show');
+    Route::post('inventario/{producto}/entrada', [SuperadminInventarioController::class, 'storeEntrada'])->name('inventario.entrada');
+    Route::post('inventario/{producto}/salida', [SuperadminInventarioController::class, 'storeSalida'])->name('inventario.salida');
+    Route::put('inventario/movimiento/{movimiento}', [SuperadminInventarioController::class, 'updateMovimiento'])->name('inventario.movimiento.update');
+
     // ── Módulo Cronograma de Espacios ──
     Route::get('cronograma', [CronogramaController::class, 'index'])->name('cronograma.index');
     Route::post('cronograma', [CronogramaController::class, 'store'])->name('cronograma.store');
@@ -151,6 +160,13 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
     Route::resource('ventas', OperativoVentaController::class)->except(['show', 'create', 'edit'])->parameters(['ventas' => 'venta']);
     Route::get('ventas/producto/{producto}/precio', [OperativoVentaController::class, 'precioProducto'])->name('ventas.precio');
 
+    // Inventario operativo (solo movimientos, sin editar ficha)
+    Route::get('inventario', [OperativoInventarioController::class, 'index'])->name('inventario.index');
+    Route::get('inventario/{producto}', [OperativoInventarioController::class, 'show'])->name('inventario.show');
+    Route::post('inventario/{producto}/entrada', [OperativoInventarioController::class, 'storeEntrada'])->name('inventario.entrada');
+    Route::post('inventario/{producto}/salida', [OperativoInventarioController::class, 'storeSalida'])->name('inventario.salida');
+    Route::put('inventario/movimiento/{movimiento}', [OperativoInventarioController::class, 'updateMovimiento'])->name('inventario.movimiento.update');
+
     // Transferencias y shows
     Route::get('cronograma', [OperativoCronogramaController::class, 'index'])->name('cronograma.index');
     Route::post('cronograma', [OperativoCronogramaController::class, 'store'])->name('cronograma.store');
@@ -174,10 +190,11 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
 
 // ── Proveedor (rol 3) ───────────────────────────────────────
 Route::middleware(['auth'])->prefix('proveedor')->name('proveedor.')->group(function () {
-    Route::get('/dashboard', function () {
-        if (auth()->user()->role_id !== 3) abort(403);
-        return view('proveedor.dashboard');
-    })->name('dashboard');
+    Route::get('/dashboard', [\App\Http\Controllers\Proveedor\DashboardController::class, 'index'])->name('dashboard');
+
+    // Solo lectura
+    Route::get('ventas', [\App\Http\Controllers\Proveedor\VentaController::class, 'index'])->name('ventas.index');
+    Route::get('inventario', [\App\Http\Controllers\Proveedor\InventarioController::class, 'index'])->name('inventario.index');
 });
 
 Route::middleware('auth')->group(function () {

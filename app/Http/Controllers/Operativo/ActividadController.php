@@ -42,7 +42,7 @@ class ActividadController extends Controller
             $query->whereDate('fecha_limite', $fecha);
         }
 
-        $actividades = $query->paginate(15)->withQueryString();
+        $actividades = $query->paginate(10)->withQueryString();
         $proyectos   = ProyectoInvestigacion::orderBy('nombre')->get();
         $usuarios    = User::where('activo', true)->orderBy('name')->get();
 

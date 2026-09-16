@@ -1,6 +1,20 @@
 @php $title = 'Ejecución de Actividades'; @endphp
 
 <x-superadmin-layout :title="$title">
+<style>
+.drag-ghost {
+    display: none !important;
+}
+.kanban-col {
+    border-radius: 0.75rem;
+    border: 2px dashed transparent;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+.kanban-col.drag-over {
+    border-color: #39a900 !important;
+    background-color: #f0fdf4 !important;
+}
+</style>
 <div class="px-8 py-8 max-w-screen-xl mx-auto" style="color:#1c2b16;">
 
     {{-- ENCABEZADO --}}
@@ -130,17 +144,27 @@
                     <span class="w-2.5 h-2.5 rounded-full" style="background:{{ $cc['dot'] }};"></span>
                     <h3 class="font-extrabold text-sm" style="color:#1c2b16;">{{ $cc['label'] }}</h3>
                     <span class="ml-1 px-2 py-0.5 rounded-full text-xs font-bold"
-                          style="background:{{ $cc['bg'] }}; color:{{ $cc['color'] }};">
+                          style="background:{{ $cc['bg'] }}; color:{{ $cc['color'] }};"
+                          id="badge-{{ $estado }}">
                         {{ $columnas[$estado]->count() }}
                     </span>
                 </div>
             </div>
 
             {{-- Tarjetas --}}
-            <div class="flex-1 p-3 space-y-3 min-h-[200px]" id="col-{{ $estado }}">
+            <div class="flex-1 p-3 space-y-3 min-h-[200px] kanban-col transition-colors duration-150"
+                 id="col-{{ $estado }}"
+                 data-estado="{{ $estado }}"
+                 ondragover="event.preventDefault(); this.classList.add('drag-over')"
+                 ondragleave="this.classList.remove('drag-over')"
+                 ondrop="onDrop(event, '{{ $estado }}')">
                 @forelse($columnas[$estado] as $tarea)
                 @php $pc = $prioridadConfig[$tarea->prioridad] ?? $prioridadConfig['media']; @endphp
-                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition group"
+                <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-grab hover:shadow-md transition group select-none"
+                     draggable="true"
+                     data-id="{{ $tarea->id }}"
+                     ondragstart="onDragStart(event, {{ $tarea->id }})"
+                     ondragend="onDragEnd(event)"
                      onclick="cargarTarea({{ $tarea->id }})">
 
                     {{-- Proyecto --}}
@@ -194,7 +218,7 @@
                     </div>
                 </div>
                 @empty
-                <div class="flex flex-col items-center justify-center py-10 text-center" style="color:#d1d5db;">
+                <div class="kanban-empty flex flex-col items-center justify-center py-10 text-center" style="color:#d1d5db;">
                     <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                         <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>
                     </svg>
@@ -309,6 +333,81 @@ const R = {
     base:    '/superadmin/ejecucion/',
     csrf:    '{{ csrf_token() }}',
 };
+
+// ── Drag & Drop ───────────────────────────────────────────────
+let draggingId = null;
+
+function onDragStart(event, id) {
+    draggingId = id;
+    event.dataTransfer.effectAllowed = 'move';
+    // Pequeño delay para que el navegador tome el snapshot antes de ocultar
+    setTimeout(() => {
+        event.target.classList.add('drag-ghost');
+    }, 0);
+}
+
+function onDragEnd(event) {
+    event.currentTarget.classList.remove('drag-ghost');
+    document.querySelectorAll('.kanban-col').forEach(c => c.classList.remove('drag-over'));
+}
+
+async function onDrop(event, nuevoEstado) {
+    event.preventDefault();
+    const col = event.currentTarget;
+    col.classList.remove('drag-over');
+
+    if (!draggingId) return;
+
+    const card = document.querySelector(`[data-id="${draggingId}"]`);
+    if (!card) return;
+
+    const origenCol = card.closest('.kanban-col');
+
+    // Quitar el mensaje "Sin tareas" de la columna destino
+    col.querySelector('.kanban-empty')?.remove();
+
+    // Mover la tarjeta al final de la columna destino
+    col.appendChild(card);
+
+    // Si la columna origen quedó vacía, mostrar "Sin tareas"
+    if (origenCol && origenCol !== col) {
+        if (origenCol.querySelectorAll('[data-id]').length === 0) {
+            origenCol.insertAdjacentHTML('afterbegin', `
+                <div class="kanban-empty flex flex-col items-center justify-center py-10 text-center" style="color:#d1d5db;">
+                    <svg class="w-8 h-8 mb-2 opacity-40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/>
+                    </svg>
+                    <p class="text-xs">Sin tareas</p>
+                </div>
+            `);
+        }
+    }
+
+    // Llamar al backend
+    const res = await fetch(`/superadmin/ejecucion/${draggingId}/estado`, {
+        method: 'PATCH',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': R.csrf,
+            'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({ estado: nuevoEstado }),
+    });
+
+    const data = await res.json();
+    if (!data.ok) {
+        location.reload();
+    } else {
+        document.querySelectorAll('.kanban-col').forEach(c => {
+            const estado = c.dataset.estado;
+            const count = c.querySelectorAll('[data-id]').length;
+            const badge = document.querySelector(`#badge-${estado}`);
+            if (badge) badge.textContent = count;
+        });
+    }
+
+    draggingId = null;
+}
 
 function abrirModal() {
     document.getElementById('modalForm').classList.remove('hidden');

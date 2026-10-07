@@ -8,7 +8,7 @@
 <meta name="description" content="Zajuna Campo acompaña a comunidades rurales y campesinas de Colombia con formación, asistencia técnica y acceso a mercados.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Work+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root{
     --green:#39a900;
@@ -26,7 +26,7 @@
     --radius:20px;
     --shadow:0 18px 40px -22px rgba(34,48,28,0.35);
     --display:'Fredoka', sans-serif;
-    --body:'Work Sans', sans-serif;
+    --body:'Fredoka', sans-serif;
   }
 
   *{box-sizing:border-box;}
@@ -44,14 +44,14 @@
   p{margin:0;}
   .wrap{max-width:1180px;margin:0 auto;padding:0 28px;}
   .eyebrow{
-    font-family:var(--body);
-    font-weight:700;
+    font-family:var(--display);
+    font-weight:600;
     text-transform:uppercase;
-    letter-spacing:0.14em;
-    font-size:0.78rem;
+    letter-spacing:0.12em;
+    font-size:0.82rem;
   }
   button, .btn{
-    font-family:var(--body);
+    font-family:var(--display);
     font-weight:600;
     cursor:pointer;
     border:none;
@@ -282,7 +282,7 @@
   .footer-logo{height:34px;filter:brightness(0) invert(1);margin-bottom:16px;}
   .footer-grid p{color:#cdb8cf;font-size:0.92rem;line-height:1.6;max-width:32ch;}
   .footer-col h4{
-    font-family:var(--body);font-size:0.85rem;text-transform:uppercase;letter-spacing:0.1em;
+    font-family:var(--display);font-size:0.9rem;text-transform:uppercase;letter-spacing:0.08em;
     color:#f2d9f4;margin-bottom:16px;
   }
   .footer-col ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:11px;}

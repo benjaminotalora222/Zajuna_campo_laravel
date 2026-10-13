@@ -27,6 +27,20 @@
         #sidebar { transition: width 0.3s cubic-bezier(.4,0,.2,1); }
         #sidebar .sidebar-label { transition: opacity 0.15s ease; white-space: nowrap; overflow: hidden; }
         #sidebar .sidebar-section-label { transition: opacity 0.15s ease, height 0.3s ease; overflow: hidden; }
+        #sidebar .sidebar-section-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            background: #71277a;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(253, 195, 0, 0.35);
+        }
         #sidebar .sidebar-badge { transition: opacity 0.15s ease; }
         #sidebar-toggle-arrow { transition: transform 0.3s cubic-bezier(.4,0,.2,1); }
         #sidebar-toggle-arrow.rotated { transform: rotate(180deg); }
@@ -86,9 +100,9 @@
         </a>
     </div>
 
-    <p class="sidebar-section-label px-5 pt-4 pb-2 text-[11px] font-bold uppercase tracking-wider text-white/55">
-        Panel Superadministrador
-    </p>
+    <div class="sidebar-section-label px-4 pt-4 pb-2">
+        <span class="sidebar-section-pill">Panel Superadministrador</span>
+    </div>
 
     {{-- Nav --}}
     <nav class="flex-1 overflow-y-auto px-3 pb-5 space-y-1 overflow-x-hidden">
@@ -111,7 +125,9 @@
         </a>
 
         {{-- Minimarket --}}
-        <p class="sidebar-section-label px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-white/45">Minimarket</p>
+        <div class="sidebar-section-label px-2 pt-4 pb-1.5">
+            <span class="sidebar-section-pill">Minimarket</span>
+        </div>
 
         <a href="{{ route('superadmin.proveedores.index') }}"
            class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold relative transition
@@ -187,7 +203,9 @@
         </a>
 
         {{-- Transferencias y shows --}}
-        <p class="sidebar-section-label px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-white/45">Transferencias y shows</p>
+        <div class="sidebar-section-label px-2 pt-4 pb-1.5">
+            <span class="sidebar-section-pill">Transferencias y shows</span>
+        </div>
 
         <a href="{{ route('superadmin.cronograma.index') }}"
            class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold relative transition
@@ -216,7 +234,9 @@
         </a>
 
         {{-- Investigación --}}
-        <p class="sidebar-section-label px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-white/45">Investigación</p>
+        <div class="sidebar-section-label px-2 pt-4 pb-1.5">
+            <span class="sidebar-section-pill">Investigación</span>
+        </div>
 
         <a href="{{ route('superadmin.proyectos.index') }}"
            class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold relative transition
@@ -245,7 +265,9 @@
         </a>
 
         {{-- Administración --}}
-        <p class="sidebar-section-label px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-white/45">Administración</p>
+        <div class="sidebar-section-label px-2 pt-4 pb-1.5">
+            <span class="sidebar-section-pill">Administración</span>
+        </div>
 
         <a href="{{ route('superadmin.usuarios.index') }}"
            class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold relative transition

@@ -39,29 +39,28 @@ class RegisteredUserController extends Controller
         ]);
 
         DB::transaction(function () use ($request) {
-            // 1. Crear el registro de proveedor
+            // 1. Crear el registro de proveedor inactivo hasta que el administrador lo active
             $proveedor = Proveedor::create([
                 'nombre'  => $request->name,
+                'codigo'  => Proveedor::generarCodigo(),
                 'tipo'    => 'externo',
                 'correo'  => $request->email,
-                'estado'  => true,
+                'estado'  => false,
             ]);
 
-            // 2. Crear el usuario con role_id = 3 (proveedor) y proveedor_id vinculado
+            // 2. Crear el usuario con role_id = 3 (proveedor) y proveedor_id vinculado (inactivo)
             $user = User::create([
                 'name'         => $request->name,
                 'email'        => $request->email,
                 'password'     => Hash::make($request->password),
                 'role_id'      => 3,
                 'proveedor_id' => $proveedor->id,
-                'activo'       => true,
+                'activo'       => false,
             ]);
 
             event(new Registered($user));
-
-            Auth::login($user);
         });
 
-        return redirect(route('proveedor.dashboard', absolute: false));
+        return redirect()->route('login')->with('status', 'Proveedor registrado, espere activación del administrador.');
     }
 }

@@ -50,6 +50,23 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        $user = Auth::user();
+        if ($user) {
+            $proveedorInactivo = false;
+            if ($user->role_id === 3 && $user->proveedor_id) {
+                $proveedorInactivo = !\App\Models\Proveedor::where('id', $user->proveedor_id)->where('estado', true)->exists();
+            }
+
+            if (! $user->activo || $proveedorInactivo) {
+                Auth::guard('web')->logout();
+                RateLimiter::hit($this->throttleKey());
+
+                throw ValidationException::withMessages([
+                    'email' => 'Tu cuenta aún no está activa. El administrador debe activar tu cuenta para que puedas acceder.',
+                ]);
+            }
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

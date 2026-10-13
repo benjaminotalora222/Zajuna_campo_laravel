@@ -132,16 +132,16 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     Route::get('reportes/pdf', [ReporteController::class, 'exportarPdf'])->name('reportes.pdf');
 
     // ── Módulo Proyectos ──
-    Route::resource('proyectos', ProyectoController::class)->except(['show', 'create', 'edit']);
+    Route::resource('proyectos', ProyectoController::class)->except(['show', 'create', 'edit'])->parameters(['proyectos' => 'proyecto']);
 
     // ── Módulo Ejecución de Actividades ──
-    Route::resource('actividades', ActividadController::class)->except(['show', 'create', 'edit']);
+    Route::resource('actividades', ActividadController::class)->except(['show', 'create', 'edit'])->parameters(['actividades' => 'actividad']);
 
     // ── Módulo Ejecución de Actividades (Kanban) ──
     // ── Módulo Tareas y Avances (Kanban) ──
     Route::get('ejecucion', [EjecucionController::class, 'index'])->name('ejecucion.index');
     Route::get('tareas', [EjecucionController::class, 'index'])->name('tareas.index'); // alias para sidebar
-    Route::post('ejecuci    on', [EjecucionController::class, 'store'])->name('ejecucion.store');
+    Route::post('ejecucion', [EjecucionController::class, 'store'])->name('ejecucion.store');
     Route::get('ejecucion/{tarea}', [EjecucionController::class, 'show'])->name('ejecucion.show');
     Route::put('ejecucion/{tarea}', [EjecucionController::class, 'update'])->name('ejecucion.update');
     Route::patch('ejecucion/{tarea}/estado', [EjecucionController::class, 'moverEstado'])->name('ejecucion.estado');
@@ -174,10 +174,10 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
     Route::put('cronograma/{evento}', [OperativoCronogramaController::class, 'update'])->name('cronograma.update');
     Route::delete('cronograma/{evento}', [OperativoCronogramaController::class, 'destroy'])->name('cronograma.destroy');
 
-    Route::resource('actividades', OperativoActividadController::class)->except(['show', 'create', 'edit']);
+    Route::resource('actividades', OperativoActividadController::class)->except(['show', 'create', 'edit'])->parameters(['actividades' => 'actividad']);
 
     // Investigación
-    Route::resource('proyectos', OperativoProyectoController::class)->except(['show', 'create', 'edit']);
+    Route::resource('proyectos', OperativoProyectoController::class)->except(['show', 'create', 'edit'])->parameters(['proyectos' => 'proyecto']);
 
     Route::get('ejecucion', [OperativoEjecucionController::class, 'index'])->name('ejecucion.index');
     Route::get('tareas', [OperativoEjecucionController::class, 'index'])->name('tareas.index');

@@ -427,7 +427,7 @@
                             onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
                         <option value="">Selecciona un proveedor...</option>
                         @foreach($proveedores as $prov)
-                            <option value="{{ $prov->id }}">{{ $prov->nombre }}</option>
+                            <option value="{{ $prov->id }}">{{ $prov->codigo ? "[$prov->codigo] " : '' }}{{ $prov->nombre }}</option>
                         @endforeach
                     </select>
                 </div>

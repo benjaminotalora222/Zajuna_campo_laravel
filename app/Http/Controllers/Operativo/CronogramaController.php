@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Operativo;
 
 use App\Http\Controllers\Controller;
+use App\Models\Actividad;
 use App\Models\Evento;
 use Illuminate\Http\Request;
 
@@ -56,9 +57,29 @@ class CronogramaController extends Controller
         ]);
 
         $data['creado_por'] = auth()->id();
-        Evento::create($data);
+        $evento = Evento::create($data);
 
-        return response()->json(['ok' => true, 'message' => 'Evento creado.']);
+        // Sincronizar y crear actividad en el módulo de Ejecución de Actividades
+        $fechaHora = null;
+        if (!empty($data['fecha'])) {
+            $hora = !empty($data['hora_inicio']) ? $data['hora_inicio'] . ':00' : '00:00:00';
+            $fechaHora = "{$data['fecha']} {$hora}";
+        }
+
+        Actividad::create([
+            'tema'           => $evento->titulo,
+            'descripcion'    => $evento->descripcion,
+            'tipo'           => $evento->tipo,
+            'espacio_fisico' => $evento->espacio,
+            'fecha_hora'     => $fechaHora,
+            'fecha_limite'   => $evento->fecha,
+            'responsable_id' => $evento->creado_por,
+            'estado'         => 'pendiente',
+            'progreso'       => 0,
+            'evento_id'      => $evento->id,
+        ]);
+
+        return response()->json(['ok' => true, 'message' => 'Evento creado y conectado a ejecución de actividades.']);
     }
 
     public function show(Evento $evento)
@@ -83,12 +104,33 @@ class CronogramaController extends Controller
 
         $evento->update($data);
 
+        // Actualizar actividad vinculada
+        $fechaHora = null;
+        if (!empty($data['fecha'])) {
+            $hora = !empty($data['hora_inicio']) ? $data['hora_inicio'] . ':00' : '00:00:00';
+            $fechaHora = "{$data['fecha']} {$hora}";
+        }
+
+        Actividad::updateOrCreate(
+            ['evento_id' => $evento->id],
+            [
+                'tema'           => $evento->titulo,
+                'descripcion'    => $evento->descripcion,
+                'tipo'           => $evento->tipo,
+                'espacio_fisico' => $evento->espacio,
+                'fecha_hora'     => $fechaHora,
+                'fecha_limite'   => $evento->fecha,
+                'responsable_id' => $evento->creado_por ?? auth()->id(),
+            ]
+        );
+
         return response()->json(['ok' => true, 'message' => 'Evento actualizado.']);
     }
 
     public function destroy(Evento $evento)
     {
         $this->soloOperativo();
+        Actividad::where('evento_id', $evento->id)->delete();
         $evento->delete();
         return response()->json(['ok' => true, 'message' => 'Evento eliminado.']);
     }

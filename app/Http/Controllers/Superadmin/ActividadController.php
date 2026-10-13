@@ -20,13 +20,15 @@ class ActividadController extends Controller
     {
         $this->soloSuperadmin();
 
-        $query = Actividad::with(['proyecto', 'responsableUser'])->latest();
+        $query = Actividad::with(['proyecto', 'responsableUser', 'evento'])->latest();
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('tema', 'like', "%{$search}%")
                   ->orWhere('descripcion', 'like', "%{$search}%")
-                  ->orWhereHas('proyecto', fn($p) => $p->where('nombre', 'like', "%{$search}%"));
+                  ->orWhere('espacio_fisico', 'like', "%{$search}%")
+                  ->orWhereHas('proyecto', fn($p) => $p->where('nombre', 'like', "%{$search}%"))
+                  ->orWhereHas('evento', fn($e) => $e->where('titulo', 'like', "%{$search}%")->orWhere('espacio', 'like', "%{$search}%"));
             });
         }
 

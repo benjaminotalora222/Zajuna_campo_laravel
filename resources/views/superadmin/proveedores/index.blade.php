@@ -77,7 +77,7 @@
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Buscar proveedor</label>
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}"
-                           placeholder="Nombre, correo o teléfono..."
+                           placeholder="Nombre, código, correo o teléfono..."
                            class="w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
                     <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color:#9a9a8a;"
@@ -122,6 +122,7 @@
             <thead>
                 <tr style="border-bottom:2px solid #f3f0e8;">
                     <th class="text-left px-6 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Proveedor</th>
+                    <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Código</th>
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Tipo</th>
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Correo</th>
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Teléfono</th>
@@ -150,6 +151,16 @@
                                  style="background:#39a900;">{{ $initials }}</div>
                             <span class="font-semibold" style="color:#1c2b16;">{{ $p->nombre ?? '—' }}</span>
                         </div>
+                    </td>
+
+                    {{-- Código --}}
+                    <td class="px-4 py-4">
+                        @if($p->codigo)
+                        <span class="inline-block font-mono text-xs font-bold px-2.5 py-1 rounded-lg"
+                              style="background:#f3e8ff; color:#71277a; border: 1px solid #e9d5ff;">
+                            {{ $p->codigo }}
+                        </span>
+                        @else <span style="color:#9a9a8a;">—</span> @endif
                     </td>
 
                     {{-- Tipo --}}
@@ -225,7 +236,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" class="px-6 py-16 text-center" style="color:#9a9a8a;">
+                    <td colspan="7" class="px-6 py-16 text-center" style="color:#9a9a8a;">
                         <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path d="M3 6h18l-2 12H5L3 6Z"/><path d="M8 6V4a4 4 0 0 1 8 0v2"/>
                         </svg>
@@ -307,10 +318,10 @@
             @csrf
             <input type="hidden" name="_method" id="formMethod" value="POST">
 
-            {{-- Nombre --}}
+            {{-- Nombre empresa --}}
             <div>
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">
-                    Nombre <span style="color:#ef4444;">*</span>
+                    Nombre del proveedor <span style="color:#ef4444;">*</span>
                 </label>
                 <input type="text" name="nombre" id="inputNombre" placeholder="Ej. Distribuidora Andina" required
                        class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
@@ -320,56 +331,88 @@
                 @error('nombre')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
             </div>
 
-            {{-- Tipo --}}
+            {{-- Código único --}}
             <div>
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">
-                    Tipo <span style="color:#ef4444;">*</span>
+                    Código único de proveedor
+                    <span class="text-xs font-normal ml-1" style="color:#9a9a8a;">(opcional, autogenerado si se deja vacío)</span>
                 </label>
-                <div class="flex gap-2">
-                    <select name="tipo" id="inputTipo" required
-                            class="flex-1 px-4 py-3 rounded-xl border text-sm outline-none transition"
-                            style="border-color:#e7e0cc; background:#fafafa;"
-                            onchange="if(this.value==='__otro__'){document.getElementById('inputTipoCustom').classList.remove('hidden');this.name=''}else{document.getElementById('inputTipoCustom').classList.add('hidden');this.name='tipo'}">
-                        <option value="">Selecciona tipo...</option>
-                        <option value="Nacional">Nacional</option>
-                        <option value="Internacional">Internacional</option>
-                        <option value="Regional">Regional</option>
-                        <option value="Local">Local</option>
-                        @foreach($tipos as $t)
-                            @if(!in_array($t, ['Nacional','Internacional','Regional','Local']))
-                                <option value="{{ $t }}">{{ $t }}</option>
-                            @endif
-                        @endforeach
-                        <option value="__otro__">Otro (especificar)...</option>
-                    </select>
-                    <input type="text" name="tipo" id="inputTipoCustom" placeholder="Especifica el tipo"
-                           class="hidden flex-1 px-4 py-3 rounded-xl border text-sm outline-none transition"
-                           style="border-color:#e7e0cc; background:#fafafa;"
-                           onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
-                           onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
-                </div>
-                @error('tipo')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
+                <input type="text" name="codigo" id="inputCodigo" placeholder="Ej. PRV-001"
+                       class="w-full px-4 py-3 rounded-xl border text-sm font-mono uppercase outline-none transition"
+                       style="border-color:#e7e0cc; background:#fafafa;"
+                       onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
+                       onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                @error('codigo')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
             </div>
 
-            {{-- Correo + Teléfono --}}
-            <div class="grid grid-cols-2 gap-4">
+            {{-- Teléfono --}}
+            <div>
+                <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Teléfono</label>
+                <input type="text" name="telefono" id="inputTelefono" placeholder="+57 300 000 0000"
+                       class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
+                       style="border-color:#e7e0cc; background:#fafafa;"
+                       onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
+                       onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                @error('telefono')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Separador cuenta --}}
+            <div id="separadorCuenta" class="hidden">
+                <p class="text-xs font-bold uppercase tracking-wider mt-2 mb-3 pb-2 border-b"
+                   style="color:#71277a; border-color:#f3f0e8;">
+                    👤 Cuenta de acceso
+                </p>
+            </div>
+
+            {{-- Nombre del usuario --}}
+            <div id="campoUserName" class="hidden">
+                <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">
+                    Nombre completo del usuario <span style="color:#ef4444;">*</span>
+                </label>
+                <input type="text" name="user_name" id="inputUserName" placeholder="Ej. Camilo Millan"
+                       class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
+                       style="border-color:#e7e0cc; background:#fafafa;"
+                       onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
+                       onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                @error('user_name')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Correo (sirve para login) --}}
+            <div>
+                <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">
+                    Correo electrónico <span style="color:#ef4444;">*</span>
+                    <span class="text-xs font-normal ml-1" style="color:#9a9a8a;">(será el usuario de acceso)</span>
+                </label>
+                <input type="email" name="correo" id="inputCorreo" placeholder="proveedor@ejemplo.com" required
+                       class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
+                       style="border-color:#e7e0cc; background:#fafafa;"
+                       onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
+                       onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                @error('correo')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
+            </div>
+
+            {{-- Contraseña --}}
+            <div id="campoPassword" class="hidden grid grid-cols-2 gap-4">
                 <div>
-                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Correo</label>
-                    <input type="email" name="correo" id="inputCorreo" placeholder="proveedor@ejemplo.com"
+                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">
+                        Contraseña <span id="passReq" style="color:#ef4444;">*</span>
+                    </label>
+                    <p id="passHintProveedor" class="text-xs mb-1 hidden" style="color:#9a9a8a;">Deja en blanco para no cambiar.</p>
+                    <div id="passPlaceholder" class="text-xs mb-1" style="color:transparent;">-</div>
+                    <input type="password" name="password" id="inputPassword" placeholder="Mínimo 8 caracteres"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
-                    @error('correo')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Teléfono</label>
-                    <input type="text" name="telefono" id="inputTelefono" placeholder="+57 300 000 0000"
+                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Confirmar contraseña</label>
+                    <div class="text-xs mb-1" style="color:transparent;">-</div>
+                    <input type="password" name="password_confirmation" id="inputPasswordConfirm" placeholder="Repite la contraseña"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
-                    @error('telefono')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
                 </div>
             </div>
 
@@ -486,36 +529,38 @@ function abrirModalCrear() {
     document.getElementById('formProveedor').action = '{{ route("superadmin.proveedores.store") }}';
     document.getElementById('formMethod').value = 'POST';
     document.getElementById('inputNombre').value = '';
-    document.getElementById('inputTipo').value = '';
-    document.getElementById('inputTipoCustom').value = '';
-    document.getElementById('inputTipoCustom').classList.add('hidden');
+    document.getElementById('inputCodigo').value = '';
     document.getElementById('inputCorreo').value = '';
     document.getElementById('inputTelefono').value = '';
     document.getElementById('inputEstado').checked = true;
+    // Mostrar campos de cuenta
+    document.getElementById('separadorCuenta').classList.remove('hidden');
+    document.getElementById('campoUserName').classList.remove('hidden');
+    document.getElementById('campoPassword').classList.remove('hidden');
+    document.getElementById('inputUserName').value = '';
+    document.getElementById('inputPassword').value = '';
+    document.getElementById('inputPasswordConfirm').value = '';
+    document.getElementById('inputPassword').required = true;
+    document.getElementById('inputUserName').required = true;
+    document.getElementById('passReq').classList.remove('hidden');
+    document.getElementById('passHintProveedor').classList.add('hidden');
+    document.getElementById('passPlaceholder').style.display = '';
     abrirModal('modalForm');
 }
 
 function abrirModalEditar(p) {
     document.getElementById('modalFormTitle').textContent = 'Editar Proveedor';
     document.getElementById('btnGuardar').textContent = 'Guardar cambios';
+    // Ocultar campos de cuenta en edición
+    document.getElementById('separadorCuenta').classList.add('hidden');
+    document.getElementById('campoUserName').classList.add('hidden');
+    document.getElementById('campoPassword').classList.add('hidden');
+    document.getElementById('inputPassword').required = false;
+    document.getElementById('inputUserName').required = false;
     document.getElementById('formProveedor').action = '/superadmin/proveedores/' + p.id;
     document.getElementById('formMethod').value = 'PUT';
     document.getElementById('inputNombre').value = p.nombre || '';
-    // Tipo
-    const sel = document.getElementById('inputTipo');
-    let tipoEncontrado = false;
-    for (let opt of sel.options) {
-        if (opt.value === p.tipo) { sel.value = p.tipo; tipoEncontrado = true; break; }
-    }
-    if (!tipoEncontrado && p.tipo) {
-        sel.value = '__otro__';
-        document.getElementById('inputTipoCustom').value = p.tipo;
-        document.getElementById('inputTipoCustom').classList.remove('hidden');
-        sel.name = '';
-    } else {
-        document.getElementById('inputTipoCustom').classList.add('hidden');
-        sel.name = 'tipo';
-    }
+    document.getElementById('inputCodigo').value = p.codigo || '';
     document.getElementById('inputCorreo').value = p.correo || '';
     document.getElementById('inputTelefono').value = p.telefono || '';
     document.getElementById('inputEstado').checked = p.estado == 1 || p.estado === true;

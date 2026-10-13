@@ -130,15 +130,28 @@ class ReporteController extends Controller
 
         $usuario = auth()->user();
 
+        $logoSenaFile = public_path('img/logo-sena.png');
+        $logoZajunaFile = public_path('img/logo-zajuna-campo.png');
+
+        $logoSena = file_exists($logoSenaFile)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoSenaFile))
+            : $logoSenaFile;
+
+        $logoZajuna = file_exists($logoZajunaFile)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoZajunaFile))
+            : $logoZajunaFile;
+
         $pdf = Pdf::loadView("superadmin.reportes.pdf.{$modulo}", array_merge($datos, [
-            'inicio'     => $inicio,
-            'fin'        => $fin,
-            'periodo'    => $periodo,
-            'anio'       => $anio,
-            'mes'        => $mes,
-            'nombresMes' => $nombresMes,
-            'usuario'    => $usuario,
-            'logoPath'   => public_path('img/logo-zajuna-campo.png'),
+            'inicio'         => $inicio,
+            'fin'            => $fin,
+            'periodo'        => $periodo,
+            'anio'           => $anio,
+            'mes'            => $mes,
+            'nombresMes'     => $nombresMes,
+            'usuario'        => $usuario,
+            'logoPath'       => $logoSena,
+            'logoSenaPath'   => $logoSena,
+            'logoZajunaPath' => $logoZajuna,
         ]))->setPaper('a4', 'portrait');
 
         $nombreArchivo = "reporte-{$modulo}-{$periodo}-{$inicio->format('Y-m-d')}.pdf";

@@ -62,16 +62,28 @@
 </head>
 <body>
 
-<div class="top-bar">
-    <div class="logo-area">
-        <img src="{{ $logoPath }}" alt="Zajuna Campo">
-    </div>
-    <div class="meta">
-        <div><strong>Generado por:</strong> {{ $usuario->name }}</div>
-        <div><strong>Rol:</strong> Superadmin</div>
-        <div><strong>Fecha:</strong> {{ now()->format('d/m/Y H:i') }}</div>
-    </div>
-</div>
+{{-- ══ ENCABEZADO ══ --}}
+<table style="width:100%; border-collapse:collapse; margin-bottom:8px;">
+    <tr>
+        <td style="width:50%; vertical-align:middle; border:none; padding:0;">
+            <img src="{{ $logoZajunaPath }}" alt="Zajuna Campo" style="height:48px; display:block;">
+        </td>
+        <td style="width:50%; text-align:right; vertical-align:middle; border:none; padding:0;">
+            <table style="border-collapse:collapse; border:none; margin:0 0 0 auto;">
+                <tr>
+                    <td style="text-align:right; vertical-align:middle; border:none; padding:0 16px 0 0; font-size:9px; color:#555; line-height:1.7;">
+                        <div><strong>Generado por:</strong> {{ $usuario->name }}</div>
+                        <div><strong>Rol:</strong> Superadmin</div>
+                        <div><strong>Fecha:</strong> {{ now()->format('d/m/Y H:i') }}</div>
+                    </td>
+                    <td style="vertical-align:middle; border:none; padding:0 0 0 16px; border-left:1.5px solid #d4d4d4; width:65px;">
+                        <img src="{{ $logoSenaPath ?? $logoPath }}" alt="SENA" style="height:62px; display:block;">
+                    </td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
 <hr class="divider-top">
 
 <div class="report-title">Reporte de Tareas y Avances</div>

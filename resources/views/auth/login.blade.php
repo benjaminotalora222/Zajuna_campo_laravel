@@ -181,12 +181,30 @@
   .status-msg {
     background: #e9f6dd;
     border: 1px solid var(--green);
-    border-radius: 10px;
-    padding: 11px 15px;
-    font-size: 0.88rem;
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 0.9rem;
     color: var(--green-dark);
     font-weight: 600;
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1.4;
+  }
+  .alert-warning-msg {
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    padding: 13px 16px;
+    font-size: 0.88rem;
+    color: #92400e;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    line-height: 1.4;
   }
 
   /* Fields */
@@ -391,8 +409,25 @@
       <h1>Bienvenido de nuevo</h1>
       <p class="subtitle">Ingresa tus datos para continuar con tu proceso de formación y acompañamiento.</p>
 
-      @if (session('status'))
-        <div class="status-msg">{{ session('status') }}</div>
+      @if (session('status') || session('success'))
+        <div class="status-msg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span>{{ session('status') ?? session('success') }}</span>
+        </div>
+      @endif
+
+      @if (session('warning'))
+        <div class="alert-warning-msg">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>{{ session('warning') }}</span>
+        </div>
       @endif
 
       <form method="POST" action="{{ route('login') }}">

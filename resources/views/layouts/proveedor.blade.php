@@ -27,6 +27,20 @@
         #sidebar { transition: width 0.3s cubic-bezier(.4,0,.2,1); }
         #sidebar .sidebar-label { transition: opacity 0.15s ease; white-space: nowrap; overflow: hidden; }
         #sidebar .sidebar-section-label { transition: opacity 0.15s ease, height 0.3s ease; overflow: hidden; }
+        #sidebar .sidebar-section-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 9999px;
+            background: #71277a;
+            color: #ffffff;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(253, 195, 0, 0.35);
+        }
         #sidebar-toggle-arrow { transition: transform 0.3s cubic-bezier(.4,0,.2,1); }
         #sidebar-toggle-arrow.rotated { transform: rotate(180deg); }
 
@@ -87,9 +101,9 @@
         <span class="text-[11px] font-bold" style="color:#fdc300;">Portal de solo lectura</span>
     </div>
 
-    <p class="sidebar-section-label px-5 pt-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-white/55">
-        Portal Proveedor
-    </p>
+    <div class="sidebar-section-label px-4 pt-3 pb-2">
+        <span class="sidebar-section-pill">Portal Proveedor</span>
+    </div>
 
     {{-- Nav --}}
     <nav class="flex-1 overflow-y-auto px-3 pb-5 space-y-1 overflow-x-hidden">
@@ -111,7 +125,9 @@
             <span class="sidebar-label">Panel general</span>
         </a>
 
-        <p class="sidebar-section-label px-3 pt-4 pb-1 text-[11px] font-bold uppercase tracking-wider text-white/45">Mis productos</p>
+        <div class="sidebar-section-label px-2 pt-4 pb-1.5">
+            <span class="sidebar-section-pill">Mis productos</span>
+        </div>
 
         {{-- Ventas --}}
         <a href="{{ route('proveedor.ventas.index') }}"
@@ -173,6 +189,26 @@
 
 {{-- CONTENIDO PRINCIPAL --}}
 <main class="flex-1 min-h-screen overflow-auto bg-zcrema">
+    @php
+        $provAuth = auth()->user()->proveedor_id ? \App\Models\Proveedor::find(auth()->user()->proveedor_id) : null;
+        $inactivoProv = !auth()->user()->activo || ($provAuth && !$provAuth->estado);
+    @endphp
+
+    @if($inactivoProv)
+    <div class="m-6 p-4 rounded-2xl flex items-center gap-3.5 text-sm shadow-sm"
+         style="background:#fffbeb; border:1px solid #fde68a; color:#92400e;">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style="background:#fef3c7;">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+        </div>
+        <div>
+            <p class="font-extrabold text-amber-900">Cuenta pendiente de activación</p>
+            <p class="text-xs text-amber-800 mt-0.5">El administrador debe activar tu cuenta para que puedas operar completamente en la plataforma.</p>
+        </div>
+    </div>
+    @endif
+
     {{ $slot }}
 </main>
 

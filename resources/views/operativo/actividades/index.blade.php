@@ -79,7 +79,7 @@
             <thead>
                 <tr style="border-bottom:2px solid #f3f0e8;">
                     <th class="text-left px-6 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Actividad</th>
-                    <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Proyecto</th>
+                    <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Proyecto / Espacio</th>
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Progreso</th>
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Estado</th>
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Responsable</th>
@@ -101,13 +101,30 @@
                 @endphp
                 <tr class="border-b last:border-0 hover:bg-gray-50 transition" style="border-color:#f3f0e8;">
                     <td class="px-6 py-4" style="max-width:220px;">
-                        <p class="font-bold text-sm leading-snug" style="color:#1c2b16;">{{ $act->tema }}</p>
+                        <div class="flex items-center gap-2">
+                            <p class="font-bold text-sm leading-snug" style="color:#1c2b16;">{{ $act->tema }}</p>
+                        </div>
                         @if($act->descripcion)
                             <p class="text-xs mt-0.5 line-clamp-2" style="color:#9a9a8a;">{{ $act->descripcion }}</p>
                         @endif
                     </td>
                     <td class="px-4 py-4">
-                        <span class="text-sm" style="color:#5a5a4f;">{{ $act->proyecto->nombre ?? '—' }}</span>
+                        @if($act->proyecto)
+                            <span class="text-sm font-medium" style="color:#5a5a4f;">{{ $act->proyecto->nombre }}</span>
+                        @elseif($act->evento_id || $act->evento)
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold"
+                                  style="background:#f0fdf4; color:#166534; border:1px solid #bbf7d0;">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                <span>Cronograma: {{ $act->espacio_fisico ?: 'Espacio general' }}</span>
+                            </span>
+                        @else
+                            <span class="text-sm" style="color:#9a9a8a;">—</span>
+                        @endif
                     </td>
                     <td class="px-4 py-4" style="min-width:140px;">
                         <div class="flex items-center gap-2">
@@ -346,7 +363,7 @@ document.getElementById('modalEliminar').addEventListener('click', function(e) {
 function abrirModalCrear() {
     document.getElementById('modalTitle').textContent  = 'Nueva Actividad';
     document.getElementById('btnGuardar').textContent  = 'Crear actividad';
-    document.getElementById('formActividad').action    = '{{ route("superadmin.actividades.store") }}';
+    document.getElementById('formActividad').action    = '{{ route("operativo.actividades.store") }}';
     document.getElementById('formMethod').value        = 'POST';
     document.getElementById('inpTema').value           = '';
     document.getElementById('inpDescripcion').value    = '';

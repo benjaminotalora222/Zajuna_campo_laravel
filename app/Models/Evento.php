@@ -22,4 +22,9 @@ class Evento extends Model
     {
         return $this->belongsTo(User::class, 'creado_por');
     }
+
+    public function actividad()
+    {
+        return $this->hasOne(Actividad::class, 'evento_id');
+    }
 }

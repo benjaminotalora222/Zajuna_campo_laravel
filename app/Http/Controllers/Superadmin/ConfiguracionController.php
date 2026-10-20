@@ -33,7 +33,9 @@ class ConfiguracionController extends Controller
             'en' => 'English',
         ];
 
-        return view('superadmin.configuracion.index', compact('config', 'zonas', 'idiomas'));
+        $operativos = \App\Models\User::where('role_id', 2)->orderBy('name')->get();
+
+        return view('superadmin.configuracion.index', compact('config', 'zonas', 'idiomas', 'operativos'));
     }
 
     public function update(Request $request)
@@ -55,12 +57,14 @@ class ConfiguracionController extends Controller
             'notif_alertas_criticas',
             'seg_dos_pasos',
             'seg_sesion_automatica',
+            'modulo_ventas_operativo',
         ];
 
         // Los toggles que no vengan en el request se guardan como '0'
         $toggles = [
             'notif_correo', 'notif_recordatorios', 'notif_alertas_criticas',
             'seg_dos_pasos', 'seg_sesion_automatica',
+            'modulo_ventas_operativo',
         ];
 
         foreach ($campos as $clave) {
@@ -71,9 +75,45 @@ class ConfiguracionController extends Controller
             }
         }
 
+        // Actualizar permisos individuales de usuarios operativos para ventas
+        if ($request->has('operativos_ids')) {
+            $operativosIds = $request->input('operativos_ids', []);
+            $ventasPermitidas = $request->input('operativos_ventas', []);
+
+            foreach ($operativosIds as $opId) {
+                $acceso = isset($ventasPermitidas[$opId]);
+                \App\Models\User::where('id', $opId)
+                    ->where('role_id', 2)
+                    ->update(['acceso_ventas' => $acceso]);
+            }
+        }
+
         LogAuditoria::registrar('Configuración', 'Actualización', 'Se actualizó la configuración del sistema.');
 
         return redirect()->route('superadmin.configuracion.index')
                          ->with('success', 'Configuración guardada correctamente.');
+    }
+
+    /**
+     * Alternar rápidamente el bloqueo/habilitación del módulo de ventas para el rol operativo.
+     */
+    public function toggleVentasOperativo(Request $request)
+    {
+        $this->soloSuperadmin();
+
+        $algunoHabilitado = \App\Models\User::where('role_id', 2)->where('acceso_ventas', true)->exists();
+        $nuevoEstado = !$algunoHabilitado;
+
+        \App\Models\User::where('role_id', 2)->update(['acceso_ventas' => $nuevoEstado]);
+        ConfiguracionSistema::set('modulo_ventas_operativo', $nuevoEstado ? '1' : '0');
+
+        $accion = $nuevoEstado ? 'habilitó a todos los operativos' : 'bloqueó a todos los operativos';
+        LogAuditoria::registrar('Permisos', 'Actualización', "El superadministrador {$accion} en el módulo de ventas.");
+
+        $mensaje = $nuevoEstado
+            ? 'Módulo de ventas HABILITADO para todos los usuarios operativos.'
+            : 'Módulo de ventas BLOQUEADO para todos los usuarios operativos.';
+
+        return back()->with('success', $mensaje);
     }
 }

@@ -32,4 +32,9 @@ class ProyectoInvestigacion extends Model
     {
         return $this->hasMany(Tarea::class, 'proyecto_id');
     }
+
+    public function aprendices()
+    {
+        return $this->belongsToMany(Aprendiz::class, 'aprendiz_proyecto', 'proyecto_id', 'aprendiz_id')->withTimestamps();
+    }
 }

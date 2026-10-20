@@ -99,6 +99,7 @@
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Correo electrónico</th>
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Rol</th>
                     <th class="text-left px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Estado</th>
+                    <th class="text-center px-4 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Módulo Ventas</th>
                     <th class="text-right px-6 py-4 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Acciones</th>
                 </tr>
             </thead>
@@ -139,6 +140,27 @@
                                   style="background:{{ $usuario->activo ? '#22c55e' : '#ef4444' }};"></span>
                             {{ $usuario->activo ? 'Activo' : 'Inactivo' }}
                         </span>
+                    </td>
+                    <td class="px-4 py-4 text-center">
+                        @if((int) $usuario->role_id === 2)
+                            <form action="{{ route('superadmin.usuarios.toggleVentas', $usuario) }}" method="POST" class="inline">
+                                @csrf
+                                @method('PATCH')
+                                <button type="submit"
+                                        title="{{ $usuario->acceso_ventas ? 'Clic para bloquear ventas a este usuario' : 'Clic para permitir ventas a este usuario' }}"
+                                        class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition hover:opacity-85 shadow-sm cursor-pointer"
+                                        style="{{ $usuario->acceso_ventas ? 'background:#ecfdf5; border-color:#a7f3d0; color:#065f46;' : 'background:#fef2f2; border-color:#fecaca; color:#991b1b;' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $usuario->acceso_ventas ? 'bg-emerald-500' : 'bg-red-500' }}"></span>
+                                    {{ $usuario->acceso_ventas ? 'Permitido' : 'Bloqueado' }}
+                                </button>
+                            </form>
+                        @elseif((int) $usuario->role_id === 1)
+                            <span class="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-50 text-purple-700">
+                                Total (Superadmin)
+                            </span>
+                        @else
+                            <span class="text-xs text-gray-400">N/A</span>
+                        @endif
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center justify-end gap-2">
@@ -184,7 +206,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5" class="px-6 py-16 text-center" style="color:#9a9a8a;">
+                    <td colspan="6" class="px-6 py-16 text-center" style="color:#9a9a8a;">
                         <svg class="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                             <path d="M3 17v-2a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v2"/><circle cx="8.5" cy="7" r="3"/>
                         </svg>
@@ -335,6 +357,31 @@
                 @error('role_id')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
             </div>
 
+            {{-- Permiso de Módulo Ventas (Rol Operativo) --}}
+            <div id="campoPermisoVentas" class="p-3.5 rounded-xl border transition" style="background:#fafafa; border-color:#e7e0cc;">
+                <div class="flex items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-sm font-semibold" style="color:#1c2b16;">Acceso a Módulo de Ventas</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded font-bold uppercase" style="background:#f3e8ff; color:#71277a;">Operativo</span>
+                        </div>
+                        <p class="text-xs mt-0.5" style="color:#5a5a4f;">
+                            Habilitar o bloquear el acceso al minimarket y registro de ventas.
+                        </p>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input type="hidden" name="acceso_ventas" value="0">
+                        <input type="checkbox" name="acceso_ventas" id="inputAccesoVentas" value="1" checked
+                               class="sr-only peer">
+                        <div class="w-10 h-5 rounded-full peer transition-colors bg-gray-300 peer-checked:bg-emerald-500
+                                    after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                                    after:bg-white after:rounded-full after:h-4 after:w-4
+                                    after:transition-all peer-checked:after:translate-x-5">
+                        </div>
+                    </label>
+                </div>
+            </div>
+
             {{-- Estado --}}
             <div>
                 <label class="block text-sm font-semibold mb-2" style="color:#1c2b16;">Estado</label>
@@ -461,6 +508,7 @@ function abrirModalCrear() {
     document.getElementById('inputPasswordConfirm').value = '';
     document.getElementById('inputRole').value = '';
     document.getElementById('inputActivo').checked = true;
+    document.getElementById('inputAccesoVentas').checked = true;
     document.getElementById('inputPassword').required = true;
     document.getElementById('passRequired').classList.remove('hidden');
     document.getElementById('passHint').classList.add('hidden');
@@ -480,6 +528,7 @@ function abrirModalEditar(usuario, rol) {
     document.getElementById('inputPasswordConfirm').value = '';
     document.getElementById('inputRole').value = usuario.role_id;
     document.getElementById('inputActivo').checked = usuario.activo == 1 || usuario.activo === true;
+    document.getElementById('inputAccesoVentas').checked = (usuario.acceso_ventas == 1 || usuario.acceso_ventas === true || usuario.acceso_ventas === undefined || usuario.acceso_ventas === null);
     document.getElementById('inputPassword').required = false;
     document.getElementById('passRequired').classList.add('hidden');
     document.getElementById('passHint').classList.remove('hidden');

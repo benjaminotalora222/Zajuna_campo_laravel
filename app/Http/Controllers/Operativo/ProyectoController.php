@@ -20,7 +20,7 @@ class ProyectoController extends Controller
     {
         $this->soloOperativo();
 
-        $query = ProyectoInvestigacion::with('responsable');
+        $query = ProyectoInvestigacion::with(['responsable', 'aprendices']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -44,8 +44,10 @@ class ProyectoController extends Controller
         $proyectos = $query->get();
         $usuarios  = User::where('activo', true)->orderBy('name')->get();
         $total     = $proyectos->count();
+        $aprendices = \App\Models\Aprendiz::with('proyecto')->latest()->get();
+        $totalAprendices = $aprendices->count();
 
-        return view('operativo.proyectos.index', compact('proyectos', 'usuarios', 'total'));
+        return view('operativo.proyectos.index', compact('proyectos', 'usuarios', 'total', 'aprendices', 'totalAprendices'));
     }
 
     public function store(Request $request)
@@ -62,13 +64,27 @@ class ProyectoController extends Controller
             'responsable_id'   => 'nullable|exists:users,id',
             'porcentajeAvance' => 'nullable|numeric|min:0|max:100',
             'imagen'           => 'nullable|image|max:2048',
+            'aprendices'       => 'nullable|array',
+            'aprendices.*'     => 'exists:aprendices,id',
         ]);
+
+        $aprendicesIds = $request->input('aprendices', []);
+        unset($data['aprendices']);
 
         if ($request->hasFile('imagen')) {
             $data['imagen'] = $request->file('imagen')->store('proyectos', 'public');
         }
 
-        ProyectoInvestigacion::create($data);
+        $proyecto = ProyectoInvestigacion::create($data);
+
+        if (!empty($aprendicesIds)) {
+            $proyecto->aprendices()->sync($aprendicesIds);
+            \App\Models\Aprendiz::whereIn('id', $aprendicesIds)->update([
+                'proyecto_id'     => $proyecto->id,
+                'nombre_proyecto' => $proyecto->nombre,
+            ]);
+        }
+
         LogAuditoria::registrar('Proyectos', 'Creación', "Se creó el proyecto: {$data['nombre']}");
 
         return redirect()->route('operativo.proyectos.index')
@@ -89,7 +105,12 @@ class ProyectoController extends Controller
             'responsable_id'   => 'nullable|exists:users,id',
             'porcentajeAvance' => 'nullable|numeric|min:0|max:100',
             'imagen'           => 'nullable|image|max:2048',
+            'aprendices'       => 'nullable|array',
+            'aprendices.*'     => 'exists:aprendices,id',
         ]);
+
+        $aprendicesIds = $request->input('aprendices', []);
+        unset($data['aprendices']);
 
         if ($request->hasFile('imagen')) {
             if ($proyecto->imagen) Storage::disk('public')->delete($proyecto->imagen);
@@ -97,6 +118,15 @@ class ProyectoController extends Controller
         }
 
         $proyecto->update($data);
+
+        $proyecto->aprendices()->sync($aprendicesIds);
+        if (!empty($aprendicesIds)) {
+            \App\Models\Aprendiz::whereIn('id', $aprendicesIds)->update([
+                'proyecto_id'     => $proyecto->id,
+                'nombre_proyecto' => $proyecto->nombre,
+            ]);
+        }
+
         LogAuditoria::registrar('Proyectos', 'Actualización', "Se actualizó el proyecto: {$proyecto->nombre}");
 
         return redirect()->route('operativo.proyectos.index')

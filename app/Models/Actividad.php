@@ -12,6 +12,7 @@ class Actividad extends Model
         'tipo', 'tema', 'descripcion', 'progreso', 'fecha_hora',
         'duracion', 'espacio_fisico', 'responsable', 'responsable_id',
         'estado', 'fecha_limite', 'proyecto_id', 'evento_id',
+        'documento', 'documento_nombre', 'documentos',
     ];
 
     protected function casts(): array
@@ -19,6 +20,7 @@ class Actividad extends Model
         return [
             'fecha_hora'   => 'datetime',
             'fecha_limite' => 'date',
+            'documentos'   => 'array',
         ];
     }
 

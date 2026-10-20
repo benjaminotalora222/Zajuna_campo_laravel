@@ -26,27 +26,53 @@
     <style>
         #sidebar { transition: width 0.3s cubic-bezier(.4,0,.2,1); }
         #sidebar .sidebar-label { transition: opacity 0.15s ease; white-space: nowrap; overflow: hidden; }
-        #sidebar .sidebar-section-label { transition: opacity 0.15s ease, height 0.3s ease; overflow: hidden; }
+        #sidebar .sidebar-section-label {
+            transition: opacity 0.15s ease, height 0.3s ease;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding-left: 0.75rem;
+            padding-right: 0.75rem;
+        }
+        #sidebar .sidebar-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.18);
+        }
         #sidebar .sidebar-section-pill {
             display: inline-flex;
             align-items: center;
-            padding: 3px 10px;
+            gap: 6px;
+            padding: 3.5px 10px;
             border-radius: 9999px;
-            background: #71277a;
+            background: rgba(14, 46, 2, 0.38);
             color: #ffffff;
             font-size: 10px;
             font-weight: 800;
-            letter-spacing: 0.06em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
-            border: 1px solid rgba(253, 195, 0, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+            white-space: nowrap;
+        }
+        #sidebar .sidebar-section-pill::before {
+            content: '';
+            width: 5px;
+            height: 5px;
+            border-radius: 9999px;
+            background: #fdc300;
+            display: inline-block;
+            flex-shrink: 0;
+            box-shadow: 0 0 4px rgba(253, 195, 0, 0.6);
         }
         #sidebar-toggle-arrow { transition: transform 0.3s cubic-bezier(.4,0,.2,1); }
         #sidebar-toggle-arrow.rotated { transform: rotate(180deg); }
 
         #sidebar.collapsed { width: 4rem; }
         #sidebar.collapsed .sidebar-label { opacity: 0; width: 0; display: none; }
-        #sidebar.collapsed .sidebar-section-label { opacity: 0; height: 0 !important; padding: 0 !important; margin: 0 !important; }
+        #sidebar.collapsed .sidebar-section-label { opacity: 0; height: 0 !important; padding: 0 !important; margin: 0 !important; display: none !important; }
         #sidebar.collapsed #sidebar-brand-full { display: none; }
         #sidebar.collapsed #sidebar-brand-icon { display: flex; }
         #sidebar:not(.collapsed) #sidebar-brand-icon { display: none; }

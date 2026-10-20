@@ -16,6 +16,10 @@ class VentaController extends Controller
     private function soloOperativo()
     {
         if (!in_array(auth()->user()->role_id, [1, 2])) abort(403);
+
+        if (auth()->user()->role_id === 2 && !auth()->user()->tieneAccesoVentas()) {
+            abort(403, 'No tienes permisos asignados para acceder al módulo de ventas o el módulo se encuentra bloqueado. Contacta al superadministrador.');
+        }
     }
 
     private function descontarStockFefo(Producto $producto, int $cantidad, string $motivo = 'Venta'): bool

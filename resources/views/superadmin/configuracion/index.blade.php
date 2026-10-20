@@ -54,6 +54,16 @@
                 </svg>
                 Seguridad
             </button>
+            <button @click="tab='permisos'"
+                    :class="tab==='permisos' ? 'border-b-2 font-bold' : 'font-semibold opacity-60 hover:opacity-100'"
+                    class="flex items-center gap-2 px-4 py-2.5 text-sm transition -mb-px"
+                    style="border-color:#fdc300; color:#1c2b16;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                Módulos y Permisos
+            </button>
         </div>
 
         {{-- FORM --}}
@@ -224,6 +234,133 @@
                                 </label>
                             </div>
                             @endforeach
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ── TAB MÓDULOS Y PERMISOS ─────────────────────── --}}
+            <div x-show="tab==='permisos'" x-cloak>
+                <div class="bg-white rounded-2xl shadow-sm border p-6 flex gap-6" style="border-color:#e7e0cc;">
+                    {{-- Icono --}}
+                    <div class="shrink-0">
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center" style="background:#e8f5e9;">
+                            <svg class="w-6 h-6" style="color:#39a900;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                        </div>
+                    </div>
+                    {{-- Texto y campos --}}
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between mb-0.5">
+                            <h2 class="font-extrabold text-base">Control de Módulos y Accesos</h2>
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold {{ ($config['modulo_ventas_operativo'] ?? '1') === '1' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                <span class="w-2 h-2 rounded-full {{ ($config['modulo_ventas_operativo'] ?? '1') === '1' ? 'bg-green-500' : 'bg-red-500' }}"></span>
+                                Ventas Operativo: {{ ($config['modulo_ventas_operativo'] ?? '1') === '1' ? 'Permitido' : 'Bloqueado' }}
+                            </span>
+                        </div>
+                        <p class="text-xs mb-5" style="color:#5a5a4f;">Gestiona las funciones y módulos que pueden ver y operar los diferentes roles del sistema.</p>
+
+                        <div class="divide-y" style="divide-color:#f3f0e8;">
+
+                            {{-- Módulo de Ventas para Rol Operativo --}}
+                            <div class="flex items-start justify-between py-4 gap-6">
+                                <div class="max-w-xl">
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-sm font-semibold">Módulo de Ventas para Rol Operativo</p>
+                                        <span class="px-2 py-0.5 rounded text-[11px] font-bold uppercase tracking-wider" style="background:#f3e8ff; color:#71277a;">Rol Operativo</span>
+                                    </div>
+                                    <p class="text-xs mt-1" style="color:#5a5a4f;">
+                                        Permite o restringe completamente el acceso al módulo de Ventas (pedidos, clientes, cotizaciones y catálogo de ventas) para los usuarios con rol Operativo.
+                                    </p>
+                                    <div class="mt-2.5 p-2.5 rounded-xl border text-xs flex items-center gap-2" style="background:#faf8f5; border-color:#e7e0cc; color:#5a5a4f;">
+                                        <svg class="w-4 h-4 shrink-0 text-amber-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <circle cx="12" cy="12" r="10"/>
+                                            <line x1="12" y1="8" x2="12" y2="12"/>
+                                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                                        </svg>
+                                        <span>
+                                            <strong>Efecto inmediato:</strong> Al desactivarlo, el enlace desaparece del menú del Operativo, se ocultan los accesos directos de ventas y cualquier intento de ingreso por URL responderá con <strong>Error 403 (Acceso Denegado)</strong>.
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col items-end gap-2 shrink-0">
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" name="modulo_ventas_operativo" value="1"
+                                               class="sr-only peer"
+                                               {{ ($config['modulo_ventas_operativo'] ?? '1') === '1' ? 'checked' : '' }}>
+                                        <div class="w-12 h-6 rounded-full peer transition-colors
+                                                    bg-gray-300 peer-checked:bg-emerald-500
+                                                    after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                                                    after:bg-white after:rounded-full after:h-5 after:w-5
+                                                    after:transition-all peer-checked:after:translate-x-6">
+                                        </div>
+                                    </label>
+                                    <span class="text-[11px] font-medium" style="color:#5a5a4f;">
+                                        {{ ($config['modulo_ventas_operativo'] ?? '1') === '1' ? 'Permitido' : 'Bloqueado' }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            {{-- Selección individual de usuarios operativos --}}
+                            <div class="py-5">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900">Permisos Individuales por Usuario Operativo</p>
+                                        <p class="text-xs mt-0.5" style="color:#5a5a4f;">
+                                            Selecciona qué usuarios operativos tienen habilitado el módulo de ventas y quiénes lo tienen bloqueado.
+                                        </p>
+                                    </div>
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-purple-50 text-purple-700">
+                                        {{ $operativos->count() }} Operativo{{ $operativos->count() != 1 ? 's' : '' }}
+                                    </span>
+                                </div>
+
+                                <div class="bg-gray-50/80 rounded-2xl border border-gray-100 divide-y divide-gray-100 overflow-hidden">
+                                    @forelse($operativos as $op)
+                                    @php
+                                        $initialsOp = strtoupper(substr(explode(' ',$op->name)[0],0,1)) . strtoupper(substr(explode(' ',$op->name)[1] ?? 'O',0,1));
+                                    @endphp
+                                    <input type="hidden" name="operativos_ids[]" value="{{ $op->id }}">
+                                    <div class="p-4 flex items-center justify-between gap-4 hover:bg-white transition">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs text-white shrink-0"
+                                                 style="background:#71277a;">
+                                                {{ $initialsOp }}
+                                            </div>
+                                            <div>
+                                                <p class="text-sm font-semibold text-gray-800">{{ $op->name }}</p>
+                                                <p class="text-xs" style="color:#5a5a4f;">{{ $op->email }}</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-3">
+                                            <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ $op->acceso_ventas ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700' }}">
+                                                {{ $op->acceso_ventas ? 'Acceso Permitido' : 'Acceso Bloqueado' }}
+                                            </span>
+
+                                            <label class="relative inline-flex items-center cursor-pointer">
+                                                <input type="checkbox" name="operativos_ventas[{{ $op->id }}]" value="1"
+                                                       class="sr-only peer"
+                                                       {{ $op->acceso_ventas ? 'checked' : '' }}>
+                                                <div class="w-11 h-6 rounded-full peer transition-colors
+                                                            bg-gray-300 peer-checked:bg-emerald-500
+                                                            after:content-[''] after:absolute after:top-0.5 after:left-0.5
+                                                            after:bg-white after:rounded-full after:h-5 after:w-5
+                                                            after:transition-all peer-checked:after:translate-x-5">
+                                                </div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                    @empty
+                                    <div class="p-6 text-center text-xs text-gray-400">
+                                        No hay usuarios registrados con el rol Operativo en el sistema.
+                                    </div>
+                                    @endforelse
+                                </div>
+                            </div>
 
                         </div>
                     </div>

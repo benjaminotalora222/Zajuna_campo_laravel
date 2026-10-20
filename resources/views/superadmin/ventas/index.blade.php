@@ -9,14 +9,53 @@
             <h1 class="text-2xl font-extrabold leading-tight">Ventas</h1>
             <p class="text-sm mt-1" style="color:#5a5a4f;">Registro y seguimiento de todas las transacciones.</p>
         </div>
-        <button onclick="abrirModalCrear()"
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
-                style="background:#fdc300; color:#71277a;">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
-            </svg>
-            Nueva Venta
-        </button>
+        <div class="flex items-center gap-3 flex-wrap">
+            @php
+                $operativosList = \App\Models\User::where('role_id', 2)->orderBy('name')->get();
+                $totalOperativos = $operativosList->count();
+                $conAccesoVentas = $operativosList->where('acceso_ventas', true)->count();
+                $ventasOperativoHabilitado = \App\Models\ConfiguracionSistema::get('modulo_ventas_operativo', '1') === '1';
+            @endphp
+
+            {{-- Botón para abrir modal de selección individual de operativos --}}
+            <button type="button"
+                    onclick="document.getElementById('modalPermisosOperativos').classList.remove('hidden'); document.getElementById('modalPermisosOperativos').classList.add('flex');"
+                    class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold border transition shadow-sm hover:opacity-95 cursor-pointer bg-white"
+                    style="border-color:#e7e0cc; color:#1c2b16;"
+                    title="Configurar qué operativos pueden ingresar a ventas">
+                <svg class="w-4 h-4" style="color:#71277a;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>Permisos Operativos:</span>
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold {{ $conAccesoVentas > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800' }}">
+                    {{ $conAccesoVentas }}/{{ $totalOperativos }} con acceso
+                </span>
+            </button>
+
+            {{-- Toggle maestro general --}}
+            <form action="{{ route('superadmin.configuracion.toggleVentasOperativo') }}" method="POST" class="inline">
+                @csrf
+                <button type="submit"
+                        title="{{ $ventasOperativoHabilitado ? 'Clic para bloquear ventas a TODOS los operativos' : 'Clic para permitir ventas a operativos' }}"
+                        class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold border transition shadow-sm hover:opacity-95 cursor-pointer"
+                        style="{{ $ventasOperativoHabilitado ? 'background:#ecfdf5; border-color:#a7f3d0; color:#065f46;' : 'background:#fef2f2; border-color:#fecaca; color:#991b1b;' }}">
+                    <span class="w-2 h-2 rounded-full {{ $ventasOperativoHabilitado ? 'bg-emerald-500 animate-pulse' : 'bg-red-500' }}"></span>
+                    <span>General: <strong>{{ $ventasOperativoHabilitado ? 'Habilitado' : 'Bloqueado' }}</strong></span>
+                </button>
+            </form>
+
+            <button onclick="abrirModalCrear()"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
+                    style="background:#fdc300; color:#71277a;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+                </svg>
+                Nueva Venta
+            </button>
+        </div>
     </div>
 
     {{-- ALERTA --}}
@@ -480,6 +519,90 @@
     </div>
 </div>
 
+{{-- ══ MODAL PERMISOS DE VENTAS POR USUARIO OPERATIVO ═════ --}}
+<div id="modalPermisosOperativos" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+        
+        {{-- Header --}}
+        <div class="flex items-center justify-between px-6 py-5 border-b" style="border-color:#f3f0e8;">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:#f3e8ff;">
+                    <svg class="w-5 h-5" style="color:#71277a;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2 class="text-base font-extrabold" style="color:#1c2b16;">Permisos de Ventas por Usuario Operativo</h2>
+                    <p class="text-xs" style="color:#5a5a4f;">Selecciona quién tiene autorización para operar ventas.</p>
+                </div>
+            </div>
+            <button onclick="cerrarModal('modalPermisosOperativos')"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center transition hover:bg-gray-100"
+                    style="color:#9a9a8a;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        {{-- Body: List of operatives --}}
+        <div class="p-6 overflow-y-auto flex-1 space-y-3">
+            @forelse($operativosList as $op)
+            @php
+                $initialsModal = strtoupper(substr(explode(' ',$op->name)[0],0,1)) . strtoupper(substr(explode(' ',$op->name)[1] ?? 'O',0,1));
+            @endphp
+            <div class="p-3.5 rounded-xl border flex items-center justify-between gap-4 transition hover:bg-gray-50/50"
+                 style="border-color:{{ $op->acceso_ventas ? '#bbf7d0' : '#fecaca' }}; background:{{ $op->acceso_ventas ? '#f0fdf4' : '#fff5f5' }};">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-xs text-white shrink-0"
+                         style="background:#71277a;">
+                        {{ $initialsModal }}
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold" style="color:#1c2b16;">{{ $op->name }}</p>
+                        <p class="text-xs" style="color:#5a5a4f;">{{ $op->email }}</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <form action="{{ route('superadmin.usuarios.toggleVentas', $op) }}" method="POST">
+                        @csrf
+                        @method('PATCH')
+                        <button type="submit"
+                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition shadow-sm hover:opacity-90 cursor-pointer"
+                                style="{{ $op->acceso_ventas ? 'background:#dcfce7; border-color:#86efac; color:#166534;' : 'background:#fee2e2; border-color:#fca5a5; color:#991b1b;' }}">
+                            <span class="w-2 h-2 rounded-full {{ $op->acceso_ventas ? 'bg-emerald-500' : 'bg-red-500' }}"></span>
+                            <span>{{ $op->acceso_ventas ? 'Permitido (Bloquear)' : 'Bloqueado (Permitir)' }}</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @empty
+            <div class="py-8 text-center text-sm" style="color:#9a9a8a;">
+                No hay usuarios con rol Operativo registrados en el sistema.
+            </div>
+            @endforelse
+        </div>
+
+        {{-- Footer --}}
+        <div class="px-6 py-4 border-t flex items-center justify-between bg-gray-50 text-xs" style="border-color:#f3f0e8;">
+            <a href="{{ route('superadmin.usuarios.index', ['role_id' => 2]) }}"
+               class="font-semibold text-purple-700 hover:underline inline-flex items-center gap-1">
+                Administrar todos los usuarios en Usuarios y Roles &rarr;
+            </a>
+            <button onclick="cerrarModal('modalPermisosOperativos')"
+                    class="px-4 py-2 rounded-xl border bg-white font-bold text-gray-700 hover:bg-gray-100 transition"
+                    style="border-color:#e7e0cc;">
+                Cerrar
+            </button>
+        </div>
+
+    </div>
+</div>
+
 {{-- Datos de productos para JS --}}
 @php
 $productosJs = $productos->map(function($p) {
@@ -507,7 +630,7 @@ function cerrarModal(id) {
     document.getElementById(id).classList.remove('flex');
     document.body.style.overflow = '';
 }
-['modalForm','modalEliminar'].forEach(id => {
+['modalForm','modalEliminar','modalPermisosOperativos'].forEach(id => {
     document.getElementById(id).addEventListener('click', function(e) {
         if (e.target === this) cerrarModal(id);
     });

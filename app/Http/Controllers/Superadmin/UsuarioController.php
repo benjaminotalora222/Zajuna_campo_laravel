@@ -60,15 +60,17 @@ class UsuarioController extends Controller
         $this->soloSuperadmin();
 
         $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => 'required|email|unique:users,email',
-            'password' => 'required|string|min:8|confirmed',
-            'role_id'  => 'required|exists:roles,id',
-            'activo'   => 'boolean',
+            'name'          => 'required|string|max:255',
+            'email'         => 'required|email|unique:users,email',
+            'password'      => 'required|string|min:8|confirmed',
+            'role_id'       => 'required|exists:roles,id',
+            'activo'        => 'boolean',
+            'acceso_ventas' => 'nullable|boolean',
         ]);
 
-        $data['password'] = Hash::make($data['password']);
-        $data['activo']   = $request->boolean('activo', true);
+        $data['password']      = Hash::make($data['password']);
+        $data['activo']        = $request->boolean('activo', true);
+        $data['acceso_ventas'] = $request->boolean('acceso_ventas', true);
 
         $usuario = User::create($data);
 
@@ -106,11 +108,12 @@ class UsuarioController extends Controller
         $this->soloSuperadmin();
 
         $data = $request->validate([
-            'name'     => 'required|string|max:255',
-            'email'    => ['required', 'email', Rule::unique('users', 'email')->ignore($usuario->id)],
-            'password' => 'nullable|string|min:8|confirmed',
-            'role_id'  => 'required|exists:roles,id',
-            'activo'   => 'boolean',
+            'name'          => 'required|string|max:255',
+            'email'         => ['required', 'email', Rule::unique('users', 'email')->ignore($usuario->id)],
+            'password'      => 'nullable|string|min:8|confirmed',
+            'role_id'       => 'required|exists:roles,id',
+            'activo'        => 'boolean',
+            'acceso_ventas' => 'nullable|boolean',
         ]);
 
         if (!empty($data['password'])) {
@@ -120,6 +123,9 @@ class UsuarioController extends Controller
         }
 
         $data['activo'] = $request->boolean('activo');
+        if ($request->has('acceso_ventas')) {
+            $data['acceso_ventas'] = $request->boolean('acceso_ventas');
+        }
 
         $rolAnterior = $usuario->role_id;
         $usuario->update($data);
@@ -161,6 +167,27 @@ class UsuarioController extends Controller
         }
 
         return back()->with('success', 'Estado del usuario actualizado.');
+    }
+
+    /** Alternar acceso al módulo de ventas para un usuario (especialmente rol operativo) */
+    public function toggleVentas(User $usuario)
+    {
+        $this->soloSuperadmin();
+
+        $usuario->update(['acceso_ventas' => !$usuario->acceso_ventas]);
+
+        $estado = $usuario->acceso_ventas ? 'habilitado' : 'bloqueado';
+        LogAuditoria::registrar('Permisos', 'Actualización', "Se {$estado} el acceso al módulo de ventas para {$usuario->name} ({$usuario->email}).");
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'ok' => true,
+                'acceso_ventas' => $usuario->acceso_ventas,
+                'message' => "Acceso a ventas {$estado} para {$usuario->name}."
+            ]);
+        }
+
+        return back()->with('success', "Acceso a ventas {$estado} para el usuario {$usuario->name}.");
     }
 
     /** Eliminar */

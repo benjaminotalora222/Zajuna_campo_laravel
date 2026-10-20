@@ -100,12 +100,68 @@
                     $barColor = $act->estado === 'finalizado' ? '#39a900' : '#fdc300';
                 @endphp
                 <tr class="border-b last:border-0 hover:bg-gray-50 transition" style="border-color:#f3f0e8;">
-                    <td class="px-6 py-4" style="max-width:220px;">
+                    <td class="px-6 py-4" style="max-width:240px;">
                         <div class="flex items-center gap-2">
                             <p class="font-bold text-sm leading-snug" style="color:#1c2b16;">{{ $act->tema }}</p>
                         </div>
                         @if($act->descripcion)
                             <p class="text-xs mt-0.5 line-clamp-2" style="color:#9a9a8a;">{{ $act->descripcion }}</p>
+                        @endif
+                        @php
+                            $todosDocs = $act->documentos ?? [];
+                            if (empty($todosDocs) && $act->documento) {
+                                $todosDocs = [[
+                                    'path' => $act->documento,
+                                    'nombre' => $act->documento_nombre ?? 'Documento',
+                                    'tamano' => ''
+                                ]];
+                            }
+                        @endphp
+                        @if(count($todosDocs) > 0)
+                            <div class="mt-2 flex items-center">
+                                @if(count($todosDocs) === 1)
+                                    <a href="{{ asset('storage/' . $todosDocs[0]['path']) }}" target="_blank"
+                                       class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold transition hover:opacity-90"
+                                       style="background:#f5f3ff; color:#71277a; border:1px solid #ddd6fe;"
+                                       title="{{ $todosDocs[0]['nombre'] }}">
+                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14 2 14 8 20 8"/>
+                                            <line x1="16" y1="13" x2="8" y2="13"/>
+                                            <line x1="16" y1="17" x2="8" y2="17"/>
+                                        </svg>
+                                        <span class="truncate max-w-[130px]">{{ $todosDocs[0]['nombre'] }}</span>
+                                        <svg class="w-3 h-3 opacity-60 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                                            <polyline points="15 3 21 3 21 9"/>
+                                            <line x1="10" y1="14" x2="21" y2="3"/>
+                                        </svg>
+                                    </a>
+                                @else
+                                    <details class="relative">
+                                        <summary class="list-none inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold cursor-pointer transition hover:opacity-90 select-none"
+                                                 style="background:#f5f3ff; color:#71277a; border:1px solid #ddd6fe;">
+                                            <svg class="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                                <polyline points="14 2 14 8 20 8"/>
+                                            </svg>
+                                            <span>{{ count($todosDocs) }} documentos</span>
+                                            <svg class="w-3 h-3 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="m6 9 6 6 6-6"/>
+                                            </svg>
+                                        </summary>
+                                        <div class="absolute left-0 mt-1.5 w-64 bg-white rounded-xl shadow-xl border border-gray-100 p-2 z-30 space-y-1">
+                                            @foreach($todosDocs as $d)
+                                                <a href="{{ asset('storage/' . $d['path']) }}" target="_blank"
+                                                   class="flex items-center justify-between p-2 rounded-lg text-xs hover:bg-purple-50 transition font-medium text-gray-700 hover:text-purple-900">
+                                                    <span class="truncate pr-2">📄 {{ $d['nombre'] }}</span>
+                                                    <span class="text-[10px] text-gray-400 shrink-0">{{ $d['tamano'] ?? '' }}</span>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </details>
+                                @endif
+                            </div>
                         @endif
                     </td>
                     <td class="px-4 py-4">
@@ -241,7 +297,7 @@
             </button>
         </div>
 
-        <form id="formActividad" method="POST" class="px-7 py-6 space-y-4">
+        <form id="formActividad" method="POST" enctype="multipart/form-data" class="px-7 py-6 space-y-4">
             @csrf
             <input type="hidden" name="_method" id="formMethod" value="POST">
 
@@ -307,6 +363,48 @@
                            class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
                 </div>
+
+                {{-- Campo para anexar documentos múltiples --}}
+                <div class="col-span-2">
+                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">
+                        Anexar Documentos o Soportes
+                        <span class="text-xs font-normal" style="color:#9a9a8a;">(Puedes seleccionar varios archivos: PDF, Word, Excel, imagen o ZIP - máx 20MB c/u)</span>
+                    </label>
+
+                    {{-- Lista de documentos actuales en modo edición --}}
+                    <div id="docActualesWrap" class="hidden mb-3">
+                        <p class="text-xs font-bold mb-1.5" style="color:#5a5a4f;">Documentos guardados actualmente:</p>
+                        <div id="docActualesList" class="space-y-1.5 max-h-36 overflow-y-auto pr-1"></div>
+                        <div id="inputsEliminarDocs"></div>
+                    </div>
+
+                    {{-- Selector de archivos múltiples --}}
+                    <label class="flex items-center gap-3 px-4 py-3 rounded-xl border border-dashed cursor-pointer hover:border-[#39a900] transition group"
+                           style="border-color:#d4cfc0; background:#fafafa;">
+                        <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 group-hover:scale-105 transition"
+                             style="background:#f0fdf4; color:#39a900;">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="17 8 12 3 7 8"/>
+                                <line x1="12" y1="3" x2="12" y2="15"/>
+                            </svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p id="docNombreSeleccionado" class="text-xs font-semibold truncate" style="color:#1c2b16;">Haz clic para seleccionar uno o varios documentos</p>
+                            <p class="text-[11px]" style="color:#9a9a8a;">Mantén presionado Ctrl o Shift para elegir múltiples archivos</p>
+                        </div>
+                        <input type="file" name="documentos[]" id="inpDocumentos" multiple class="hidden" onchange="mostrarNombresArchivos(this)">
+                    </label>
+
+                    {{-- Lista de nuevos archivos seleccionados para subir --}}
+                    <div id="nuevosDocsList" class="hidden mt-2 p-2.5 rounded-xl border space-y-1 text-xs" style="background:#f0fdf4; border-color:#bbf7d0;">
+                        <div class="flex items-center justify-between font-bold text-emerald-800 text-[11px] mb-1">
+                            <span id="nuevosDocsConteo">Archivos listos para subir:</span>
+                            <button type="button" onclick="limpiarNuevosDocs()" class="text-emerald-700 hover:underline text-[10px]">Limpiar selección</button>
+                        </div>
+                        <ul id="nuevosDocsItems" class="space-y-1 max-h-28 overflow-y-auto pr-1 font-medium text-emerald-900"></ul>
+                    </div>
+                </div>
             </div>
 
             <div class="flex items-center gap-3 pt-2 border-t" style="border-color:#f3f0e8;">
@@ -360,6 +458,112 @@ function cerrarEliminar() {
 document.getElementById('modalForm').addEventListener('click', function(e) { if (e.target === this) cerrarModal(); });
 document.getElementById('modalEliminar').addEventListener('click', function(e) { if (e.target === this) cerrarEliminar(); });
 
+function mostrarNombresArchivos(input) {
+    const listWrap = document.getElementById('nuevosDocsList');
+    const itemsUl = document.getElementById('nuevosDocsItems');
+    const conteo = document.getElementById('nuevosDocsConteo');
+    const lbl = document.getElementById('docNombreSeleccionado');
+
+    itemsUl.innerHTML = '';
+
+    if (input.files && input.files.length > 0) {
+        lbl.textContent = input.files.length + ' archivo(s) seleccionado(s)';
+        lbl.style.color = '#166534';
+        conteo.textContent = input.files.length + ' archivo(s) listo(s) para subir:';
+        listWrap.classList.remove('hidden');
+
+        for (let i = 0; i < input.files.length; i++) {
+            const f = input.files[i];
+            const li = document.createElement('li');
+            li.className = 'flex items-center justify-between gap-2 py-0.5 border-b border-emerald-100 last:border-0';
+            li.innerHTML = '<span class="truncate">📄 ' + f.name + '</span><span class="text-[10px] text-emerald-700 shrink-0 font-bold">' + (f.size / 1024).toFixed(1) + ' KB</span>';
+            itemsUl.appendChild(li);
+        }
+    } else {
+        limpiarNuevosDocs();
+    }
+}
+
+function limpiarNuevosDocs() {
+    const inp = document.getElementById('inpDocumentos');
+    if (inp) inp.value = '';
+    const lbl = document.getElementById('docNombreSeleccionado');
+    if (lbl) {
+        lbl.textContent = 'Haz clic para seleccionar uno o varios documentos';
+        lbl.style.color = '#1c2b16';
+    }
+    const listWrap = document.getElementById('nuevosDocsList');
+    if (listWrap) listWrap.classList.add('hidden');
+    const itemsUl = document.getElementById('nuevosDocsItems');
+    if (itemsUl) itemsUl.innerHTML = '';
+}
+
+function renderDocsGuardados(docs) {
+    const wrap = document.getElementById('docActualesWrap');
+    const list = document.getElementById('docActualesList');
+    const inputsEliminar = document.getElementById('inputsEliminarDocs');
+
+    wrap.classList.add('hidden');
+    list.innerHTML = '';
+    inputsEliminar.innerHTML = '';
+
+    if (!docs || docs.length === 0) return;
+
+    wrap.classList.remove('hidden');
+
+    docs.forEach((doc, idx) => {
+        const item = document.createElement('div');
+        item.id = 'docGuardadoItem_' + idx;
+        item.className = 'p-2.5 rounded-xl border flex items-center justify-between gap-3 text-xs transition';
+        item.style.background = '#f8fafc';
+        item.style.borderColor = '#e2e8f0';
+
+        item.innerHTML = `
+            <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style="background:#f3e8ff; color:#71277a;">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                </div>
+                <div class="min-w-0">
+                    <p class="font-bold truncate text-gray-800">${doc.nombre}</p>
+                    <a href="/storage/${doc.path}" target="_blank" class="text-[11px] font-semibold hover:underline" style="color:#71277a;">
+                        Ver / Descargar ${doc.tamano ? '(' + doc.tamano + ')' : ''}
+                    </a>
+                </div>
+            </div>
+            <button type="button" onclick="marcarEliminarDoc('${doc.path}', ${idx})"
+                    class="px-2.5 py-1 rounded-lg text-[11px] font-bold text-red-600 hover:bg-red-50 transition shrink-0 border border-red-200">
+                Eliminar
+            </button>
+        `;
+        list.appendChild(item);
+    });
+}
+
+function marcarEliminarDoc(path, idx) {
+    const item = document.getElementById('docGuardadoItem_' + idx);
+    const inputsEliminar = document.getElementById('inputsEliminarDocs');
+    if (!item) return;
+
+    const hidden = document.createElement('input');
+    hidden.type = 'hidden';
+    hidden.name = 'eliminar_docs[]';
+    hidden.value = path;
+    inputsEliminar.appendChild(hidden);
+
+    item.style.opacity = '0.45';
+    item.style.background = '#fef2f2';
+    item.style.borderColor = '#fca5a5';
+    const btn = item.querySelector('button');
+    if (btn) btn.remove();
+    const span = document.createElement('span');
+    span.className = 'text-[10px] text-red-600 font-bold shrink-0';
+    span.textContent = 'Marcado para eliminar';
+    item.appendChild(span);
+}
+
 function abrirModalCrear() {
     document.getElementById('modalTitle').textContent  = 'Nueva Actividad';
     document.getElementById('btnGuardar').textContent  = 'Crear actividad';
@@ -372,6 +576,10 @@ function abrirModalCrear() {
     document.getElementById('inpEstado').value         = 'pendiente';
     document.getElementById('inpProgreso').value       = '0';
     document.getElementById('inpFecha').value          = '';
+    limpiarNuevosDocs();
+    document.getElementById('docActualesWrap').classList.add('hidden');
+    document.getElementById('docActualesList').innerHTML = '';
+    document.getElementById('inputsEliminarDocs').innerHTML = '';
     abrirModal('modalForm');
 }
 
@@ -387,6 +595,18 @@ function abrirModalEditar(act) {
     document.getElementById('inpEstado').value         = act.estado || 'pendiente';
     document.getElementById('inpProgreso').value       = act.progreso || 0;
     document.getElementById('inpFecha').value          = act.fecha_limite ? act.fecha_limite.substring(0,10) : '';
+    limpiarNuevosDocs();
+
+    let docs = act.documentos || [];
+    if ((!docs || docs.length === 0) && act.documento) {
+        docs = [{
+            path: act.documento,
+            nombre: act.documento_nombre || 'Documento adjunto',
+            tamano: ''
+        }];
+    }
+    renderDocsGuardados(docs);
+
     abrirModal('modalForm');
 }
 

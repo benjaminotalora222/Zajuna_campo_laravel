@@ -54,6 +54,11 @@
     {{-- ── KPI CARDS ──────────────────────────────────────── --}}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
 
+        @php
+            $ventasHabilitadas = auth()->user()->tieneAccesoVentas();
+        @endphp
+
+        @if($ventasHabilitadas)
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3">
             <div class="flex items-center justify-between">
                 <p class="text-xs font-bold uppercase tracking-wider" style="color:#71277a;">Ventas del mes</p>
@@ -70,6 +75,18 @@
                 @else Sin ventas este mes @endif
             </p>
         </div>
+        @else
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-dashed border-gray-200 flex flex-col gap-3 opacity-70">
+            <div class="flex items-center justify-between">
+                <p class="text-xs font-bold uppercase tracking-wider text-gray-500">Módulo Ventas</p>
+                <span class="w-9 h-9 rounded-xl flex items-center justify-center bg-gray-100 text-gray-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                </span>
+            </div>
+            <p class="text-xl font-extrabold text-gray-600">Bloqueado</p>
+            <p class="text-xs text-gray-400">Por administración</p>
+        </div>
+        @endif
 
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3">
             <div class="flex items-center justify-between">
@@ -115,7 +132,7 @@
     </div>
 
     {{-- ── FILA 2: Proyectos + Últimas ventas ─────────────── --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+    <div class="grid grid-cols-1 {{ $ventasHabilitadas ? 'lg:grid-cols-2' : '' }} gap-5 mb-5">
 
         {{-- Proyectos de investigación --}}
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -159,6 +176,7 @@
             @endforelse
         </div>
 
+        @if($ventasHabilitadas)
         {{-- Últimas ventas --}}
         <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div class="flex items-center justify-between mb-5">
@@ -195,6 +213,7 @@
             </div>
             @endforelse
         </div>
+        @endif
 
     </div>
 
@@ -217,6 +236,10 @@
                 ['label'=>'Tareas','route'=>'operativo.tareas.index','bg'=>'#faf5ff','color'=>'#71277a',
                  'icon'=>'M4 3h16a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z|M8 8h8|M8 12h8|M8 16h5'],
             ];
+
+            if (!$ventasHabilitadas) {
+                $accesos = array_values(array_filter($accesos, fn($a) => $a['route'] !== 'operativo.ventas.index'));
+            }
             @endphp
             @foreach($accesos as $acc)
             <a href="{{ route($acc['route']) }}"

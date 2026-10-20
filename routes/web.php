@@ -9,6 +9,7 @@ use App\Http\Controllers\Superadmin\ConsignacionController;
 use App\Http\Controllers\Superadmin\CronogramaController;
 use App\Http\Controllers\Superadmin\EjecucionController;
 use App\Http\Controllers\Superadmin\InventarioController as SuperadminInventarioController;
+use App\Http\Controllers\Superadmin\AprendizController;
 use App\Http\Controllers\Superadmin\ProyectoController;
 use App\Http\Controllers\Superadmin\ProductoController;
 use App\Http\Controllers\Superadmin\ProveedorController;
@@ -87,6 +88,7 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     // ── Módulo Usuarios y Roles ──
     Route::resource('usuarios', UsuarioController::class);
     Route::patch('usuarios/{usuario}/toggle', [UsuarioController::class, 'toggleActivo'])->name('usuarios.toggle');
+    Route::patch('usuarios/{usuario}/toggle-ventas', [UsuarioController::class, 'toggleVentas'])->name('usuarios.toggleVentas');
 
     // ── Módulo Proveedores ──
     Route::resource('proveedores', ProveedorController::class)->except(['show', 'create', 'edit'])->parameters(['proveedores' => 'proveedor']);
@@ -126,6 +128,7 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     // ── Módulo Configuración ──
     Route::get('configuracion', [ConfiguracionController::class, 'index'])->name('configuracion.index');
     Route::post('configuracion', [ConfiguracionController::class, 'update'])->name('configuracion.update');
+    Route::post('configuracion/toggle-ventas-operativo', [ConfiguracionController::class, 'toggleVentasOperativo'])->name('configuracion.toggleVentasOperativo');
 
     // ── Módulo Reportes ──
     Route::get('reportes', [ReporteController::class, 'index'])->name('reportes.index');
@@ -133,6 +136,9 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
 
     // ── Módulo Proyectos ──
     Route::resource('proyectos', ProyectoController::class)->except(['show', 'create', 'edit'])->parameters(['proyectos' => 'proyecto']);
+    Route::post('proyectos/aprendices', [AprendizController::class, 'store'])->name('proyectos.aprendices.store');
+    Route::get('proyectos/aprendices', [AprendizController::class, 'index'])->name('proyectos.aprendices.index');
+    Route::delete('proyectos/aprendices/{aprendiz}', [AprendizController::class, 'destroy'])->name('proyectos.aprendices.destroy');
 
     // ── Módulo Ejecución de Actividades ──
     Route::resource('actividades', ActividadController::class)->except(['show', 'create', 'edit'])->parameters(['actividades' => 'actividad']);
@@ -178,6 +184,8 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
 
     // Investigación
     Route::resource('proyectos', OperativoProyectoController::class)->except(['show', 'create', 'edit'])->parameters(['proyectos' => 'proyecto']);
+    Route::post('proyectos/aprendices', [AprendizController::class, 'store'])->name('proyectos.aprendices.store');
+    Route::get('proyectos/aprendices', [AprendizController::class, 'index'])->name('proyectos.aprendices.index');
 
     Route::get('ejecucion', [OperativoEjecucionController::class, 'index'])->name('ejecucion.index');
     Route::get('tareas', [OperativoEjecucionController::class, 'index'])->name('tareas.index');

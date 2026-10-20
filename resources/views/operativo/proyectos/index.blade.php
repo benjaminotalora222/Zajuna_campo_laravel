@@ -13,43 +13,37 @@ $estadoConfig = [
 <div class="px-8 py-8 max-w-screen-xl mx-auto" style="color:#1c2b16;">
 
     {{-- ENCABEZADO --}}
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
             <h1 class="text-2xl font-extrabold leading-tight">Gestión de Proyectos</h1>
             <p class="text-sm mt-1" style="color:#5a5a4f;">Administra y da seguimiento a los proyectos agrícolas de tu organización.</p>
         </div>
-        <div class="flex items-center gap-2 flex-wrap">
-            {{-- Búsqueda inline --}}
-            <form method="GET" action="{{ route('operativo.proyectos.index') }}" class="flex items-center gap-2">
-                <div class="relative">
-                    <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar proyectos..."
-                           class="pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none w-52"
-                           style="border-color:#e7e0cc; background:#fafafa;">
-                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color:#9a9a8a;"
-                         fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                    </svg>
-                </div>
-                <select name="estado" onchange="this.form.submit()"
-                        class="px-3 py-2.5 rounded-xl border text-sm outline-none"
-                        style="border-color:#e7e0cc; background:#fafafa;">
-                    <option value="">Todos</option>
-                    @foreach($estadoConfig as $key => $ec)
-                        <option value="{{ $key }}" {{ request('estado') === $key ? 'selected' : '' }}>{{ $ec['label'] }}</option>
-                    @endforeach
-                </select>
-                <select name="orden" onchange="this.form.submit()"
-                        class="px-3 py-2.5 rounded-xl border text-sm outline-none"
-                        style="border-color:#e7e0cc; background:#fafafa;">
-                    <option value="recientes" {{ request('orden','recientes') === 'recientes' ? 'selected' : '' }}>Más recientes</option>
-                    <option value="nombre"    {{ request('orden') === 'nombre'    ? 'selected' : '' }}>Nombre A-Z</option>
-                    <option value="avance_desc" {{ request('orden') === 'avance_desc' ? 'selected' : '' }}>Mayor avance</option>
-                    <option value="avance_asc"  {{ request('orden') === 'avance_asc'  ? 'selected' : '' }}>Menor avance</option>
-                </select>
-            </form>
+        {{-- BOTONES DE ACCIÓN PRINCIPAL --}}
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <a href="{{ route('operativo.proyectos.aprendices.index') }}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-bold bg-white hover:bg-gray-50 transition shadow-sm"
+               style="border-color:#e7e0cc; color:#1c2b16;" title="Ver listado de aprendices vinculados">
+                <svg class="w-4 h-4" style="color:#71277a;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <span>Aprendices</span>
+                <span class="px-2 py-0.5 rounded-full text-xs font-black text-white" style="background:#71277a;">{{ $totalAprendices ?? 0 }}</span>
+            </a>
+            <button onclick="abrirModalAprendiz()"
+                    id="btnRegistroAprendices"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-95 shadow-sm text-white"
+                    style="background:#39a900;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M19 8v6M22 11h-6"/>
+                </svg>
+                Registro de aprendices
+            </button>
             <button onclick="abrirModalCrear()"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90"
-                    style="background:#71277a; color:white;">
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-95 shadow-sm text-white"
+                    style="background:#71277a;">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
                 </svg>
@@ -69,7 +63,42 @@ $estadoConfig = [
     </div>
     @endif
 
-    <p class="text-sm mb-5" style="color:#9a9a8a;">{{ $total }} proyecto{{ $total != 1 ? 's' : '' }} encontrado{{ $total != 1 ? 's' : '' }}</p>
+    {{-- BARRA DE FILTROS Y BÚSQUEDA --}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <form method="GET" action="{{ route('operativo.proyectos.index') }}" class="flex items-center gap-2.5 flex-wrap flex-1">
+            <div class="relative flex-1 min-w-[220px]">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar proyectos por nombre o descripción..."
+                       class="w-full pl-9 pr-4 py-2.5 rounded-xl border text-sm outline-none transition focus:border-purple-600 bg-gray-50"
+                       style="border-color:#e7e0cc;">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style="color:#9a9a8a;"
+                     fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+            </div>
+            <select name="estado" onchange="this.form.submit()"
+                    class="px-3.5 py-2.5 rounded-xl border text-sm font-medium outline-none transition focus:border-purple-600 bg-gray-50 cursor-pointer"
+                    style="border-color:#e7e0cc;">
+                <option value="">Todos los estados</option>
+                @foreach($estadoConfig as $key => $ec)
+                    <option value="{{ $key }}" {{ request('estado') === $key ? 'selected' : '' }}>{{ $ec['label'] }}</option>
+                @endforeach
+            </select>
+            <select name="orden" onchange="this.form.submit()"
+                    class="px-3.5 py-2.5 rounded-xl border text-sm font-medium outline-none transition focus:border-purple-600 bg-gray-50 cursor-pointer"
+                    style="border-color:#e7e0cc;">
+                <option value="recientes" {{ request('orden','recientes') === 'recientes' ? 'selected' : '' }}>Más recientes</option>
+                <option value="nombre"    {{ request('orden') === 'nombre'    ? 'selected' : '' }}>Nombre A-Z</option>
+                <option value="avance_desc" {{ request('orden') === 'avance_desc' ? 'selected' : '' }}>Mayor avance</option>
+                <option value="avance_asc"  {{ request('orden') === 'avance_asc'  ? 'selected' : '' }}>Menor avance</option>
+            </select>
+            @if(request()->anyFilled(['search', 'estado', 'orden']))
+                <a href="{{ route('operativo.proyectos.index') }}" class="px-2.5 py-2 text-xs font-bold text-gray-500 hover:text-gray-800">Limpiar</a>
+            @endif
+        </form>
+        <div class="text-xs font-bold px-3.5 py-2 rounded-full shrink-0" style="background:#fdf9ee; color:#71277a; border: 1px solid #e7e0cc;">
+            {{ $total }} proyecto{{ $total != 1 ? 's' : '' }} encontrado{{ $total != 1 ? 's' : '' }}
+        </div>
+    </div>
 
     {{-- GRID --}}
     @if($proyectos->count())
@@ -145,6 +174,17 @@ $estadoConfig = [
                              style="width:{{ $pct }}%; background:{{ $barColor }};"></div>
                     </div>
                 </div>
+
+                {{-- Aprendices asignados badge --}}
+                @if($p->aprendices->count() > 0)
+                <div class="flex items-center gap-1.5 mt-2.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-100 w-fit">
+                    <svg class="w-3.5 h-3.5 text-emerald-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    <span>{{ $p->aprendices->count() }} aprendiz{{ $p->aprendices->count() != 1 ? 'es' : '' }}</span>
+                </div>
+                @endif
 
                 {{-- Pie: fecha + responsable --}}
                 <div class="flex items-center justify-between mt-3 text-xs" style="color:#9a9a8a;">
@@ -279,6 +319,72 @@ $estadoConfig = [
                 </div>
             </div>
 
+            {{-- Aprendices vinculados al proyecto (Múltiples) --}}
+            <div>
+                <div class="flex items-center justify-between mb-1.5">
+                    <label class="block text-sm font-semibold" style="color:#1c2b16;">
+                        Aprendices vinculados al proyecto
+                    </label>
+                    <span id="aprendicesCountBadge" class="text-[11px] font-bold px-2 py-0.5 rounded-full" style="background:#f3e8ff; color:#71277a;">
+                        0 seleccionados
+                    </span>
+                </div>
+                <p class="text-xs text-gray-500 mb-2">Selecciona los aprendices registrados que participarán en este proyecto (puedes agregar todos los que desees):</p>
+
+                <div class="border rounded-2xl p-3 bg-gray-50/70" style="border-color:#e7e0cc;">
+                    {{-- Buscador rápido de aprendices --}}
+                    <div class="relative mb-2.5">
+                        <input type="text" id="busquedaAprendizModal" oninput="filtrarAprendicesModal(this.value)"
+                               placeholder="Filtrar por nombre, documento o ficha..."
+                               class="w-full pl-8 pr-3 py-1.5 rounded-xl border text-xs outline-none bg-white transition focus:border-green-600"
+                               style="border-color:#e7e0cc;">
+                        <svg class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                        </svg>
+                    </div>
+
+                    {{-- Botones selección rápida --}}
+                    <div class="flex items-center justify-between text-[11px] mb-2 px-1">
+                        <button type="button" onclick="seleccionarTodosAprendices(true)" class="font-bold text-emerald-700 hover:underline">
+                            Seleccionar todos
+                        </button>
+                        <button type="button" onclick="seleccionarTodosAprendices(false)" class="font-bold text-gray-500 hover:underline">
+                            Deseleccionar todos
+                        </button>
+                    </div>
+
+                    {{-- Lista con scroll --}}
+                    <div id="listaAprendicesCheckboxes" class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                        @forelse($aprendices as $ap)
+                        <label class="item-aprendiz flex items-start gap-2.5 p-2 rounded-xl bg-white border border-transparent hover:border-emerald-300 hover:bg-emerald-50/30 transition cursor-pointer has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/60"
+                               data-search="{{ strtolower($ap->nombre_completo . ' ' . $ap->numero_documento . ' ' . $ap->ficha_programa . ' ' . $ap->programa_formacion) }}">
+                            <input type="checkbox" name="aprendices[]" value="{{ $ap->id }}"
+                                   id="chk_aprendiz_{{ $ap->id }}"
+                                   onchange="actualizarContadorAprendices()"
+                                   class="chk-aprendiz mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 border-gray-300">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-xs truncate" style="color:#1c2b16;">
+                                    {{ $ap->nombre_completo }}
+                                </div>
+                                <div class="text-[10.5px] text-gray-500 flex items-center gap-1.5 flex-wrap mt-0.5">
+                                    <span class="font-semibold">{{ $ap->tipo_documento }}: {{ $ap->numero_documento }}</span>
+                                    <span>•</span>
+                                    <span>Ficha: <strong>{{ $ap->ficha_programa }}</strong></span>
+                                    <span>•</span>
+                                    <span class="text-emerald-700 font-semibold truncate max-w-[180px]">{{ $ap->programa_completo }}</span>
+                                </div>
+                            </div>
+                        </label>
+                        @empty
+                        <div class="text-center py-5 text-xs text-gray-400">
+                            <p class="font-bold text-gray-500">No hay aprendices registrados aún</p>
+                            <p class="text-[11px] mt-0.5">Usa el botón "Registro de aprendices" para agregar aprendices al sistema.</p>
+                        </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+
             <div>
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Imagen</label>
                 <div id="imgPreviewWrap" class="hidden mb-2">
@@ -351,7 +457,7 @@ document.getElementById('modalEliminar').addEventListener('click', function(e) {
 function abrirModalCrear() {
     document.getElementById('modalTitle').textContent     = 'Nuevo Proyecto';
     document.getElementById('btnGuardar').textContent     = 'Crear proyecto';
-    document.getElementById('formProyecto').action        = '{{ route("superadmin.proyectos.store") }}';
+    document.getElementById('formProyecto').action        = '{{ route("operativo.proyectos.store") }}';
     document.getElementById('formMethod').value           = 'POST';
     document.getElementById('inpNombre').value            = '';
     document.getElementById('inpDescripcion').value       = '';
@@ -362,6 +468,12 @@ function abrirModalCrear() {
     document.getElementById('inpFechaFin').value          = '';
     document.getElementById('inpResponsable').value       = '';
     document.getElementById('imgPreviewWrap').classList.add('hidden');
+    document.querySelectorAll('.chk-aprendiz').forEach(cb => cb.checked = false);
+    actualizarContadorAprendices();
+    if (document.getElementById('busquedaAprendizModal')) {
+        document.getElementById('busquedaAprendizModal').value = '';
+        filtrarAprendicesModal('');
+    }
     abrirModal('modalForm');
 }
 
@@ -384,7 +496,43 @@ function abrirModalEditar(p) {
     } else {
         document.getElementById('imgPreviewWrap').classList.add('hidden');
     }
+    const aprendicesAsignados = (p.aprendices || []).map(a => a.id);
+    document.querySelectorAll('.chk-aprendiz').forEach(cb => {
+        cb.checked = aprendicesAsignados.includes(parseInt(cb.value));
+    });
+    actualizarContadorAprendices();
+    if (document.getElementById('busquedaAprendizModal')) {
+        document.getElementById('busquedaAprendizModal').value = '';
+        filtrarAprendicesModal('');
+    }
     abrirModal('modalForm');
+}
+
+function actualizarContadorAprendices() {
+    const total = document.querySelectorAll('.chk-aprendiz:checked').length;
+    const badge = document.getElementById('aprendicesCountBadge');
+    if (badge) {
+        badge.textContent = total + ' seleccionado' + (total !== 1 ? 's' : '');
+    }
+}
+
+function seleccionarTodosAprendices(marcar) {
+    document.querySelectorAll('.item-aprendiz:not(.hidden) .chk-aprendiz').forEach(cb => {
+        cb.checked = marcar;
+    });
+    actualizarContadorAprendices();
+}
+
+function filtrarAprendicesModal(q) {
+    const query = q.toLowerCase().trim();
+    document.querySelectorAll('.item-aprendiz').forEach(item => {
+        const searchData = item.getAttribute('data-search') || '';
+        if (!query || searchData.includes(query)) {
+            item.classList.remove('hidden');
+        } else {
+            item.classList.add('hidden');
+        }
+    });
 }
 
 function confirmarEliminar(id, nombre) {
@@ -405,9 +553,13 @@ function previewImg(input) {
     }
 }
 
-@if($errors->any())
+@if($errors->hasAny(['nombre_completo', 'tipo_documento', 'numero_documento', 'genero', 'rh', 'eps', 'telefono', 'correo_electronico', 'tipo_programa', 'programa_formacion', 'ficha_programa', 'semillero', 'nombre_proyecto', 'instructor_lider_asesores']))
+    document.addEventListener('DOMContentLoaded', () => abrirModalAprendiz());
+@elseif($errors->any())
     document.addEventListener('DOMContentLoaded', () => abrirModalCrear());
 @endif
 </script>
+
+<x-modal-registro-aprendiz :proyectos="$proyectos" route="{{ route('operativo.proyectos.aprendices.store') }}" />
 
 </x-operativo-layout>

@@ -8,6 +8,7 @@ use App\Models\LogAuditoria;
 use App\Models\ProyectoInvestigacion;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class ActividadController extends Controller
 {
@@ -65,14 +66,46 @@ class ActividadController extends Controller
             'estado'         => 'required|in:pendiente,en_ejecucion,finalizado,pausado',
             'fecha_limite'   => 'nullable|date',
             'fecha_hora'     => 'nullable|date',
+            'documento'      => 'nullable|file|max:20480',
+            'documentos'     => 'nullable|array',
+            'documentos.*'   => 'nullable|file|max:20480',
         ]);
+
+        $docs = [];
+        if ($request->hasFile('documentos')) {
+            foreach ($request->file('documentos') as $doc) {
+                if ($doc && $doc->isValid()) {
+                    $docs[] = [
+                        'path'   => $doc->store('actividades/documentos', 'public'),
+                        'nombre' => $doc->getClientOriginalName(),
+                        'tamano' => round($doc->getSize() / 1024, 1) . ' KB',
+                    ];
+                }
+            }
+        } elseif ($request->hasFile('documento')) {
+            $file = $request->file('documento');
+            $docs[] = [
+                'path'   => $file->store('actividades/documentos', 'public'),
+                'nombre' => $file->getClientOriginalName(),
+                'tamano' => round($file->getSize() / 1024, 1) . ' KB',
+            ];
+        }
+
+        $data['documentos'] = $docs;
+        if (count($docs) > 0) {
+            $data['documento']        = $docs[0]['path'];
+            $data['documento_nombre'] = $docs[0]['nombre'];
+        } else {
+            $data['documento']        = null;
+            $data['documento_nombre'] = null;
+        }
 
         Actividad::create($data);
 
         LogAuditoria::registrar('Actividades', 'Creación', "Se creó la actividad: {$data['tema']}");
 
         return redirect()->route('superadmin.actividades.index')
-                         ->with('success', 'Actividad creada correctamente.');
+                         ->with('success', 'Actividad creada correctamente con sus documentos.');
     }
 
     public function update(Request $request, Actividad $actividad)
@@ -80,16 +113,75 @@ class ActividadController extends Controller
         $this->soloSuperadmin();
 
         $data = $request->validate([
-            'tema'           => 'required|string|max:255',
-            'descripcion'    => 'nullable|string|max:1000',
-            'tipo'           => 'nullable|string|max:100',
-            'proyecto_id'    => 'nullable|exists:proyectoinvestigacion,id',
-            'responsable_id' => 'nullable|exists:users,id',
-            'progreso'       => 'nullable|integer|min:0|max:100',
-            'estado'         => 'required|in:pendiente,en_ejecucion,finalizado,pausado',
-            'fecha_limite'   => 'nullable|date',
-            'fecha_hora'     => 'nullable|date',
+            'tema'            => 'required|string|max:255',
+            'descripcion'     => 'nullable|string|max:1000',
+            'tipo'            => 'nullable|string|max:100',
+            'proyecto_id'     => 'nullable|exists:proyectoinvestigacion,id',
+            'responsable_id'  => 'nullable|exists:users,id',
+            'progreso'        => 'nullable|integer|min:0|max:100',
+            'estado'          => 'required|in:pendiente,en_ejecucion,finalizado,pausado',
+            'fecha_limite'    => 'nullable|date',
+            'fecha_hora'      => 'nullable|date',
+            'documento'       => 'nullable|file|max:20480',
+            'documentos'      => 'nullable|array',
+            'documentos.*'    => 'nullable|file|max:20480',
+            'eliminar_docs'   => 'nullable|array',
+            'eliminar_docs.*' => 'nullable|string',
         ]);
+
+        // Documentos existentes
+        $docs = $actividad->documentos ?? [];
+        if (empty($docs) && $actividad->documento) {
+            $docs = [[
+                'path'   => $actividad->documento,
+                'nombre' => $actividad->documento_nombre ?? 'Documento',
+                'tamano' => '',
+            ]];
+        }
+
+        // Eliminar los documentos seleccionados
+        $eliminar = $request->input('eliminar_docs', []);
+        if (!empty($eliminar)) {
+            $docsFiltrados = [];
+            foreach ($docs as $d) {
+                if (in_array($d['path'], $eliminar)) {
+                    Storage::disk('public')->delete($d['path']);
+                } else {
+                    $docsFiltrados[] = $d;
+                }
+            }
+            $docs = $docsFiltrados;
+        }
+
+        // Agregar nuevos documentos
+        if ($request->hasFile('documentos')) {
+            foreach ($request->file('documentos') as $doc) {
+                if ($doc && $doc->isValid()) {
+                    $docs[] = [
+                        'path'   => $doc->store('actividades/documentos', 'public'),
+                        'nombre' => $doc->getClientOriginalName(),
+                        'tamano' => round($doc->getSize() / 1024, 1) . ' KB',
+                    ];
+                }
+            }
+        } elseif ($request->hasFile('documento')) {
+            $file = $request->file('documento');
+            $docs[] = [
+                'path'   => $file->store('actividades/documentos', 'public'),
+                'nombre' => $file->getClientOriginalName(),
+                'tamano' => round($file->getSize() / 1024, 1) . ' KB',
+            ];
+        }
+
+        $docs = array_values($docs);
+        $data['documentos'] = $docs;
+        if (count($docs) > 0) {
+            $data['documento']        = $docs[0]['path'];
+            $data['documento_nombre'] = $docs[0]['nombre'];
+        } else {
+            $data['documento']        = null;
+            $data['documento_nombre'] = null;
+        }
 
         $actividad->update($data);
 
@@ -102,6 +194,16 @@ class ActividadController extends Controller
     public function destroy(Actividad $actividad)
     {
         $this->soloSuperadmin();
+
+        if ($actividad->documento) {
+            Storage::disk('public')->delete($actividad->documento);
+        }
+        if (!empty($actividad->documentos)) {
+            foreach ($actividad->documentos as $d) {
+                if (!empty($d['path'])) Storage::disk('public')->delete($d['path']);
+            }
+        }
+
         $actividad->delete();
         LogAuditoria::registrar('Actividades', 'Eliminación', "Se eliminó la actividad: {$actividad->tema}");
 

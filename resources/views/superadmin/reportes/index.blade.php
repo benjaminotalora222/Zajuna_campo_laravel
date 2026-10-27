@@ -188,17 +188,24 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
 
     {{-- GENERADOR DE REPORTES PDF --}}
     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-5">
-        <h3 class="text-sm font-extrabold mb-4" style="color:#1c2b16;">Generar Reporte PDF</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mb-4">
+            <div>
+                <h3 class="text-sm font-extrabold" style="color:#1c2b16;">Generar Reporte PDF</h3>
+                <p class="text-xs" style="color:#7a7a6e;">Selecciona el módulo y escoge las fechas o días en el calendario para descargar el reporte.</p>
+            </div>
+        </div>
+
         <form method="GET" action="{{ route('superadmin.reportes.pdf') }}" target="_blank"
               class="flex flex-wrap gap-3 items-end">
 
             {{-- Módulo --}}
             <div class="flex-1 min-w-[160px]">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Módulo</label>
-                <select name="modulo" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
-                        style="border-color:#e7e0cc; background:#fafafa;">
+                <select name="modulo" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none transition focus:border-[#71277a]"
+                        style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
                     <option value="ventas">Ventas</option>
-                    <option value="productos">Productos</option>
+                    <option value="mas_vendidos">Productos Más Vendidos (Ranking)</option>
+                    <option value="productos">Productos (Catálogo)</option>
                     <option value="ejecucion">Ejecución de Actividades</option>
                     <option value="tareas">Tareas y Avances</option>
                     <option value="proyectos">Proyectos de Investigación</option>
@@ -207,41 +214,77 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
             </div>
 
             {{-- Período --}}
-            <div class="min-w-[150px]">
-                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Período</label>
+            <div class="min-w-[170px]">
+                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Período / Modo</label>
                 <select name="periodo" id="selectPeriodo" onchange="toggleFechas(this.value)"
-                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
-                        style="border-color:#e7e0cc; background:#fafafa;">
-                    <option value="diario">Diario (hoy)</option>
+                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none transition focus:border-[#71277a]"
+                        style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
+                    <option value="rango" selected>Rango de fechas (Calendario)</option>
+                    <option value="diario">Día específico (Calendario)</option>
+                    <option value="mensual">Mensual</option>
                     <option value="semanal">Semanal (esta semana)</option>
-                    <option value="mensual" selected>Mensual</option>
+                    <option value="hoy">Hoy</option>
                 </select>
             </div>
 
+            {{-- Fecha Desde (Rango) --}}
+            <div id="divFechaInicio" class="min-w-[145px]">
+                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Desde</label>
+                <input type="date" name="fecha_inicio" id="inputFechaInicio"
+                       value="{{ $fechaInicio ?? now()->startOfMonth()->toDateString() }}"
+                       onclick="this.showPicker && this.showPicker()"
+                       title="Click para abrir el calendario"
+                       class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none cursor-pointer transition focus:border-[#71277a]"
+                       style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
+            </div>
+
+            {{-- Fecha Hasta (Rango) --}}
+            <div id="divFechaFin" class="min-w-[145px]">
+                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Hasta</label>
+                <input type="date" name="fecha_fin" id="inputFechaFin"
+                       value="{{ $fechaFin ?? now()->toDateString() }}"
+                       onclick="this.showPicker && this.showPicker()"
+                       title="Click para abrir el calendario"
+                       class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none cursor-pointer transition focus:border-[#71277a]"
+                       style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
+            </div>
+
+            {{-- Fecha Única (Diario) --}}
+            <div id="divFechaDia" class="min-w-[145px]" style="display:none;">
+                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Fecha (Día)</label>
+                <input type="date" name="fecha" id="inputFechaDia"
+                       value="{{ $fecha ?? now()->toDateString() }}"
+                       onclick="this.showPicker && this.showPicker()"
+                       title="Click para abrir el calendario"
+                       class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none cursor-pointer transition focus:border-[#71277a]"
+                       style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
+            </div>
+
             {{-- Mes/Año (solo mensual) --}}
-            <div id="divMes" class="min-w-[130px]">
+            <div id="divMes" class="min-w-[130px]" style="display:none;">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Mes</label>
-                <select name="mes" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
-                        style="border-color:#e7e0cc; background:#fafafa;">
+                <select name="mes" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none transition focus:border-[#71277a]"
+                        style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
                     @for($m = 1; $m <= 12; $m++)
                         <option value="{{ $m }}" {{ $mes == $m ? 'selected' : '' }}>
-                            {{ $nombresMes[$m] }}
+                            {{ $nombresMes[$m] ?? $nombresMesArr[$m] }}
                         </option>
                     @endfor
                 </select>
             </div>
-            <div id="divAnio" class="min-w-[100px]">
+            <div id="divAnio" class="min-w-[100px]" style="display:none;">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Año</label>
-                <select name="anio" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
-                        style="border-color:#e7e0cc; background:#fafafa;">
+                <select name="anio" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none transition focus:border-[#71277a]"
+                        style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
                     @for($y = now()->year; $y >= now()->year - 3; $y--)
                         <option value="{{ $y }}" {{ $anio == $y ? 'selected' : '' }}>{{ $y }}</option>
                     @endfor
                 </select>
             </div>
 
+            {{-- Botón Descargar --}}
             <button type="submit"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:opacity-90 transition"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:opacity-90 transition shadow-sm"
                     style="background:#71277a;">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -249,6 +292,26 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
                 </svg>
                 Descargar PDF
             </button>
+
+            {{-- Accesos rápidos de calendario (Presets) --}}
+            <div id="divPresets" class="w-full flex items-center gap-1.5 flex-wrap pt-3 mt-1 border-t text-xs" style="border-color:#f1eee4;">
+                <span class="font-semibold mr-1 flex items-center gap-1" style="color:#5a5a4f;">
+                    <svg class="w-3.5 h-3.5" style="color:#71277a;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                        <line x1="16" y1="2" x2="16" y2="6"></line>
+                        <line x1="8" y1="2" x2="8" y2="6"></line>
+                        <line x1="3" y1="10" x2="21" y2="10"></line>
+                    </svg>
+                    Atajos de fecha:
+                </span>
+                <button type="button" onclick="setRangoPreset('hoy')" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Hoy</button>
+                <button type="button" onclick="setRangoPreset('ayer')" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Ayer</button>
+                <button type="button" onclick="setRangoPreset(7)" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Últimos 7 días</button>
+                <button type="button" onclick="setRangoPreset(15)" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Últimos 15 días</button>
+                <button type="button" onclick="setRangoPreset(30)" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Últimos 30 días</button>
+                <button type="button" onclick="setRangoPreset('este_mes')" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Este mes</button>
+                <button type="button" onclick="setRangoPreset('mes_anterior')" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Mes anterior</button>
+            </div>
         </form>
     </div>
 
@@ -284,32 +347,93 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
             @endif
         </div>
 
-        {{-- Top Productos --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 class="text-sm font-extrabold mb-5" style="color:#1c2b16;">Top Productos</h3>
-            @if($topProductos->count())
-            <div class="space-y-0">
-                <div class="grid grid-cols-3 gap-2 pb-2 border-b mb-2" style="border-color:#f3f0e8;">
-                    <span class="text-[11px] font-bold uppercase tracking-wider" style="color:#9a9a8a;">Producto</span>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-right" style="color:#9a9a8a;">Ventas</span>
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-right" style="color:#9a9a8a;">Part.</span>
+        {{-- Productos Más Vendidos --}}
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-extrabold flex items-center gap-1.5" style="color:#1c2b16;">
+                            <svg class="w-4 h-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                            <span>Productos Más Vendidos</span>
+                        </h3>
+                        <p class="text-xs mt-0.5" style="color:#9a9a8a;">Ranking del período por volumen e ingresos</p>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider" style="background:#faf5ff; color:#71277a;">
+                        Top {{ $topProductos->count() }}
+                    </span>
                 </div>
-                @foreach($topProductos as $tp)
-                @php $part = round(($tp->total_ventas / $totalTopProductos) * 100, 1); @endphp
-                <div class="grid grid-cols-3 gap-2 py-2 border-b last:border-0" style="border-color:#f3f0e8;">
-                    <span class="text-xs font-semibold truncate" style="color:#1c2b16;">{{ $tp->nombre }}</span>
-                    <span class="text-xs text-right font-bold" style="color:#39a900;">${{ number_format($tp->total_ventas, 0, ',', '.') }}</span>
-                    <span class="text-xs text-right" style="color:#9a9a8a;">{{ $part }}%</span>
+
+                @if($topProductos->count())
+                <div class="space-y-2.5">
+                    @foreach($topProductos as $idx => $tp)
+                    @php
+                        $part = round(($tp->total_ventas / $totalTopProductos) * 100, 1);
+                        $pctVol = isset($maxUnidadesTop) ? round(($tp->unidades / $maxUnidadesTop) * 100) : $part;
+                        $rankStyle = match($idx) {
+                            0 => 'background:#fef3c7; color:#b45309; border-color:#fde68a;',
+                            1 => 'background:#f1f5f9; color:#475569; border-color:#e2e8f0;',
+                            2 => 'background:#ffedd5; color:#c2410c; border-color:#fed7aa;',
+                            default => 'background:#fafafa; color:#6b7280; border-color:#e5e7eb;',
+                        };
+                        $rankText = match($idx) {
+                            0 => '🥇',
+                            1 => '🥈',
+                            2 => '🥉',
+                            default => '#' . ($idx + 1),
+                        };
+                    @endphp
+                    <div class="p-2 rounded-xl border transition hover:bg-gray-50/50" style="border-color:#f3f0e8;">
+                        <div class="flex items-center justify-between gap-2 mb-1">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-5 h-5 rounded-md text-[11px] font-black flex items-center justify-center border shrink-0" style="{{ $rankStyle }}">
+                                    {{ $rankText }}
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold truncate" style="color:#1c2b16;" title="{{ $tp->nombre }}">
+                                        {{ $tp->nombre }}
+                                    </p>
+                                    @if(!empty($tp->categoria))
+                                    <span class="text-[9px] text-gray-500">
+                                        {{ $tp->categoria }}
+                                    </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="text-xs font-extrabold block" style="color:#39a900;">
+                                    ${{ number_format($tp->total_ventas, 0, ',', '.') }}
+                                </span>
+                                <span class="text-[10px] font-semibold" style="color:#5a5a4f;">
+                                    {{ $tp->unidades }} {{ $tp->unidades == 1 ? 'ud.' : 'uds.' }} ({{ $part }}%)
+                                </span>
+                            </div>
+                        </div>
+                        <div class="w-full h-1.5 rounded-full overflow-hidden" style="background:#f3f0e8;">
+                            <div class="h-full rounded-full transition-all duration-500"
+                                 style="width:{{ max(6, $pctVol) }}%; background:{{ $idx === 0 ? '#fdc300' : ($idx === 1 ? '#71277a' : '#39a900') }};"></div>
+                        </div>
+                    </div>
+                    @endforeach
                 </div>
-                @endforeach
+                @else
+                <div class="py-8 text-center">
+                    <p class="text-xs font-semibold" style="color:#9a9a8a;">Sin ventas en este período</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">Selecciona otro rango en el calendario</p>
+                </div>
+                @endif
             </div>
-            <a href="{{ route('superadmin.productos.index') }}"
-               class="block mt-3 text-xs font-bold hover:underline" style="color:#71277a;">
-                Ver todos los productos →
-            </a>
-            @else
-            <p class="text-xs text-center py-8" style="color:#9a9a8a;">Sin ventas en este período</p>
-            @endif
+
+            <div class="pt-3 mt-3 border-t flex items-center justify-between" style="border-color:#f3f0e8;">
+                <a href="{{ route('superadmin.productos.index') }}"
+                   class="text-xs font-bold hover:underline" style="color:#71277a;">
+                    Ver catálogo →
+                </a>
+                <span class="text-xs font-extrabold" style="color:#1c2b16;">
+                    Total: ${{ number_format($topProductos->sum('total_ventas'), 0, ',', '.') }}
+                </span>
+            </div>
         </div>
 
         {{-- Resumen operativo --}}
@@ -391,11 +515,68 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
 
 <script>
 function toggleFechas(val) {
-    const show = val === 'mensual';
-    document.getElementById('divMes').style.display  = show ? '' : 'none';
-    document.getElementById('divAnio').style.display = show ? '' : 'none';
+    const divRangoInicio = document.getElementById('divFechaInicio');
+    const divRangoFin    = document.getElementById('divFechaFin');
+    const divFechaDia    = document.getElementById('divFechaDia');
+    const divMes         = document.getElementById('divMes');
+    const divAnio        = document.getElementById('divAnio');
+    const divPresets     = document.getElementById('divPresets');
+
+    if (divRangoInicio) divRangoInicio.style.display = (val === 'rango') ? '' : 'none';
+    if (divRangoFin)    divRangoFin.style.display    = (val === 'rango') ? '' : 'none';
+    if (divFechaDia)    divFechaDia.style.display    = (val === 'diario') ? '' : 'none';
+    if (divMes)         divMes.style.display         = (val === 'mensual') ? '' : 'none';
+    if (divAnio)        divAnio.style.display        = (val === 'mensual') ? '' : 'none';
+    if (divPresets)     divPresets.style.display     = (val === 'rango') ? '' : 'none';
 }
-document.addEventListener('DOMContentLoaded', () => toggleFechas(document.getElementById('selectPeriodo').value));
+
+function formatFechaLocal(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dia = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${dia}`;
+}
+
+function setRangoPreset(preset) {
+    const sel = document.getElementById('selectPeriodo');
+    if (sel) {
+        sel.value = 'rango';
+        toggleFechas('rango');
+    }
+
+    const hoy = new Date();
+    let inicio = new Date();
+    let fin = new Date();
+
+    if (preset === 'hoy') {
+        inicio = new Date(hoy);
+        fin = new Date(hoy);
+    } else if (preset === 'ayer') {
+        inicio = new Date(hoy);
+        inicio.setDate(hoy.getDate() - 1);
+        fin = new Date(inicio);
+    } else if (typeof preset === 'number') {
+        inicio = new Date(hoy);
+        inicio.setDate(hoy.getDate() - (preset - 1));
+        fin = new Date(hoy);
+    } else if (preset === 'este_mes') {
+        inicio = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+        fin = new Date(hoy);
+    } else if (preset === 'mes_anterior') {
+        inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
+        fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    }
+
+    const inpInicio = document.getElementById('inputFechaInicio');
+    const inpFin    = document.getElementById('inputFechaFin');
+    if (inpInicio) inpInicio.value = formatFechaLocal(inicio);
+    if (inpFin)    inpFin.value    = formatFechaLocal(fin);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const sel = document.getElementById('selectPeriodo');
+    if (sel) toggleFechas(sel.value);
+});
 </script>
 
 </div>

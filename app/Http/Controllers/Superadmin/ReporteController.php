@@ -22,29 +22,101 @@ class ReporteController extends Controller
         if (auth()->user()->role_id !== 1) abort(403);
     }
 
-    private function calcularRango(string $periodo, int $anio, int $mes): array
+    private function calcularRango(string $periodo, int $anio, int $mes, ?string $fechaInicio = null, ?string $fechaFin = null, ?string $fecha = null): array
     {
         $hoy = Carbon::today();
-        return match ($periodo) {
-            'diario'  => [$hoy->copy()->startOfDay(),   $hoy->copy()->endOfDay()],
-            'semanal' => [$hoy->copy()->startOfWeek(),  $hoy->copy()->endOfWeek()],
-            default   => [Carbon::create($anio, $mes, 1)->startOfMonth(),
-                          Carbon::create($anio, $mes, 1)->endOfMonth()],
-        };
+
+        if ($periodo === 'rango' || $periodo === 'personalizado') {
+            try {
+                $ini = $fechaInicio ? Carbon::parse($fechaInicio)->startOfDay() : $hoy->copy()->startOfMonth();
+            } catch (\Exception $e) {
+                $ini = $hoy->copy()->startOfMonth();
+            }
+
+            try {
+                $fn = $fechaFin ? Carbon::parse($fechaFin)->endOfDay() : $hoy->copy()->endOfDay();
+            } catch (\Exception $e) {
+                $fn = $hoy->copy()->endOfDay();
+            }
+
+            if ($ini->gt($fn)) {
+                $temp = $ini;
+                $ini = $fn->copy()->startOfDay();
+                $fn = $temp->copy()->endOfDay();
+            }
+
+            $texto = $ini->isSameDay($fn)
+                ? 'Día ' . $ini->format('d/m/Y')
+                : 'Del ' . $ini->format('d/m/Y') . ' al ' . $fn->format('d/m/Y');
+
+            return [$ini, $fn, $texto];
+        }
+
+        if ($periodo === 'diario') {
+            $target = $fecha ?: ($fechaInicio ?: null);
+            try {
+                $dateObj = $target ? Carbon::parse($target) : $hoy;
+            } catch (\Exception $e) {
+                $dateObj = $hoy;
+            }
+            $ini = $dateObj->copy()->startOfDay();
+            $fn  = $dateObj->copy()->endOfDay();
+            $texto = 'Día ' . $ini->format('d/m/Y');
+            return [$ini, $fn, $texto];
+        }
+
+        if ($periodo === 'semanal') {
+            $target = $fecha ?: ($fechaInicio ?: null);
+            try {
+                $dateObj = $target ? Carbon::parse($target) : $hoy;
+            } catch (\Exception $e) {
+                $dateObj = $hoy;
+            }
+            $ini = $dateObj->copy()->startOfWeek();
+            $fn  = $dateObj->copy()->endOfWeek();
+            $texto = 'Semana del ' . $ini->format('d/m/Y') . ' al ' . $fn->format('d/m/Y');
+            return [$ini, $fn, $texto];
+        }
+
+        if ($periodo === 'hoy') {
+            $ini = $hoy->copy()->startOfDay();
+            $fn  = $hoy->copy()->endOfDay();
+            $texto = 'Hoy (' . $ini->format('d/m/Y') . ')';
+            return [$ini, $fn, $texto];
+        }
+
+        // Mensual por defecto
+        $mesVal  = max(1, min(12, $mes));
+        $anioVal = max(2000, min(2100, $anio));
+        $ini = Carbon::create($anioVal, $mesVal, 1)->startOfMonth();
+        $fn  = Carbon::create($anioVal, $mesVal, 1)->endOfMonth();
+        $nombres = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Junio',
+                    7=>'Julio',8=>'Agosto',9=>'Septiembre',10=>'Octubre',11=>'Noviembre',12=>'Diciembre'];
+        $texto = ($nombres[$mesVal] ?? 'Mes ' . $mesVal) . ' ' . $anioVal;
+        return [$ini, $fn, $texto];
     }
 
     public function index(Request $request)
     {
         $this->soloSuperadmin();
 
-        $anio    = (int) $request->input('anio', now()->year);
-        $mes     = (int) $request->input('mes',  now()->month);
-        $periodo = $request->input('periodo', 'mensual');
+        $anio        = (int) $request->input('anio', now()->year);
+        $mes         = (int) $request->input('mes',  now()->month);
+        $periodo     = $request->input('periodo', 'mensual');
+        $fechaInicio = $request->input('fecha_inicio');
+        $fechaFin    = $request->input('fecha_fin');
+        $fecha       = $request->input('fecha');
 
-        [$inicio, $fin] = $this->calcularRango($periodo, $anio, $mes);
+        [$inicio, $fin, $periodoTexto] = $this->calcularRango($periodo, $anio, $mes, $fechaInicio, $fechaFin, $fecha);
 
-        $inicioAnterior = $inicio->copy()->subMonth()->startOfMonth();
-        $finAnterior    = $inicio->copy()->subMonth()->endOfMonth();
+        if ($periodo === 'mensual') {
+            $inicioAnterior = $inicio->copy()->subMonth()->startOfMonth();
+            $finAnterior    = $inicio->copy()->subMonth()->endOfMonth();
+        } else {
+            $dias = max(1, $inicio->diffInDays($fin) + 1);
+            $inicioAnterior = $inicio->copy()->subDays($dias)->startOfDay();
+            $finAnterior    = $inicio->copy()->subSecond();
+        }
 
         // KPIs
         $ventasTotales     = Venta::whereBetween('fechaVenta', [$inicio, $fin])->sum('total');
@@ -72,19 +144,26 @@ class ReporteController extends Controller
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
             ->whereBetween('venta.fechaVenta', [$inicio, $fin])
-            ->select('producto.nombre', DB::raw('SUM(venta_items.subtotal) as total_ventas'), DB::raw('SUM(venta_items.cantidad) as unidades'))
-            ->groupBy('producto.id', 'producto.nombre')
+            ->select(
+                'producto.id',
+                'producto.nombre',
+                'producto.categoria',
+                DB::raw('SUM(venta_items.subtotal) as total_ventas'),
+                DB::raw('SUM(venta_items.cantidad) as unidades')
+            )
+            ->groupBy('producto.id', 'producto.nombre', 'producto.categoria')
+            ->orderByDesc('unidades')
             ->orderByDesc('total_ventas')
-            ->limit(6)
+            ->limit(8)
             ->get();
 
         $totalTopProductos = $topProductos->sum('total_ventas') ?: 1;
+        $maxUnidadesTop    = $topProductos->max('unidades') ?: 1;
 
         $ventasCategoria = DB::table('venta_items')
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
             ->whereBetween('venta.fechaVenta', [$inicio, $fin])
-            ->whereNotNull('producto.categoria')
             ->select('producto.categoria', DB::raw('SUM(venta_items.subtotal) as total'))
             ->groupBy('producto.categoria')
             ->orderByDesc('total')
@@ -100,8 +179,9 @@ class ReporteController extends Controller
         return view('superadmin.reportes.index', compact(
             'ventasTotales','varVentas','ordenesVenta','varOrdenes',
             'clientesAtendidos','varClientes','ventasMensuales',
-            'topProductos','totalTopProductos','ventasCategoria','totalCategoria',
-            'stockBajo','anio','mes','periodo','nombresMes','inicio','fin'
+            'topProductos','totalTopProductos','maxUnidadesTop','ventasCategoria','totalCategoria',
+            'stockBajo','anio','mes','periodo','nombresMes','inicio','fin','periodoTexto',
+            'fechaInicio','fechaFin','fecha'
         ));
     }
 
@@ -109,20 +189,24 @@ class ReporteController extends Controller
     {
         $this->soloSuperadmin();
 
-        $modulo  = $request->input('modulo', 'ventas');
-        $periodo = $request->input('periodo', 'mensual');
-        $anio    = (int) $request->input('anio', now()->year);
-        $mes     = (int) $request->input('mes',  now()->month);
+        $modulo      = $request->input('modulo', 'ventas');
+        $periodo     = $request->input('periodo', 'rango');
+        $anio        = (int) $request->input('anio', now()->year);
+        $mes         = (int) $request->input('mes',  now()->month);
+        $fechaInicio = $request->input('fecha_inicio');
+        $fechaFin    = $request->input('fecha_fin');
+        $fecha       = $request->input('fecha');
 
-        [$inicio, $fin] = $this->calcularRango($periodo, $anio, $mes);
+        [$inicio, $fin, $periodoTexto] = $this->calcularRango($periodo, $anio, $mes, $fechaInicio, $fechaFin, $fecha);
 
         $datos = match ($modulo) {
-            'productos'   => $this->datosProductos(),
-            'ejecucion'   => $this->datosActividades($inicio, $fin),
-            'tareas'      => $this->dareasTareas($inicio, $fin),
-            'proyectos'   => $this->datosProyectos(),
-            'inventario'  => $this->datosInventario(),
-            default       => $this->datosVentas($inicio, $fin),
+            'productos'    => $this->datosProductos(),
+            'mas_vendidos' => $this->datosMasVendidos($inicio, $fin),
+            'ejecucion'    => $this->datosActividades($inicio, $fin),
+            'tareas'       => $this->dareasTareas($inicio, $fin),
+            'proyectos'    => $this->datosProyectos(),
+            'inventario'   => $this->datosInventario(),
+            default        => $this->datosVentas($inicio, $fin),
         };
 
         $nombresMes = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Junio',
@@ -145,6 +229,7 @@ class ReporteController extends Controller
             'inicio'         => $inicio,
             'fin'            => $fin,
             'periodo'        => $periodo,
+            'periodoTexto'   => $periodoTexto,
             'anio'           => $anio,
             'mes'            => $mes,
             'nombresMes'     => $nombresMes,
@@ -154,9 +239,41 @@ class ReporteController extends Controller
             'logoZajunaPath' => $logoZajuna,
         ]))->setPaper('a4', 'portrait');
 
-        $nombreArchivo = "reporte-{$modulo}-{$periodo}-{$inicio->format('Y-m-d')}.pdf";
+        $fechasArchivo = $inicio->isSameDay($fin)
+            ? $inicio->format('Y-m-d')
+            : "{$inicio->format('Y-m-d')}-a-{$fin->format('Y-m-d')}";
+
+        $nombreArchivo = "reporte-{$modulo}-{$periodo}-{$fechasArchivo}.pdf";
 
         return $pdf->download($nombreArchivo);
+    }
+
+    private function datosMasVendidos($inicio, $fin): array
+    {
+        $productos = DB::table('venta_items')
+            ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
+            ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
+            ->whereBetween('venta.fechaVenta', [$inicio, $fin])
+            ->select(
+                'producto.id',
+                'producto.nombre',
+                'producto.categoria',
+                'producto.precio',
+                DB::raw('SUM(venta_items.cantidad) as unidades'),
+                DB::raw('SUM(venta_items.subtotal) as total_ventas'),
+                DB::raw('COUNT(DISTINCT venta.id) as total_ordenes')
+            )
+            ->groupBy('producto.id', 'producto.nombre', 'producto.categoria', 'producto.precio')
+            ->orderByDesc('unidades')
+            ->orderByDesc('total_ventas')
+            ->get();
+
+        $totalUnidades    = $productos->sum('unidades');
+        $totalIngresos    = $productos->sum('total_ventas');
+        $totalProductos   = $productos->count();
+        $productoEstrella = $productos->first();
+
+        return compact('productos', 'totalUnidades', 'totalIngresos', 'totalProductos', 'productoEstrella');
     }
 
     private function datosVentas($inicio, $fin): array
@@ -173,8 +290,9 @@ class ReporteController extends Controller
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
             ->whereBetween('venta.fechaVenta', [$inicio, $fin])
-            ->select('producto.nombre', DB::raw('SUM(venta_items.subtotal) as total_ventas'), DB::raw('SUM(venta_items.cantidad) as unidades'))
-            ->groupBy('producto.id','producto.nombre')
+            ->select('producto.id', 'producto.nombre', 'producto.categoria', DB::raw('SUM(venta_items.subtotal) as total_ventas'), DB::raw('SUM(venta_items.cantidad) as unidades'))
+            ->groupBy('producto.id', 'producto.nombre', 'producto.categoria')
+            ->orderByDesc('unidades')
             ->orderByDesc('total_ventas')
             ->limit(10)
             ->get();

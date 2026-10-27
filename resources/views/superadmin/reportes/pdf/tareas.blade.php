@@ -87,7 +87,11 @@
 <hr class="divider-top">
 
 <div class="report-title">Reporte de Tareas y Avances</div>
-<div class="report-sub">Período: {{ $inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} — {{ $fin->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} &nbsp;·&nbsp; {{ ucfirst($periodo) }}</div>
+@if($inicio->isSameDay($fin))
+<div class="report-sub">Fecha: {{ $inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} &nbsp;·&nbsp; {{ $periodoTexto ?? ucfirst($periodo) }}</div>
+@else
+<div class="report-sub">Período: {{ $inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} — {{ $fin->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} &nbsp;·&nbsp; {{ $periodoTexto ?? ucfirst($periodo) }}</div>
+@endif
 
 <div class="kpi-row">
     <div class="kpi">

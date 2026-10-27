@@ -95,118 +95,219 @@
         </div>
     </div>
 
-    {{-- GRÁFICO DE VENTAS --}}
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-6">
-        {{-- Encabezado --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+    {{-- GRÁFICO DE VENTAS + PRODUCTOS MÁS VENDIDOS --}}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+
+        {{-- Gráfico de ventas --}}
+        <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
             <div>
-                <h3 class="text-sm font-extrabold" style="color:#1c2b16;">Ventas últimos 6 meses</h3>
-                <p class="text-xs mt-0.5" style="color:#9a9a8a;">Transacciones e ingresos por mes</p>
-            </div>
-            {{-- Leyenda --}}
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-1.5">
-                    <div class="w-3 h-3 rounded-sm" style="background:linear-gradient(180deg,#39a900,#2d8600);"></div>
-                    <span class="text-xs font-semibold" style="color:#5a5a4f;">Transacciones</span>
-                </div>
-                <div class="flex items-center gap-1.5">
-                    <div class="w-3 h-3 rounded-sm" style="background:linear-gradient(180deg,#fdc300,#e6b000);"></div>
-                    <span class="text-xs font-semibold" style="color:#5a5a4f;">Ingresos</span>
-                </div>
-            </div>
-        </div>
-
-        @php
-            $maxV  = $ventasMes->max('cantidad') ?: 1;
-            $maxI  = $ventasMes->max('ingresos') ?: 1;
-            $totalTx      = $ventasMes->sum('cantidad');
-            $totalIngresos = $ventasMes->sum('ingresos');
-            $mesActivo    = $ventasMes->last();
-        @endphp
-
-        {{-- Resumen rápido --}}
-        <div class="grid grid-cols-3 gap-3 mb-6">
-            <div class="rounded-xl px-4 py-3" style="background:#f0fdf4; border:1px solid #dcfce7;">
-                <p class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color:#166534;">Total período</p>
-                <p class="text-xl font-extrabold" style="color:#166534;">{{ $totalTx }}</p>
-                <p class="text-[11px]" style="color:#4ade80;">transacciones</p>
-            </div>
-            <div class="rounded-xl px-4 py-3" style="background:#fffbeb; border:1px solid #fef08a;">
-                <p class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color:#854d0e;">Ingresos período</p>
-                <p class="text-xl font-extrabold" style="color:#854d0e;">${{ $totalIngresos >= 1000000 ? number_format($totalIngresos/1000000,1).'M' : number_format($totalIngresos,0,',','.') }}</p>
-                <p class="text-[11px]" style="color:#ca8a04;">COP acumulado</p>
-            </div>
-            <div class="rounded-xl px-4 py-3" style="background:#faf5ff; border:1px solid #e9d5ff;">
-                <p class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color:#6b21a8;">Mes actual</p>
-                <p class="text-xl font-extrabold" style="color:#71277a;">{{ $mesActivo['cantidad'] ?? 0 }}</p>
-                <p class="text-[11px]" style="color:#a855f7;">{{ $mesActivo['mes'] ?? '' }}</p>
-            </div>
-        </div>
-
-        {{-- Barras --}}
-        <div class="flex items-end gap-2" style="height:140px;">
-            @foreach($ventasMes as $idx => $vm)
-            @php
-                $pctTx = round(($vm['cantidad'] / $maxV) * 100);
-                $pctIn = round((($vm['ingresos'] ?? 0) / $maxI) * 100);
-                $heightTx = max(4, $pctTx * 1.2);
-                $heightIn = max(4, $pctIn * 1.2);
-                $isLast = $loop->last;
-                $colorTx = $isLast ? 'linear-gradient(180deg,#39a900,#2d8600)' : ($pctTx >= 70 ? 'linear-gradient(180deg,#5fcc1a,#39a900)' : ($pctTx >= 30 ? 'linear-gradient(180deg,#a3e635,#6bbd00)' : 'linear-gradient(180deg,#d1fae5,#bbf7d0)'));
-                $colorIn = $isLast ? 'linear-gradient(180deg,#fdc300,#e6b000)' : ($pctIn >= 70 ? 'linear-gradient(180deg,#fde047,#fdc300)' : ($pctIn >= 30 ? 'linear-gradient(180deg,#fef08a,#fdc300)' : 'linear-gradient(180deg,#fef9c3,#fef08a)'));
-            @endphp
-            <div class="flex-1 flex flex-col items-center gap-1 group relative" style="height:140px; justify-content:flex-end;">
-
-                {{-- Tooltip --}}
-                <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none
-                            opacity-0 group-hover:opacity-100 transition-opacity duration-200
-                            bg-gray-900 text-white rounded-xl px-3 py-2 text-[11px] font-semibold
-                            shadow-xl whitespace-nowrap" style="min-width:110px;">
-                    <p class="font-bold mb-0.5" style="color:#fdc300;">{{ $vm['mes'] }}</p>
-                    <p>🛒 {{ $vm['cantidad'] }} venta{{ $vm['cantidad'] != 1 ? 's' : '' }}</p>
-                    <p>💰 ${{ number_format($vm['ingresos'] ?? 0, 0, ',', '.') }}</p>
-                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full
-                                border-4 border-transparent" style="border-top-color:#111827;"></div>
-                </div>
-
-                {{-- Par de barras --}}
-                <div class="flex items-end gap-0.5 w-full px-1" style="height:120px;">
-                    {{-- Barra transacciones --}}
-                    <div class="flex-1 rounded-t-lg transition-all duration-500 cursor-pointer hover:opacity-80"
-                         style="height:{{ $heightTx }}px; background:{{ $colorTx }}; {{ $isLast ? 'box-shadow:0 -3px 8px rgba(57,169,0,0.4);' : '' }}">
+                {{-- Encabezado --}}
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+                    <div>
+                        <h3 class="text-sm font-extrabold" style="color:#1c2b16;">Ventas últimos 6 meses</h3>
+                        <p class="text-xs mt-0.5" style="color:#9a9a8a;">Transacciones e ingresos por mes</p>
                     </div>
-                    {{-- Barra ingresos --}}
-                    <div class="flex-1 rounded-t-lg transition-all duration-500 cursor-pointer hover:opacity-80"
-                         style="height:{{ $heightIn }}px; background:{{ $colorIn }}; {{ $isLast ? 'box-shadow:0 -3px 8px rgba(253,195,0,0.4);' : '' }}">
+                    {{-- Leyenda --}}
+                    <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-3 h-3 rounded-sm" style="background:linear-gradient(180deg,#39a900,#2d8600);"></div>
+                            <span class="text-xs font-semibold" style="color:#5a5a4f;">Transacciones</span>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-3 h-3 rounded-sm" style="background:linear-gradient(180deg,#fdc300,#e6b000);"></div>
+                            <span class="text-xs font-semibold" style="color:#5a5a4f;">Ingresos</span>
+                        </div>
                     </div>
                 </div>
 
-                {{-- Etiqueta valor --}}
-                <div class="text-center leading-tight">
-                    @if($vm['cantidad'] > 0)
-                        <span class="text-[10px] font-extrabold block" style="color:{{ $isLast ? '#39a900' : '#71277a' }};">{{ $vm['cantidad'] }}</span>
-                    @else
-                        <span class="text-[10px] font-bold block" style="color:#d1d5db;">0</span>
-                    @endif
+                @php
+                    $maxV  = $ventasMes->max('cantidad') ?: 1;
+                    $maxI  = $ventasMes->max('ingresos') ?: 1;
+                    $totalTx      = $ventasMes->sum('cantidad');
+                    $totalIngresos = $ventasMes->sum('ingresos');
+                    $mesActivo    = $ventasMes->last();
+                @endphp
+
+                {{-- Resumen rápido --}}
+                <div class="grid grid-cols-3 gap-3 mb-6">
+                    <div class="rounded-xl px-4 py-3" style="background:#f0fdf4; border:1px solid #dcfce7;">
+                        <p class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color:#166534;">Total período</p>
+                        <p class="text-xl font-extrabold" style="color:#166534;">{{ $totalTx }}</p>
+                        <p class="text-[11px]" style="color:#4ade80;">transacciones</p>
+                    </div>
+                    <div class="rounded-xl px-4 py-3" style="background:#fffbeb; border:1px solid #fef08a;">
+                        <p class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color:#854d0e;">Ingresos período</p>
+                        <p class="text-xl font-extrabold" style="color:#854d0e;">${{ $totalIngresos >= 1000000 ? number_format($totalIngresos/1000000,1).'M' : number_format($totalIngresos,0,',','.') }}</p>
+                        <p class="text-[11px]" style="color:#ca8a04;">COP acumulado</p>
+                    </div>
+                    <div class="rounded-xl px-4 py-3" style="background:#faf5ff; border:1px solid #e9d5ff;">
+                        <p class="text-[11px] font-bold uppercase tracking-wider mb-1" style="color:#6b21a8;">Mes actual</p>
+                        <p class="text-xl font-extrabold" style="color:#71277a;">{{ $mesActivo['cantidad'] ?? 0 }}</p>
+                        <p class="text-[11px]" style="color:#a855f7;">{{ $mesActivo['mes'] ?? '' }}</p>
+                    </div>
                 </div>
 
-                {{-- Mes --}}
-                <span class="text-[10px] font-semibold" style="color:{{ $isLast ? '#1c2b16' : '#9a9a8a' }};">{{ $vm['mes'] }}</span>
+                {{-- Barras --}}
+                <div class="flex items-end gap-2" style="height:140px;">
+                    @foreach($ventasMes as $idx => $vm)
+                    @php
+                        $pctTx = round(($vm['cantidad'] / $maxV) * 100);
+                        $pctIn = round((($vm['ingresos'] ?? 0) / $maxI) * 100);
+                        $heightTx = max(4, $pctTx * 1.2);
+                        $heightIn = max(4, $pctIn * 1.2);
+                        $isLast = $loop->last;
+                        $colorTx = $isLast ? 'linear-gradient(180deg,#39a900,#2d8600)' : ($pctTx >= 70 ? 'linear-gradient(180deg,#5fcc1a,#39a900)' : ($pctTx >= 30 ? 'linear-gradient(180deg,#a3e635,#6bbd00)' : 'linear-gradient(180deg,#d1fae5,#bbf7d0)'));
+                        $colorIn = $isLast ? 'linear-gradient(180deg,#fdc300,#e6b000)' : ($pctIn >= 70 ? 'linear-gradient(180deg,#fde047,#fdc300)' : ($pctIn >= 30 ? 'linear-gradient(180deg,#fef08a,#fdc300)' : 'linear-gradient(180deg,#fef9c3,#fef08a)'));
+                    @endphp
+                    <div class="flex-1 flex flex-col items-center gap-1 group relative" style="height:140px; justify-content:flex-end;">
 
-                {{-- Indicador mes activo --}}
-                @if($isLast)
-                    <div class="w-1.5 h-1.5 rounded-full mt-0.5" style="background:#39a900;"></div>
+                        {{-- Tooltip --}}
+                        <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 pointer-events-none
+                                    opacity-0 group-hover:opacity-100 transition-opacity duration-200
+                                    bg-gray-900 text-white rounded-xl px-3 py-2 text-[11px] font-semibold
+                                    shadow-xl whitespace-nowrap" style="min-width:110px;">
+                            <p class="font-bold mb-0.5" style="color:#fdc300;">{{ $vm['mes'] }}</p>
+                            <p>🛒 {{ $vm['cantidad'] }} venta{{ $vm['cantidad'] != 1 ? 's' : '' }}</p>
+                            <p>💰 ${{ number_format($vm['ingresos'] ?? 0, 0, ',', '.') }}</p>
+                            <div class="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full
+                                        border-4 border-transparent" style="border-top-color:#111827;"></div>
+                        </div>
+
+                        {{-- Par de barras --}}
+                        <div class="flex items-end gap-0.5 w-full px-1" style="height:120px;">
+                            {{-- Barra transacciones --}}
+                            <div class="flex-1 rounded-t-lg transition-all duration-500 cursor-pointer hover:opacity-80"
+                                 style="height:{{ $heightTx }}px; background:{{ $colorTx }}; {{ $isLast ? 'box-shadow:0 -3px 8px rgba(57,169,0,0.4);' : '' }}">
+                            </div>
+                            {{-- Barra ingresos --}}
+                            <div class="flex-1 rounded-t-lg transition-all duration-500 cursor-pointer hover:opacity-80"
+                                 style="height:{{ $heightIn }}px; background:{{ $colorIn }}; {{ $isLast ? 'box-shadow:0 -3px 8px rgba(253,195,0,0.4);' : '' }}">
+                            </div>
+                        </div>
+
+                        {{-- Etiqueta valor --}}
+                        <div class="text-center leading-tight">
+                            @if($vm['cantidad'] > 0)
+                                <span class="text-[10px] font-extrabold block" style="color:{{ $isLast ? '#39a900' : '#71277a' }};">{{ $vm['cantidad'] }}</span>
+                            @else
+                                <span class="text-[10px] font-bold block" style="color:#d1d5db;">0</span>
+                            @endif
+                        </div>
+
+                        {{-- Mes --}}
+                        <span class="text-[10px] font-semibold" style="color:{{ $isLast ? '#1c2b16' : '#9a9a8a' }};">{{ $vm['mes'] }}</span>
+
+                        {{-- Indicador mes activo --}}
+                        @if($isLast)
+                            <div class="w-1.5 h-1.5 rounded-full mt-0.5" style="background:#39a900;"></div>
+                        @endif
+                    </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- Línea de escala --}}
+            <div class="mt-3 pt-3 border-t flex items-center justify-between" style="border-color:#f3f0e8;">
+                <span class="text-[10px]" style="color:#d1d5db;">0</span>
+                <span class="text-[10px]" style="color:#9a9a8a;">Máx: {{ $maxV }} transacciones · ${{ number_format($maxI,0,',','.') }}</span>
+                <div class="w-1.5 h-1.5 rounded-full" style="background:#39a900;"></div>
+            </div>
+        </div>
+
+        {{-- Top Productos Más Vendidos --}}
+        <div class="lg:col-span-1 bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col justify-between">
+            <div>
+                {{-- Encabezado --}}
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-sm font-extrabold flex items-center gap-1.5" style="color:#1c2b16;">
+                            <svg class="w-4 h-4 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                            <span>Más Vendidos</span>
+                        </h3>
+                        <p class="text-xs mt-0.5" style="color:#9a9a8a;">
+                            {{ request('mes') || request('anio') ? 'Filtrado por fecha' : 'Top artículos más vendidos' }}
+                        </p>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider" style="background:#faf5ff; color:#71277a;">
+                        Top 5
+                    </span>
+                </div>
+
+                {{-- Lista de productos --}}
+                @if(isset($topProductos) && $topProductos->count() > 0)
+                <div class="space-y-3">
+                    @foreach($topProductos as $idx => $tp)
+                    @php
+                        $pctUnits = round(($tp->total_unidades / $maxUnidadesTop) * 100);
+                        $badgeStyle = match($idx) {
+                            0 => 'background:#fef3c7; color:#b45309; border-color:#fde68a;',
+                            1 => 'background:#f1f5f9; color:#475569; border-color:#e2e8f0;',
+                            2 => 'background:#ffedd5; color:#c2410c; border-color:#fed7aa;',
+                            default => 'background:#fafafa; color:#6b7280; border-color:#e5e7eb;',
+                        };
+                        $rankIcon = match($idx) {
+                            0 => '🥇',
+                            1 => '🥈',
+                            2 => '🥉',
+                            default => '#' . ($idx + 1),
+                        };
+                    @endphp
+                    <div class="p-2.5 rounded-xl border transition hover:bg-gray-50/60" style="border-color:#f3f0e8;">
+                        <div class="flex items-center justify-between gap-2 mb-1.5">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center border shrink-0" style="{{ $badgeStyle }}">
+                                    {{ $rankIcon }}
+                                </span>
+                                <div class="min-w-0">
+                                    <p class="text-xs font-bold truncate" style="color:#1c2b16;" title="{{ $tp->nombre }}">
+                                        {{ $tp->nombre }}
+                                    </p>
+                                    @if(!empty($tp->categoria))
+                                    <span class="text-[10px] px-1.5 py-0.2 rounded" style="background:#f4f1ea; color:#7a7a6e;">
+                                        {{ $tp->categoria }}
+                                    </span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="text-right shrink-0">
+                                <span class="text-xs font-extrabold block" style="color:#39a900;">
+                                    ${{ number_format($tp->total_ventas, 0, ',', '.') }}
+                                </span>
+                                <span class="text-[10px] font-semibold" style="color:#5a5a4f;">
+                                    {{ $tp->total_unidades }} {{ $tp->total_unidades == 1 ? 'ud.' : 'uds.' }}
+                                </span>
+                            </div>
+                        </div>
+                        {{-- Barra de volumen --}}
+                        <div class="w-full h-1.5 rounded-full overflow-hidden" style="background:#f3f0e8;">
+                            <div class="h-full rounded-full transition-all duration-500"
+                                 style="width:{{ max(6, $pctUnits) }}%; background:{{ $idx === 0 ? '#fdc300' : ($idx === 1 ? '#71277a' : '#39a900') }};"></div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                @else
+                <div class="py-8 text-center">
+                    <div class="w-10 h-10 rounded-full mx-auto flex items-center justify-center mb-2" style="background:#f4f1ea;">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="M16 11V7a4 4 0 0 0-8 0v4M5 9h14l1 12H4L5 9z"/>
+                        </svg>
+                    </div>
+                    <p class="text-xs font-semibold text-gray-500">Sin ventas registradas</p>
+                    <p class="text-[10px] text-gray-400 mt-0.5">Aparecerán aquí al registrar ventas</p>
+                </div>
                 @endif
             </div>
-            @endforeach
+
+            {{-- Pie de tarjeta --}}
+            <div class="mt-3 pt-3 border-t flex items-center justify-between text-[11px]" style="border-color:#f3f0e8;">
+                <span style="color:#9a9a8a;">Total Top 5:</span>
+                <span class="font-extrabold" style="color:#1c2b16;">${{ number_format($totalVentasTop ?? 0, 0, ',', '.') }}</span>
+            </div>
         </div>
 
-        {{-- Línea de escala --}}
-        <div class="mt-3 pt-3 border-t flex items-center justify-between" style="border-color:#f3f0e8;">
-            <span class="text-[10px]" style="color:#d1d5db;">0</span>
-            <span class="text-[10px]" style="color:#9a9a8a;">Máx: {{ $maxV }} transacciones · ${{ number_format($maxI,0,',','.') }}</span>
-            <div class="w-1.5 h-1.5 rounded-full" style="background:#39a900;"></div>
-        </div>
     </div>
 
     {{-- FILTROS --}}

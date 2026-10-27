@@ -123,7 +123,38 @@ class VentaController extends Controller
         $anios = Venta::selectRaw('YEAR(fechaVenta) as anio')
                       ->whereNotNull('fechaVenta')->distinct()->orderByDesc('anio')->pluck('anio');
 
-        return view('superadmin.ventas.index', compact('ventas', 'productos', 'stats', 'ventasMes', 'anios'));
+        // Top productos más vendidos (respeta filtros de mes y año)
+        $topProductosQuery = DB::table('venta_items')
+            ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
+            ->join('producto', 'venta_items.idProducto', '=', 'producto.id');
+
+        if ($mes) {
+            $topProductosQuery->whereMonth('venta.fechaVenta', $mes);
+        }
+        if ($anio) {
+            $topProductosQuery->whereYear('venta.fechaVenta', $anio);
+        }
+
+        $topProductos = $topProductosQuery
+            ->select(
+                'producto.id',
+                'producto.nombre',
+                'producto.categoria',
+                'producto.precio',
+                DB::raw('SUM(venta_items.cantidad) as total_unidades'),
+                DB::raw('SUM(venta_items.subtotal) as total_ventas'),
+                DB::raw('COUNT(DISTINCT venta.id) as total_ordenes')
+            )
+            ->groupBy('producto.id', 'producto.nombre', 'producto.categoria', 'producto.precio')
+            ->orderByDesc('total_unidades')
+            ->orderByDesc('total_ventas')
+            ->limit(5)
+            ->get();
+
+        $maxUnidadesTop = $topProductos->max('total_unidades') ?: 1;
+        $totalVentasTop = $topProductos->sum('total_ventas') ?: 1;
+
+        return view('superadmin.ventas.index', compact('ventas', 'productos', 'stats', 'ventasMes', 'anios', 'topProductos', 'maxUnidadesTop', 'totalVentasTop'));
     }
 
     public function store(Request $request)

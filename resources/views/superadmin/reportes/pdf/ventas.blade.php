@@ -88,7 +88,11 @@
 
 {{-- ══ TÍTULO ══ --}}
 <div class="report-title">Reporte de Ventas</div>
-<div class="report-sub">Período: {{ $inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} — {{ $fin->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} &nbsp;·&nbsp; {{ ucfirst($periodo) }}</div>
+@if($inicio->isSameDay($fin))
+<div class="report-sub">Fecha: {{ $inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} &nbsp;·&nbsp; {{ $periodoTexto ?? ucfirst($periodo) }}</div>
+@else
+<div class="report-sub">Período: {{ $inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} — {{ $fin->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} &nbsp;·&nbsp; {{ $periodoTexto ?? ucfirst($periodo) }}</div>
+@endif
 
 {{-- ══ KPIs ══ --}}
 <div class="kpi-row">
@@ -118,6 +122,9 @@
     <div class="chip">
         <div class="chip-lbl">{{ Str::limit($tp->nombre, 20) }}</div>
         <div class="chip-val">${{ number_format($tp->total_ventas, 0, ',', '.') }}</div>
+        @if(isset($tp->unidades))
+        <div style="font-size:7.5px; color:#666; margin-top:2px;">{{ $tp->unidades }} {{ $tp->unidades == 1 ? 'ud.' : 'uds.' }}</div>
+        @endif
     </div>
     @endforeach
 </div>

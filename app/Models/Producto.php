@@ -47,6 +47,9 @@ class Producto extends Model
      */
     public function getStockCalculadoAttribute(): int
     {
+        if ($this->relationLoaded('lotes')) {
+            return (int) $this->lotes->sum('cantidad_disponible');
+        }
         return (int) $this->lotes()->sum('cantidad_disponible');
     }
 

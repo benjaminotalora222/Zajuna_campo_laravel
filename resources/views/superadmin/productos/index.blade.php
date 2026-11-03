@@ -326,21 +326,26 @@
                 {{-- Nombre --}}
                 <div class="col-span-2">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Nombre <span style="color:#ef4444;">*</span></label>
-                    <input type="text" name="nombre" id="inputNombre" placeholder="Ej. Café Especial" required
+                    <input type="text" name="nombre" id="inputNombre" placeholder="Ej. Café Especial" required maxlength="255"
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$"
+                           title="Solo letras y espacios (no se permiten números)"
+                           oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo letras y espacios (no se permiten números).</p>
                 </div>
 
                 {{-- Descripción --}}
                 <div class="col-span-2">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Descripción</label>
-                    <textarea name="descripcion" id="inputDescripcion" rows="2" placeholder="Descripción breve del producto..."
+                    <textarea name="descripcion" id="inputDescripcion" rows="2" maxlength="1000" placeholder="Descripción breve del producto..."
                               class="w-full px-4 py-3 rounded-xl border text-sm outline-none resize-none"
                               style="border-color:#e7e0cc; background:#fafafa;"
                               onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                               onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'"></textarea>
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Texto descriptivo opcional (máx. 1000 caracteres).</p>
                 </div>
 
                 {{-- Precio --}}
@@ -348,12 +353,15 @@
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Precio <span style="color:#ef4444;">*</span></label>
                     <div class="relative">
                         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold" style="color:#9a9a8a;">$</span>
-                        <input type="number" name="precio" id="inputPrecio" placeholder="0" step="0.01" min="0" required
+                        <input type="number" name="precio" id="inputPrecio" placeholder="0" step="0.01" min="0" max="99999999.99" required
+                               onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();"
+                               oninput="if(parseFloat(this.value) > 99999999.99) this.value = '99999999.99';"
                                class="w-full pl-7 pr-4 py-3 rounded-xl border text-sm outline-none"
                                style="border-color:#e7e0cc; background:#fafafa;"
                                onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                                onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
                     </div>
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo números y decimales (máx. $99.999.999,99).</p>
                 </div>
 
                 {{-- Unidad --}}
@@ -372,17 +380,20 @@
                         <option value="bulto">bulto</option>
                         <option value="canasta">canasta</option>
                     </select>
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Selecciona la unidad de medida.</p>
                 </div>
 
                 {{-- Stock mínimo (alertas) — el stock real viene de lotes/movimientos --}}
                 <div class="col-span-2 sm:col-span-1">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Stock mínimo de alerta</label>
-                    <input type="number" name="stockMinimo" id="inputStockMinimo" placeholder="0" min="0"
+                    <input type="number" name="stockMinimo" id="inputStockMinimo" placeholder="0" min="0" max="9999999" step="1"
+                           onkeydown="if(['e','E','+','-','.','-','.'].includes(event.key)) event.preventDefault();"
+                           oninput="this.value = this.value.replace(/\D/g, ''); if(parseInt(this.value) > 9999999) this.value = '9999999';"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
-                    <p class="text-xs mt-1" style="color:#9a9a8a;">El stock real se gestiona desde el módulo de Inventario.</p>
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo números enteros (unidades de alerta, máx. 9.999.999).</p>
                 </div>
 
                 {{-- Categoría --}}
@@ -406,15 +417,19 @@
                                 <option value="{{ $cat }}">{{ $cat }}</option>
                             @endif
                         @endforeach
-                        <option value="__otro__">Otra...</option>
+                        <option value="__otro__">Otra (escribir)...</option>
                     </select>
                     {{-- Este input SIEMPRE está presente y tiene el valor real --}}
                     <input type="text" name="categoria" id="inputCategoria"
-                           placeholder="Escribe o selecciona una categoría" required
+                           placeholder="Escribe o selecciona una categoría" required maxlength="100"
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$"
+                           title="Solo letras y espacios (no se permiten números)"
+                           oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '')"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo letras (no se permiten números).</p>
                 </div>
 
                 {{-- Proveedor --}}
@@ -430,26 +445,34 @@
                             <option value="{{ $prov->id }}">{{ $prov->codigo ? "[$prov->codigo] " : '' }}{{ $prov->nombre }}</option>
                         @endforeach
                     </select>
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Selecciona el productor o proveedor asociado.</p>
                 </div>
 
                 {{-- Código de barras --}}
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Código de barras</label>
-                    <input type="text" name="codigoBarras" id="inputCodigoBarras" placeholder="Ej. 7702001..."
+                    <input type="text" name="codigoBarras" id="inputCodigoBarras" placeholder="Ej. 7702001..." maxlength="50"
+                           pattern="^[0-9]*$"
+                           title="Solo números"
+                           oninput="this.value = this.value.replace(/\D/g, '')"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo números (sin letras ni símbolos).</p>
                 </div>
 
                 {{-- Días perecedero --}}
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Días perecedero máx.</label>
-                    <input type="number" name="diasPerecederoMax" id="inputDiasPerecedero" placeholder="Ej. 30" min="0"
+                    <input type="number" name="diasPerecederoMax" id="inputDiasPerecedero" placeholder="Ej. 30" min="0" max="3650" step="1"
+                           onkeydown="if(['e','E','+','-','.','-','.'].includes(event.key)) event.preventDefault();"
+                           oninput="this.value = this.value.replace(/\D/g, ''); if(parseInt(this.value) > 3650) this.value = '3650';"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo números enteros (días, máx. 3.650).</p>
                 </div>
 
                 {{-- Imagen --}}
@@ -464,10 +487,11 @@
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                         </svg>
-                        <span class="text-sm" style="color:#9a9a8a;" id="imagenLabel">Selecciona una imagen (JPG, PNG — máx. 2MB)</span>
-                        <input type="file" name="imagen" id="inputImagen" accept="image/*" class="hidden"
+                        <span class="text-sm" style="color:#9a9a8a;" id="imagenLabel">Selecciona una imagen (JPG, PNG, WEBP — máx. 2MB)</span>
+                        <input type="file" name="imagen" id="inputImagen" accept="image/jpeg,image/png,image/jpg,image/webp" class="hidden"
                                onchange="previewImagen(this)">
                     </label>
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Formatos permitidos: JPG, PNG, WEBP (máx. 2MB).</p>
                 </div>
 
                 {{-- Activo --}}
@@ -545,8 +569,129 @@ function cerrarModal(id) {
     });
 });
 
-// Prevenir doble submit
-document.getElementById('formProducto').addEventListener('submit', function () {
+// Validación en cliente y control de submit
+function mostrarErrorModal(msg) {
+    let errBox = document.getElementById('clienteErrorBox');
+    if (!errBox) {
+        errBox = document.createElement('div');
+        errBox.id = 'clienteErrorBox';
+        errBox.className = 'mb-4 px-4 py-3 rounded-xl text-sm';
+        errBox.style.background = '#fef2f2';
+        errBox.style.border = '1px solid #fca5a5';
+        errBox.style.color = '#991b1b';
+        const form = document.getElementById('formProducto');
+        form.insertBefore(errBox, form.querySelector('.grid'));
+    }
+    errBox.innerHTML = '<p class="font-bold mb-1">Por favor verifica los campos:</p><ul class="list-disc list-inside space-y-0.5 text-xs"><li>' + msg + '</li></ul>';
+    errBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function limpiarErrorModal() {
+    const errBox = document.getElementById('clienteErrorBox');
+    if (errBox) errBox.remove();
+}
+
+document.getElementById('formProducto').addEventListener('submit', function (e) {
+    limpiarErrorModal();
+
+    const nombre = document.getElementById('inputNombre').value.trim();
+    const categoria = document.getElementById('inputCategoria').value.trim();
+    const precio = parseFloat(document.getElementById('inputPrecio').value);
+    const codigoBarras = document.getElementById('inputCodigoBarras').value.trim();
+    const stockMin = document.getElementById('inputStockMinimo').value.trim();
+    const diasMax = document.getElementById('inputDiasPerecedero').value.trim();
+    const proveedorId = document.getElementById('inputProveedorId').value;
+
+    const regexTexto = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$/;
+    const regexCat = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$/;
+
+    // Validación Nombre: solo letras y sin números
+    if (!nombre) {
+        e.preventDefault();
+        mostrarErrorModal('El nombre del producto es obligatorio.');
+        document.getElementById('inputNombre').focus();
+        return false;
+    }
+    if (/[0-9]/.test(nombre) || !regexTexto.test(nombre)) {
+        e.preventDefault();
+        mostrarErrorModal('El nombre solo puede contener letras y espacios (no se permiten números).');
+        document.getElementById('inputNombre').focus();
+        return false;
+    }
+    if (nombre.length < 3) {
+        e.preventDefault();
+        mostrarErrorModal('El nombre debe tener al menos 3 caracteres.');
+        document.getElementById('inputNombre').focus();
+        return false;
+    }
+
+    // Validación Precio
+    if (isNaN(precio) || precio < 0) {
+        e.preventDefault();
+        mostrarErrorModal('El precio debe ser un número válido igual o mayor a 0.');
+        document.getElementById('inputPrecio').focus();
+        return false;
+    }
+    if (precio > 99999999.99) {
+        e.preventDefault();
+        mostrarErrorModal('El precio no puede exceder $99.999.999,99.');
+        document.getElementById('inputPrecio').focus();
+        return false;
+    }
+
+    // Validación Categoría: solo letras y sin números
+    if (!categoria) {
+        e.preventDefault();
+        mostrarErrorModal('La categoría es obligatoria.');
+        document.getElementById('inputCategoria').focus();
+        return false;
+    }
+    if (/[0-9]/.test(categoria) || !regexCat.test(categoria)) {
+        e.preventDefault();
+        mostrarErrorModal('La categoría solo puede contener letras y espacios (no se permiten números).');
+        document.getElementById('inputCategoria').focus();
+        return false;
+    }
+
+    // Validación Proveedor
+    if (!proveedorId) {
+        e.preventDefault();
+        mostrarErrorModal('Debes seleccionar un proveedor.');
+        document.getElementById('inputProveedorId').focus();
+        return false;
+    }
+
+    // Validación Código de barras: solo números
+    if (codigoBarras && !/^[0-9]+$/.test(codigoBarras)) {
+        e.preventDefault();
+        mostrarErrorModal('El código de barras solo debe contener números.');
+        document.getElementById('inputCodigoBarras').focus();
+        return false;
+    }
+
+    // Validación Stock mínimo: entero
+    if (stockMin !== '') {
+        const smVal = parseInt(stockMin, 10);
+        if (isNaN(smVal) || smVal < 0 || smVal > 9999999) {
+            e.preventDefault();
+            mostrarErrorModal('El stock mínimo debe ser un número entero entre 0 y 9.999.999.');
+            document.getElementById('inputStockMinimo').focus();
+            return false;
+        }
+    }
+
+    // Validación Días perecedero: entero
+    if (diasMax !== '') {
+        const dpVal = parseInt(diasMax, 10);
+        if (isNaN(dpVal) || dpVal < 0 || dpVal > 3650) {
+            e.preventDefault();
+            mostrarErrorModal('Los días perecederos deben ser un número entero entre 0 y 3.650 (10 años).');
+            document.getElementById('inputDiasPerecedero').focus();
+            return false;
+        }
+    }
+
+    // Formulario válido: deshabilitar para prevenir doble click
     const btn = document.getElementById('btnGuardar');
     btn.disabled = true;
     btn.textContent = 'Guardando...';
@@ -556,20 +701,39 @@ document.getElementById('formProducto').addEventListener('submit', function () {
 
 function previewImagen(input) {
     if (input.files && input.files[0]) {
+        const file = input.files[0];
+        const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+        if (!validTypes.includes(file.type)) {
+            mostrarErrorModal('Solo se permiten imágenes en formato JPG, PNG o WEBP.');
+            input.value = '';
+            document.getElementById('imagenPreviewWrap').classList.add('hidden');
+            document.getElementById('imagenLabel').textContent = 'Selecciona una imagen (JPG, PNG, WEBP — máx. 2MB)';
+            return;
+        }
+        if (file.size > 2 * 1024 * 1024) {
+            mostrarErrorModal('La imagen no debe superar los 2MB de tamaño.');
+            input.value = '';
+            document.getElementById('imagenPreviewWrap').classList.add('hidden');
+            document.getElementById('imagenLabel').textContent = 'Selecciona una imagen (JPG, PNG, WEBP — máx. 2MB)';
+            return;
+        }
+
+        limpiarErrorModal();
         const reader = new FileReader();
         reader.onload = e => {
             document.getElementById('imagenPreview').src = e.target.result;
             document.getElementById('imagenPreviewWrap').classList.remove('hidden');
-            document.getElementById('imagenLabel').textContent = input.files[0].name;
+            document.getElementById('imagenLabel').textContent = file.name;
         };
-        reader.readAsDataURL(input.files[0]);
+        reader.readAsDataURL(file);
     }
 }
 
 function resetForm() {
+    limpiarErrorModal();
     document.getElementById('inputImagen').value = '';
     document.getElementById('imagenPreviewWrap').classList.add('hidden');
-    document.getElementById('imagenLabel').textContent = 'Selecciona una imagen (JPG, PNG — máx. 2MB)';
+    document.getElementById('imagenLabel').textContent = 'Selecciona una imagen (JPG, PNG, WEBP — máx. 2MB)';
     document.getElementById('selectCategoria').value = '';
     document.getElementById('inputCategoria').value = '';
 }
@@ -585,8 +749,14 @@ function onCatChange(sel) {
 }
 
 function abrirModalCrear() {
+    limpiarErrorModal();
     document.getElementById('modalFormTitle').textContent = 'Nuevo Producto';
-    document.getElementById('btnGuardar').textContent = 'Crear producto';
+    const btn = document.getElementById('btnGuardar');
+    btn.textContent = 'Crear producto';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+
     document.getElementById('formProducto').action = '{{ route("superadmin.productos.store") }}';
     document.getElementById('formMethod').value = 'POST';
     document.getElementById('inputNombre').value = '';
@@ -603,8 +773,14 @@ function abrirModalCrear() {
 }
 
 function abrirModalEditar(p) {
+    limpiarErrorModal();
     document.getElementById('modalFormTitle').textContent = 'Editar Producto';
-    document.getElementById('btnGuardar').textContent = 'Guardar cambios';
+    const btn = document.getElementById('btnGuardar');
+    btn.textContent = 'Guardar cambios';
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+
     document.getElementById('formProducto').action = '/superadmin/productos/' + p.id;
     document.getElementById('formMethod').value = 'PUT';
     document.getElementById('inputNombre').value         = p.nombre || '';
@@ -633,7 +809,7 @@ function abrirModalEditar(p) {
         document.getElementById('imagenLabel').textContent = 'Imagen actual (sube otra para reemplazarla)';
     } else {
         document.getElementById('imagenPreviewWrap').classList.add('hidden');
-        document.getElementById('imagenLabel').textContent = 'Selecciona una imagen (JPG, PNG — máx. 2MB)';
+        document.getElementById('imagenLabel').textContent = 'Selecciona una imagen (JPG, PNG, WEBP — máx. 2MB)';
     }
     document.getElementById('inputImagen').value = '';
     abrirModal('modalForm');
@@ -646,7 +822,27 @@ function abrirModalEliminar(id, nombre) {
 }
 
 @if($errors->any())
-    document.addEventListener('DOMContentLoaded', () => abrirModalCrear());
+    document.addEventListener('DOMContentLoaded', () => {
+        abrirModalCrear();
+        document.getElementById('inputNombre').value = @json(old('nombre', ''));
+        document.getElementById('inputDescripcion').value = @json(old('descripcion', ''));
+        document.getElementById('inputPrecio').value = @json(old('precio', ''));
+        document.getElementById('inputUnidad').value = @json(old('unidad', 'kg'));
+        document.getElementById('inputStockMinimo').value = @json(old('stockMinimo', ''));
+        document.getElementById('inputCodigoBarras').value = @json(old('codigoBarras', ''));
+        document.getElementById('inputDiasPerecedero').value = @json(old('diasPerecederoMax', ''));
+        document.getElementById('inputCategoria').value = @json(old('categoria', ''));
+        document.getElementById('inputProveedorId').value = @json(old('proveedor_id', ''));
+        const catVal = @json(old('categoria', ''));
+        const sel = document.getElementById('selectCategoria');
+        if (sel && catVal) {
+            let found = false;
+            for (let opt of sel.options) {
+                if (opt.value === catVal) { sel.value = catVal; found = true; break; }
+            }
+            if (!found) sel.value = '__otro__';
+        }
+    });
 @endif
 </script>
 

@@ -316,7 +316,7 @@
     <div class="left">
       <p class="left-eyebrow">Zajuna Campo</p>
       <h2>Recupera el acceso a tu cuenta.</h2>
-      <p>Te enviaremos un enlace seguro a tu correo para que puedas restablecer tu contraseña.</p>
+      <p>Te enviaremos un código de recuperación a tu correo para que puedas restablecer tu contraseña.</p>
 
       <div class="left-steps">
         <div class="left-step">
@@ -325,11 +325,11 @@
         </div>
         <div class="left-step">
           <div class="step-num">2</div>
-          Revisa tu bandeja de entrada
+          Revisa tu bandeja de entrada y copia el código
         </div>
         <div class="left-step">
           <div class="step-num">3</div>
-          Haz clic en el enlace y crea una nueva contraseña
+          Ingresa el código y crea tu nueva contraseña
         </div>
       </div>
 
@@ -346,7 +346,7 @@
     {{-- Panel derecho --}}
     <div class="right">
       <h1>¿Olvidaste tu contraseña?</h1>
-      <p class="subtitle">No hay problema. Ingresa tu correo y te enviaremos un enlace para restablecerla.</p>
+      <p class="subtitle">No hay problema. Ingresa tu correo y te enviaremos un código de 6 dígitos para restablecerla.</p>
 
       @if (session('status'))
         <div class="status-msg">{{ session('status') }}</div>
@@ -369,7 +369,7 @@
         </div>
 
         <button type="submit" class="btn-submit">
-          Enviar enlace de recuperación
+          Enviar código de recuperación
         </button>
       </form>
 

@@ -4,14 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class NewPasswordController extends Controller
@@ -21,43 +21,71 @@ class NewPasswordController extends Controller
      */
     public function create(Request $request): View
     {
-        return view('auth.reset-password', ['request' => $request]);
+        $email = $request->query('email', session('reset_email', ''));
+        $devCode = session('dev_code');
+
+        return view('auth.reset-password', [
+            'email'    => $email,
+            'dev_code' => $devCode,
+        ]);
     }
 
     /**
-     * Handle an incoming new password request.
-     *
-     * @throws ValidationException
+     * Handle an incoming new password request with verification code.
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'token' => ['required'],
-            'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'email'                 => ['required', 'email', 'exists:users,email'],
+            'codigo'                => ['required', 'string', 'size:6'],
+            'password'              => ['required', 'confirmed', Rules\Password::defaults()],
+        ], [
+            'email.required'        => 'El correo electrónico es obligatorio.',
+            'email.email'           => 'Ingresa un correo electrónico válido.',
+            'email.exists'          => 'No encontramos ninguna cuenta con este correo.',
+            'codigo.required'       => 'Por favor ingresa el código de 6 dígitos enviado a tu correo.',
+            'codigo.size'           => 'El código de recuperación debe contener exactamente 6 dígitos.',
+            'password.required'     => 'Debes ingresar una nueva contraseña.',
+            'password.confirmed'    => 'La confirmación de la contraseña no coincide.',
+            'password.min'          => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
 
-        // Here we will attempt to reset the user's password. If it is successful we
-        // will update the password on an actual user model and persist it to the
-        // database. Otherwise we will parse the error and return the response.
-        $status = Password::reset(
-            $request->only('email', 'password', 'password_confirmation', 'token'),
-            function (User $user) use ($request) {
-                $user->forceFill([
-                    'password' => Hash::make($request->password),
-                    'remember_token' => Str::random(60),
-                ])->save();
+        $resetRecord = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->first();
 
-                event(new PasswordReset($user));
-            }
-        );
+        if (!$resetRecord) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['codigo' => 'No hay ninguna solicitud de recuperación activa para este correo. Por favor solicita un nuevo código.']);
+        }
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
-        return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
-                    : back()->withInput($request->only('email'))
-                        ->withErrors(['email' => __($status)]);
+        // Expiración: 15 minutos
+        if (Carbon::parse($resetRecord->created_at)->addMinutes(15)->isPast()) {
+            DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+            return back()->withInput($request->only('email'))
+                ->withErrors(['codigo' => 'El código de recuperación ha expirado (validez de 15 minutos). Por favor solicita uno nuevo.']);
+        }
+
+        // Comprobar código
+        if (!Hash::check($request->codigo, $resetRecord->token)) {
+            return back()->withInput($request->only('email'))
+                ->withErrors(['codigo' => 'El código ingresado es incorrecto. Revisa tu correo e inténtalo de nuevo.']);
+        }
+
+        // Actualizar contraseña del usuario
+        $user = User::where('email', $request->email)->first();
+        $user->forceFill([
+            'password'       => Hash::make($request->password),
+            'remember_token' => Str::random(60),
+        ])->save();
+
+        // Eliminar token usado y limpiar sesión
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+        session()->forget(['reset_email', 'dev_code']);
+
+        event(new PasswordReset($user));
+
+        return redirect()->route('login')
+            ->with('status', '¡Tu contraseña ha sido restablecida con éxito! Ya puedes iniciar sesión con tu nueva contraseña.');
     }
 }

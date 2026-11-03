@@ -300,6 +300,366 @@
     display:flex;align-items:center;justify-content:center;
   }
 
+  /* ---------- catalogo ---------- */
+  .catalogo-section{
+    background:#faf7ee;
+    border-bottom:1px solid var(--line);
+    position:relative;
+    padding:96px 0;
+  }
+  .catalogo-section .wrap{
+    max-width:1240px;
+  }
+  .catalogo-toolbar{
+    display:flex;
+    flex-wrap:wrap;
+    justify-content:space-between;
+    align-items:center;
+    gap:16px;
+    margin-bottom:20px;
+    background:var(--paper);
+    padding:16px 20px;
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    box-shadow:0 6px 20px -10px rgba(34,48,28,0.12);
+  }
+  .catalogo-search-box{
+    position:relative;
+    flex:1;
+    min-width:260px;
+    max-width:460px;
+  }
+  .catalogo-search-box input{
+    width:100%;
+    padding:12px 18px 12px 44px;
+    border-radius:999px;
+    border:1.5px solid var(--line);
+    background:#faf8f2;
+    font-family:var(--body);
+    font-size:0.92rem;
+    color:var(--ink);
+    outline:none;
+    transition:border-color .2s, box-shadow .2s, background .2s;
+  }
+  .catalogo-search-box input:focus{
+    background:#fff;
+    border-color:var(--green);
+    box-shadow:0 0 0 3px rgba(57,169,0,0.15);
+  }
+  .catalogo-search-box svg{
+    position:absolute;
+    left:16px;
+    top:50%;
+    transform:translateY(-50%);
+    color:#7c8774;
+    pointer-events:none;
+  }
+  .catalogo-count{
+    font-size:0.9rem;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  .catalogo-categories-wrap{
+    margin-bottom:28px;
+  }
+  .catalogo-filters{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    align-items:center;
+  }
+  .filter-pill{
+    background:var(--paper);
+    color:var(--ink);
+    border:1.5px solid var(--line);
+    padding:8px 18px;
+    border-radius:999px;
+    font-size:0.86rem;
+    font-weight:600;
+    cursor:pointer;
+    transition:all .18s ease;
+    font-family:var(--body);
+  }
+  .filter-pill:hover{
+    background:#f4efe0;
+    border-color:#d5cbb3;
+  }
+  .filter-pill.active{
+    background:var(--purple);
+    color:#fff;
+    border-color:var(--purple);
+    box-shadow:0 4px 14px -3px rgba(113,39,122,0.45);
+  }
+
+  .catalogo-grid{
+    display:grid;
+    grid-template-columns:repeat(4, minmax(0, 1fr));
+    gap:20px;
+  }
+  @media (max-width:1120px){
+    .catalogo-grid{grid-template-columns:repeat(3, minmax(0, 1fr));}
+  }
+  @media (max-width:820px){
+    .catalogo-grid{grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px;}
+  }
+  @media (max-width:540px){
+    .catalogo-grid{grid-template-columns:1fr;}
+  }
+  .producto-card{
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow:0 10px 25px -12px rgba(34,48,28,0.18);
+    display:flex;
+    flex-direction:column;
+    transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+  }
+  .producto-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 20px 35px -16px rgba(34,48,28,0.28);
+    border-color:#d5cbb3;
+  }
+  .producto-img-wrap{
+    position:relative;
+    width:100%;
+    height:190px;
+    background:#f2ecdb;
+    overflow:hidden;
+  }
+  .producto-img-wrap img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    transition:transform .35s ease;
+  }
+  .producto-card:hover .producto-img-wrap img{
+    transform:scale(1.06);
+  }
+  .producto-img-placeholder{
+    width:100%;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(135deg, #f7f1df 0%, #ebe2ca 100%);
+    color:var(--green-ink);
+    opacity:0.85;
+    gap:8px;
+  }
+  .producto-tag-cat{
+    position:absolute;
+    top:12px;
+    left:12px;
+    background:rgba(113,39,122,0.92);
+    backdrop-filter:blur(4px);
+    color:#fff;
+    padding:4px 12px;
+    border-radius:999px;
+    font-size:0.72rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    box-shadow:0 4px 8px rgba(0,0,0,0.15);
+  }
+  .producto-tag-stock{
+    position:absolute;
+    top:12px;
+    right:12px;
+    padding:4px 12px;
+    border-radius:999px;
+    font-size:0.72rem;
+    font-weight:700;
+    letter-spacing:0.02em;
+    box-shadow:0 4px 8px rgba(0,0,0,0.15);
+  }
+  .stock-disponible{background:#39a900;color:#fff;}
+  .stock-agotado{background:#e11d48;color:#fff;}
+
+  .producto-body{
+    padding:18px 16px;
+    display:flex;
+    flex-direction:column;
+    flex:1;
+  }
+  .producto-prov{
+    font-size:0.78rem;
+    color:var(--green-dark);
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    margin-bottom:6px;
+    display:flex;
+    align-items:center;
+    gap:5px;
+  }
+  .producto-title{
+    font-size:1.12rem;
+    color:var(--green-ink);
+    margin-bottom:6px;
+    font-weight:700;
+    line-height:1.2;
+  }
+  .producto-desc{
+    font-size:0.85rem;
+    color:var(--ink-soft);
+    line-height:1.45;
+    margin-bottom:14px;
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .producto-footer{
+    margin-top:auto;
+    padding-top:14px;
+    border-top:1px dashed var(--line);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .producto-precio-wrap{
+    display:flex;
+    flex-direction:column;
+  }
+  .producto-precio-label{
+    font-size:0.72rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--ink-soft);
+    font-weight:600;
+  }
+  .producto-precio{
+    font-size:1.25rem;
+    font-weight:700;
+    color:var(--purple-deep);
+    font-family:var(--display);
+    line-height:1.1;
+  }
+  .producto-unidad{
+    font-size:0.75rem;
+    color:var(--ink-soft);
+    font-weight:500;
+  }
+  .btn-ver-producto{
+    background:#f4efe0;
+    color:var(--purple-deep);
+    border:1px solid var(--line);
+    padding:7px 12px;
+    border-radius:999px;
+    font-size:0.78rem;
+    font-weight:600;
+    display:inline-flex;
+    align-items:center;
+    gap:4px;
+    cursor:pointer;
+    transition:all .18s ease;
+  }
+  .btn-ver-producto:hover{
+    background:var(--purple);
+    color:#fff;
+    border-color:var(--purple);
+  }
+
+  /* Empty State */
+  .catalogo-vacio{
+    grid-column:1/-1;
+    text-align:center;
+    padding:60px 20px;
+    background:var(--paper);
+    border-radius:var(--radius);
+    border:2px dashed var(--line);
+  }
+  .catalogo-vacio svg{
+    margin:0 auto 16px;
+    color:#a39f91;
+  }
+  .catalogo-vacio h3{
+    font-size:1.3rem;
+    color:var(--ink);
+    margin-bottom:8px;
+  }
+  .catalogo-vacio p{
+    color:var(--ink-soft);
+    font-size:0.95rem;
+  }
+
+  /* Modal de Detalle de Producto */
+  .modal-overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(18,28,14,0.65);
+    backdrop-filter:blur(6px);
+    z-index:999;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s ease;
+  }
+  .modal-overlay.active{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .modal-card{
+    background:var(--cream);
+    max-width:620px;
+    width:100%;
+    border-radius:24px;
+    overflow:hidden;
+    box-shadow:0 25px 60px -15px rgba(0,0,0,0.4);
+    border:1px solid var(--line);
+    transform:scale(0.95) translateY(10px);
+    transition:transform .25s ease;
+    max-height:90vh;
+    display:flex;
+    flex-direction:column;
+  }
+  .modal-overlay.active .modal-card{
+    transform:scale(1) translateY(0);
+  }
+  .modal-header-img{
+    position:relative;
+    height:260px;
+    background:#eee6d2;
+    overflow:hidden;
+    flex-shrink:0;
+  }
+  .modal-header-img img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+  }
+  .modal-close-btn{
+    position:absolute;
+    top:16px;
+    right:16px;
+    width:38px;
+    height:38px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.92);
+    border:none;
+    color:var(--ink);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    cursor:pointer;
+    box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    transition:background .18s, transform .18s;
+  }
+  .modal-close-btn:hover{
+    background:#fff;
+    transform:scale(1.06);
+  }
+  .modal-content{
+    padding:28px;
+    overflow-y:auto;
+  }
+
   /* ---------- reveal ---------- */
   [data-reveal]{opacity:0;transform:translateY(18px);transition:opacity .6s ease, transform .6s ease;}
   [data-reveal].in{opacity:1;transform:translateY(0);}
@@ -337,6 +697,7 @@
       <img class="logo-mark" src="{{ asset('img/logo-zajuna-campo.png') }}" alt="Zajuna Campo">
     </a>
     <ul class="nav-links">
+      <li><a href="#catalogo">Catálogo</a></li>
       <li><a href="#programas">Programas</a></li>
       <li><a href="#como-funciona">Cómo funciona</a></li>
       <li><a href="#comunidad">Comunidad</a></li>
@@ -365,8 +726,8 @@ Tecnológicas, los Shows y los Proyectos de Investigación del Centro
 Agroindustrial La Angostura, dando trazabilidad a las ventas de nuestros 
 proveedores y visibilidad a la economía popular y campesina.  </p>
         <div class="hero-actions">
-          <a class="btn btn-primary" href="#programas">Ver programas</a>
-          <a class="btn btn-ghost" href="#como-funciona">Cómo funciona</a>
+          <a class="btn btn-primary" href="#catalogo">Explorar catálogo</a>
+          <a class="btn btn-ghost" href="#programas">Conocer programas</a>
         </div>
         <div class="hero-stats">
           <div><strong>1.240</strong><span>Ventas registradas</span></div>
@@ -429,6 +790,231 @@ e Investigación</p>
       <div class="impact-item" data-reveal>
         <strong>100%</strong>
         <p>seguro y conforme a la Ley 1581 de 2012 de Protección de Datos</p>
+      </div>
+    </div>
+  </div>
+
+  @php
+    $productos = $productos ?? collect();
+    $categorias = $categorias ?? collect();
+  @endphp
+
+  <!-- ================= CATÁLOGO DE PRODUCTOS ================= -->
+  <section class="catalogo-section" id="catalogo">
+    <div class="wrap">
+      <div class="section-head" data-reveal>
+        <p class="eyebrow" style="color:var(--green-dark);">Minimarket Zajuna Campo</p>
+        <h2>Catálogo de Productos</h2>
+        <p>Conoce los productos registrados de nuestros proveedores locales y del Centro Agroindustrial La Angostura. Precios directos, calidad del campo y trazabilidad garantizada sin necesidad de iniciar sesión.</p>
+      </div>
+
+      {{-- Barra de búsqueda y contador --}}
+      <div class="catalogo-toolbar" data-reveal>
+        <div class="catalogo-search-box">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="catalogo-search-input" placeholder="Buscar por producto, categoría o productor..." autocomplete="off">
+        </div>
+
+        <div class="catalogo-count" id="catalogo-counter">
+          <span>Mostrando {{ $productos->count() }} {{ $productos->count() === 1 ? 'producto' : 'productos' }}</span>
+        </div>
+      </div>
+
+      @if($categorias->isNotEmpty())
+      <div class="catalogo-categories-wrap" data-reveal>
+        <div class="catalogo-filters" id="category-filters">
+          <button type="button" class="filter-pill active" data-category="all">
+            Todos ({{ $productos->count() }})
+          </button>
+          @foreach($categorias as $cat)
+            @php
+              $conteoCat = $productos->where('categoria', $cat)->count();
+            @endphp
+            <button type="button" class="filter-pill" data-category="{{ Str::slug($cat) }}">
+              {{ $cat }} ({{ $conteoCat }})
+            </button>
+          @endforeach
+        </div>
+      </div>
+      @endif
+
+      {{-- Grid de productos --}}
+      <div class="catalogo-grid" id="catalogo-grid" data-reveal>
+        @forelse($productos as $producto)
+          @php
+            $tieneStock = ($producto->stock_calculado ?? 0) > 0;
+            $catSlug = $producto->categoria ? Str::slug($producto->categoria) : 'general';
+            $imgUrl = $producto->imagen ? asset('storage/' . $producto->imagen) : null;
+            $searchString = strtolower($producto->nombre . ' ' . ($producto->categoria ?? '') . ' ' . ($producto->proveedor->nombre ?? '') . ' ' . ($producto->descripcion ?? ''));
+          @endphp
+          <article class="producto-card"
+                   data-card="producto"
+                   data-nombre="{{ strtolower($producto->nombre) }}"
+                   data-categoria="{{ $catSlug }}"
+                   data-search="{{ $searchString }}"
+                   data-nombre-display="{{ $producto->nombre }}"
+                   data-categoria-display="{{ $producto->categoria ?? 'General' }}"
+                   data-proveedor-display="{{ $producto->proveedor->nombre ?? 'Centro Agroindustrial La Angostura' }}"
+                   data-precio-display="{{ number_format($producto->precio ?? 0, 0, ',', '.') }}"
+                   data-unidad-display="{{ $producto->unidad ?? 'ud' }}"
+                   data-descripcion-display="{{ $producto->descripcion ?? 'Producto campesino de calidad garantizada disponible en Minimarket.' }}"
+                   data-imagen-display="{{ $imgUrl ?? '' }}"
+                   data-disponible-display="{{ $tieneStock ? '1' : '0' }}">
+
+            <div class="producto-img-wrap">
+              @if($imgUrl)
+                <img src="{{ $imgUrl }}" alt="{{ $producto->nombre }}" loading="lazy"
+                     onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="producto-img-placeholder" style="display:none;">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                  </svg>
+                  <span style="font-size:0.75rem;font-weight:600;">Zajuna Campo</span>
+                </div>
+              @else
+                <div class="producto-img-placeholder">
+                  <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <path d="M16 10a4 4 0 0 1-8 0"></path>
+                  </svg>
+                  <span style="font-size:0.75rem;font-weight:600;">Zajuna Campo</span>
+                </div>
+              @endif
+
+              @if($producto->categoria)
+                <span class="producto-tag-cat">{{ $producto->categoria }}</span>
+              @endif
+
+              @if($tieneStock)
+                <span class="producto-tag-stock stock-disponible">Disponible</span>
+              @else
+                <span class="producto-tag-stock stock-agotado">Agotado</span>
+              @endif
+            </div>
+
+            <div class="producto-body">
+              <span class="producto-prov">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-3"/></svg>
+                {{ $producto->proveedor->nombre ?? 'Centro La Angostura' }}
+              </span>
+
+              <h3 class="producto-title">{{ $producto->nombre }}</h3>
+
+              @if($producto->descripcion)
+                <p class="producto-desc">{{ $producto->descripcion }}</p>
+              @else
+                <p class="producto-desc" style="opacity:0.65;font-style:italic;">Producto campesino de calidad garantizada disponible en Minimarket.</p>
+              @endif
+
+              <div class="producto-footer">
+                <div class="producto-precio-wrap">
+                  <span class="producto-precio-label">Precio</span>
+                  <div style="display:flex;align-items:baseline;gap:4px;">
+                    <span class="producto-precio">${{ number_format($producto->precio ?? 0, 0, ',', '.') }}</span>
+                    <span class="producto-unidad">/ {{ $producto->unidad ?? 'ud' }}</span>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-ver-producto" onclick="abrirModalCatalogo(this)">
+                  <span>Ver detalle</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+          </article>
+        @empty
+          <div class="catalogo-vacio">
+            <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="8" y1="12" x2="16" y2="12"></line>
+            </svg>
+            <h3>Aún no hay productos registrados</h3>
+            <p>Pronto estarán disponibles los productos de nuestros proveedores campesinos.</p>
+          </div>
+        @endforelse
+
+        {{-- Estado cuando búsqueda no arroja resultados --}}
+        <div class="catalogo-vacio" id="catalogo-no-results" style="display:none;">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+          <h3>No encontramos productos coincidentes</h3>
+          <p>Prueba buscando con otra palabra o revisa otra categoría.</p>
+          <button type="button" class="btn btn-ghost" style="margin-top:16px;" onclick="resetCatalogoFiltros()">
+            Ver todos los productos
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MODAL DETALLE PRODUCTO ================= -->
+  <div class="modal-overlay" id="modal-producto" onclick="cerrarModalCatalogo(event)">
+    <div class="modal-card" onclick="event.stopPropagation()">
+      <div class="modal-header-img" id="modal-img-container">
+        <img id="modal-img" src="" alt="" style="display:none;">
+        <div class="producto-img-placeholder" id="modal-img-placeholder" style="display:flex;">
+          <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span style="font-size:0.85rem;font-weight:600;">Zajuna Campo</span>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="cerrarModalCatalogoDirecto()" aria-label="Cerrar ventana">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+        <span class="producto-tag-cat" id="modal-categoria"></span>
+      </div>
+
+      <div class="modal-content">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px;">
+          <span class="producto-prov" id="modal-proveedor"></span>
+          <span class="producto-tag-stock" id="modal-stock-badge"></span>
+        </div>
+
+        <h2 id="modal-nombre" style="font-size:1.6rem;color:var(--green-ink);margin-bottom:12px;line-height:1.2;"></h2>
+
+        <div style="background:#f4efe0;padding:14px 18px;border-radius:14px;border:1px solid var(--line);display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px;">
+          <span style="font-size:0.85rem;font-weight:600;color:var(--ink-soft);text-transform:uppercase;">Precio al público</span>
+          <div style="display:flex;align-items:baseline;gap:6px;">
+            <span id="modal-precio" style="font-size:1.75rem;font-weight:700;color:var(--purple-deep);font-family:var(--display);">$0</span>
+            <span id="modal-unidad" style="font-size:0.9rem;color:var(--ink-soft);font-weight:500;"></span>
+          </div>
+        </div>
+
+        <h4 style="font-size:0.95rem;color:var(--ink);margin-bottom:6px;font-family:var(--display);">Descripción del producto</h4>
+        <p id="modal-descripcion" style="font-size:0.95rem;color:var(--ink-soft);line-height:1.6;margin-bottom:20px;white-space:pre-line;"></p>
+
+        <div style="background:#eaf6de;border:1px solid #cce8b5;border-radius:14px;padding:14px 18px;display:flex;align-items:flex-start;gap:12px;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#28790a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div style="font-size:0.86rem;color:#1f3410;line-height:1.45;">
+            <strong>Disponible en el Minimarket La Angostura</strong><br>
+            Puedes adquirir este producto directamente en las instalaciones del Centro Agroindustrial La Angostura sin necesidad de registro previo.
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+          <button type="button" class="btn btn-ghost" onclick="cerrarModalCatalogoDirecto()">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>
@@ -588,6 +1174,7 @@ externos de la estrategia Zajuna Campo.</p>
         <h4>Zajuna Campo</h4>
         <ul>
           <li><a href="#inicio">Inicio</a></li>
+          <li><a href="#catalogo">Catálogo de productos</a></li>
           <li><a href="#como-funciona">Cómo funciona</a></li>
           <li><a href="#comunidad">Comunidad</a></li>
         </ul>
@@ -632,6 +1219,15 @@ externos de la estrategia Zajuna Campo.</p>
     });
   }
 
+  // Cerrar menú móvil al hacer clic en un enlace
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    link.addEventListener('click', () => {
+      if (window.innerWidth <= 720 && navLinks) {
+        navLinks.style.display = 'none';
+      }
+    });
+  });
+
   // Revelado suave al hacer scroll
   const revealEls = document.querySelectorAll('[data-reveal]');
   if ('IntersectionObserver' in window) {
@@ -647,6 +1243,144 @@ externos de la estrategia Zajuna Campo.</p>
   } else {
     revealEls.forEach(el => el.classList.add('in'));
   }
+
+  // ================= CATÁLOGO: BÚSQUEDA Y FILTRADO =================
+  let activeCat = 'all';
+  let searchTerm = '';
+
+  const searchInput = document.getElementById('catalogo-search-input');
+  const filterPills = document.querySelectorAll('.filter-pill');
+  const cards = document.querySelectorAll('.producto-card');
+  const counterEl = document.getElementById('catalogo-counter');
+  const noResultsEl = document.getElementById('catalogo-no-results');
+
+  function filtrarCatalogo() {
+    let visibles = 0;
+    const term = (searchTerm || '').trim().toLowerCase();
+
+    cards.forEach(card => {
+      const cardCat = card.getAttribute('data-categoria') || '';
+      const cardSearch = (card.getAttribute('data-search') || '').toLowerCase();
+
+      const matchCat = (activeCat === 'all') || (cardCat === activeCat);
+      const matchSearch = !term || cardSearch.includes(term);
+
+      if (matchCat && matchSearch) {
+        card.style.display = 'flex';
+        visibles++;
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    if (counterEl) {
+      counterEl.innerHTML = `<span>Mostrando ${visibles} de ${cards.length} ${cards.length === 1 ? 'producto' : 'productos'}</span>`;
+    }
+
+    if (noResultsEl) {
+      noResultsEl.style.display = (visibles === 0 && cards.length > 0) ? 'block' : 'none';
+    }
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+      searchTerm = e.target.value;
+      filtrarCatalogo();
+    });
+  }
+
+  filterPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      filterPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeCat = pill.getAttribute('data-category') || 'all';
+      filtrarCatalogo();
+    });
+  });
+
+  window.resetCatalogoFiltros = function() {
+    if (searchInput) searchInput.value = '';
+    searchTerm = '';
+    activeCat = 'all';
+    filterPills.forEach(p => {
+      p.classList.toggle('active', p.getAttribute('data-category') === 'all');
+    });
+    filtrarCatalogo();
+  };
+
+  // ================= CATÁLOGO: MODAL DETALLE =================
+  const modal = document.getElementById('modal-producto');
+  const modalImg = document.getElementById('modal-img');
+  const modalImgPlaceholder = document.getElementById('modal-img-placeholder');
+  const modalCat = document.getElementById('modal-categoria');
+  const modalStockBadge = document.getElementById('modal-stock-badge');
+  const modalProv = document.getElementById('modal-proveedor');
+  const modalNombre = document.getElementById('modal-nombre');
+  const modalPrecio = document.getElementById('modal-precio');
+  const modalUnidad = document.getElementById('modal-unidad');
+  const modalDesc = document.getElementById('modal-descripcion');
+
+  window.abrirModalCatalogo = function(btn) {
+    const card = btn.closest('.producto-card');
+    if (!card) return;
+
+    const nombre = card.getAttribute('data-nombre-display') || 'Producto';
+    const categoria = card.getAttribute('data-categoria-display') || 'General';
+    const proveedor = card.getAttribute('data-proveedor-display') || 'Centro Agroindustrial La Angostura';
+    const precio = card.getAttribute('data-precio-display') || '0';
+    const unidad = card.getAttribute('data-unidad-display') || 'ud';
+    const descripcion = card.getAttribute('data-descripcion-display') || 'Producto campesino de calidad garantizada disponible en Minimarket.';
+    const imagen = card.getAttribute('data-imagen-display') || '';
+    const disponible = card.getAttribute('data-disponible-display') === '1';
+
+    if (modalNombre) modalNombre.textContent = nombre;
+    if (modalCat) modalCat.textContent = categoria;
+    if (modalProv) {
+      modalProv.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V7l8-4v18"/><path d="M19 21V11l-6-3"/></svg> ` + proveedor;
+    }
+    if (modalPrecio) modalPrecio.textContent = '$' + precio;
+    if (modalUnidad) modalUnidad.textContent = '/ ' + unidad;
+    if (modalDesc) modalDesc.textContent = descripcion;
+
+    if (modalStockBadge) {
+      modalStockBadge.className = 'producto-tag-stock ' + (disponible ? 'stock-disponible' : 'stock-agotado');
+      modalStockBadge.textContent = disponible ? 'Disponible' : 'Agotado';
+    }
+
+    if (imagen) {
+      modalImg.src = imagen;
+      modalImg.style.display = 'block';
+      modalImgPlaceholder.style.display = 'none';
+    } else {
+      modalImg.src = '';
+      modalImg.style.display = 'none';
+      modalImgPlaceholder.style.display = 'flex';
+    }
+
+    if (modal) {
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+  };
+
+  window.cerrarModalCatalogo = function(e) {
+    if (e.target === modal) {
+      cerrarModalCatalogoDirecto();
+    }
+  };
+
+  window.cerrarModalCatalogoDirecto = function() {
+    if (modal) {
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+  };
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal && modal.classList.contains('active')) {
+      cerrarModalCatalogoDirecto();
+    }
+  });
 </script>
 
 </body>

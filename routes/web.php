@@ -26,8 +26,26 @@ use App\Http\Controllers\Superadmin\VentaController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return view('welcome');
-});
+    try {
+        $productos = \App\Models\Producto::where(function ($q) {
+                $q->where('activo', true)->orWhereNull('activo');
+            })
+            ->with(['proveedor', 'lotes'])
+            ->orderBy('nombre')
+            ->get();
+
+        $categorias = $productos->pluck('categoria')->filter()->unique()->values();
+    } catch (\Throwable $e) {
+        $productos = collect();
+        $categorias = collect();
+    }
+
+    return view('welcome', compact('productos', 'categorias'));
+})->name('home');
+
+Route::get('/catalogo', function () {
+    return redirect('/#catalogo');
+})->name('catalogo');
 
 // Ruta legacy dashboard — redirige según rol
 Route::get('/dashboard', function () {

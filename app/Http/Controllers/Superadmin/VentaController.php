@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\LogAuditoria;
 use App\Models\MovimientoInventario;
 use App\Models\Producto;
+use App\Models\Proveedor;
 use App\Models\Venta;
 use App\Models\VentaItem;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -92,6 +94,10 @@ class VentaController extends Controller
             });
         }
 
+        if ($proveedorId = $request->input('proveedor_id')) {
+            $query->whereHas('items.producto', fn($p) => $p->where('proveedor_id', $proveedorId));
+        }
+
         if ($mes = $request->input('mes')) {
             $query->whereMonth('fechaVenta', $mes);
         }
@@ -100,8 +106,9 @@ class VentaController extends Controller
             $query->whereYear('fechaVenta', $anio);
         }
 
-        $ventas    = $query->paginate(10)->withQueryString();
-        $productos = Producto::where('activo', true)->orderBy('nombre')->get();
+        $ventas      = $query->paginate(10)->withQueryString();
+        $productos   = Producto::where('activo', true)->orderBy('nombre')->get();
+        $proveedores = Proveedor::orderBy('nombre')->get();
 
         $hoy   = now();
         $stats = [
@@ -128,6 +135,9 @@ class VentaController extends Controller
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id');
 
+        if ($proveedorId) {
+            $topProductosQuery->where('producto.proveedor_id', $proveedorId);
+        }
         if ($mes) {
             $topProductosQuery->whereMonth('venta.fechaVenta', $mes);
         }
@@ -154,22 +164,279 @@ class VentaController extends Controller
         $maxUnidadesTop = $topProductos->max('total_unidades') ?: 1;
         $totalVentasTop = $topProductos->sum('total_ventas') ?: 1;
 
-        return view('superadmin.ventas.index', compact('ventas', 'productos', 'stats', 'ventasMes', 'anios', 'topProductos', 'maxUnidadesTop', 'totalVentasTop'));
+        return view('superadmin.ventas.index', compact('ventas', 'productos', 'proveedores', 'stats', 'ventasMes', 'anios', 'topProductos', 'maxUnidadesTop', 'totalVentasTop'));
+    }
+
+    /**
+     * Dashboard de ventas por proveedor y rango de fechas
+     */
+    public function dashboard(Request $request)
+    {
+        $this->soloSuperadmin();
+
+        $proveedorId = $request->input('proveedor_id');
+        $periodo     = $request->input('periodo', 'este_mes');
+        $fechaInicio = $request->input('fecha_inicio');
+        $fechaFin    = $request->input('fecha_fin');
+
+        $hoy = Carbon::today();
+
+        // 1. Calcular rango de fechas
+        if ($periodo === 'hoy') {
+            $inicio = $hoy->copy()->startOfDay();
+            $fin    = $hoy->copy()->endOfDay();
+            $periodoTexto = 'Hoy (' . $inicio->format('d/m/Y') . ')';
+        } elseif ($periodo === 'ayer') {
+            $inicio = $hoy->copy()->subDay()->startOfDay();
+            $fin    = $hoy->copy()->subDay()->endOfDay();
+            $periodoTexto = 'Ayer (' . $inicio->format('d/m/Y') . ')';
+        } elseif ($periodo === '7dias') {
+            $inicio = $hoy->copy()->subDays(6)->startOfDay();
+            $fin    = $hoy->copy()->endOfDay();
+            $periodoTexto = 'Últimos 7 días (' . $inicio->format('d/m') . ' - ' . $fin->format('d/m/Y') . ')';
+        } elseif ($periodo === '15dias') {
+            $inicio = $hoy->copy()->subDays(14)->startOfDay();
+            $fin    = $hoy->copy()->endOfDay();
+            $periodoTexto = 'Últimos 15 días (' . $inicio->format('d/m') . ' - ' . $fin->format('d/m/Y') . ')';
+        } elseif ($periodo === '30dias') {
+            $inicio = $hoy->copy()->subDays(29)->startOfDay();
+            $fin    = $hoy->copy()->endOfDay();
+            $periodoTexto = 'Últimos 30 días (' . $inicio->format('d/m') . ' - ' . $fin->format('d/m/Y') . ')';
+        } elseif ($periodo === 'este_mes') {
+            $inicio = Carbon::now()->startOfMonth();
+            $fin    = Carbon::now()->endOfMonth();
+            $periodoTexto = 'Este mes (' . $inicio->locale('es')->isoFormat('MMMM YYYY') . ')';
+        } elseif ($periodo === 'mes_anterior') {
+            $inicio = Carbon::now()->subMonth()->startOfMonth();
+            $fin    = Carbon::now()->subMonth()->endOfMonth();
+            $periodoTexto = 'Mes anterior (' . $inicio->locale('es')->isoFormat('MMMM YYYY') . ')';
+        } elseif ($periodo === 'anio_actual') {
+            $inicio = Carbon::now()->startOfYear();
+            $fin    = Carbon::now()->endOfYear();
+            $periodoTexto = 'Año actual (' . $inicio->year . ')';
+        } else {
+            $periodo = 'rango';
+            try {
+                $inicio = $fechaInicio ? Carbon::parse($fechaInicio)->startOfDay() : Carbon::now()->startOfMonth();
+            } catch (\Exception $e) {
+                $inicio = Carbon::now()->startOfMonth();
+            }
+            try {
+                $fin = $fechaFin ? Carbon::parse($fechaFin)->endOfDay() : Carbon::now()->endOfDay();
+            } catch (\Exception $e) {
+                $fin = Carbon::now()->endOfDay();
+            }
+            if ($inicio->gt($fin)) {
+                $temp = $inicio;
+                $inicio = $fin->copy()->startOfDay();
+                $fin = $temp->copy()->endOfDay();
+            }
+            $periodoTexto = $inicio->isSameDay($fin)
+                ? 'Día ' . $inicio->format('d/m/Y')
+                : 'Del ' . $inicio->format('d/m/Y') . ' al ' . $fin->format('d/m/Y');
+        }
+
+        // Período anterior para variaciones
+        $diasDiferencia = max(1, $inicio->diffInDays($fin) + 1);
+        $inicioAnterior = $inicio->copy()->subDays($diasDiferencia)->startOfDay();
+        $finAnterior    = $inicio->copy()->subSecond();
+
+        // 2. Proveedores
+        $proveedores = Proveedor::orderBy('nombre')->get();
+        $proveedorActual = $proveedorId ? Proveedor::find($proveedorId) : null;
+
+        // 3. Query base
+        $baseItemsQuery = DB::table('venta_items')
+            ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
+            ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
+            ->leftJoin('proveedor', 'producto.proveedor_id', '=', 'proveedor.id');
+
+        if ($proveedorId) {
+            $baseItemsQuery->where('producto.proveedor_id', $proveedorId);
+        }
+
+        // 4. KPIs
+        $itemsPeriodo  = (clone $baseItemsQuery)->whereBetween('venta.fechaVenta', [$inicio, $fin]);
+        $totalIngresos = (float) (clone $itemsPeriodo)->sum('venta_items.subtotal');
+        $totalUnidades = (int) (clone $itemsPeriodo)->sum('venta_items.cantidad');
+        $totalOrdenes  = (int) (clone $itemsPeriodo)->distinct('venta.id')->count('venta.id');
+        $promedioVenta = $totalOrdenes > 0 ? round($totalIngresos / $totalOrdenes, 2) : 0;
+
+        $itemsAnterior    = (clone $baseItemsQuery)->whereBetween('venta.fechaVenta', [$inicioAnterior, $finAnterior]);
+        $ingresosAnterior = (float) (clone $itemsAnterior)->sum('venta_items.subtotal');
+        $unidadesAnterior = (int) (clone $itemsAnterior)->sum('venta_items.cantidad');
+        $ordenesAnterior  = (int) (clone $itemsAnterior)->distinct('venta.id')->count('venta.id');
+
+        $varIngresos = $ingresosAnterior > 0 ? round((($totalIngresos - $ingresosAnterior) / $ingresosAnterior) * 100, 1) : 0;
+        $varUnidades = $unidadesAnterior > 0 ? round((($totalUnidades - $unidadesAnterior) / $unidadesAnterior) * 100, 1) : 0;
+        $varOrdenes  = $ordenesAnterior > 0 ? round((($totalOrdenes - $ordenesAnterior) / $ordenesAnterior) * 100, 1) : 0;
+
+        // Participación en total tienda
+        $totalTiendaIngresos = (float) DB::table('venta_items')
+            ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
+            ->whereBetween('venta.fechaVenta', [$inicio, $fin])
+            ->sum('venta_items.subtotal');
+        $porcentajeParticipacion = $totalTiendaIngresos > 0 ? round(($totalIngresos / $totalTiendaIngresos) * 100, 1) : 0;
+
+        // 5. Puntos de gráfico temporal
+        $esPorDia = $diasDiferencia <= 31;
+        $puntosGrafico = collect();
+
+        if ($esPorDia) {
+            $diasMap = (clone $itemsPeriodo)
+                ->selectRaw('DATE(venta.fechaVenta) as fecha, SUM(venta_items.subtotal) as total, SUM(venta_items.cantidad) as cantidad, COUNT(DISTINCT venta.id) as ordenes')
+                ->groupByRaw('DATE(venta.fechaVenta)')
+                ->get()
+                ->keyBy('fecha');
+
+            $cursor = $inicio->copy();
+            while ($cursor->lte($fin)) {
+                $fStr = $cursor->format('Y-m-d');
+                $d = $diasMap->get($fStr);
+                $puntosGrafico->push([
+                    'fecha'    => $fStr,
+                    'label'    => $cursor->locale('es')->isoFormat('D MMM'),
+                    'total'    => $d ? (float) $d->total : 0.0,
+                    'cantidad' => $d ? (int) $d->cantidad : 0,
+                    'ordenes'  => $d ? (int) $d->ordenes : 0,
+                ]);
+                $cursor->addDay();
+            }
+        } else {
+            $mesesMap = (clone $itemsPeriodo)
+                ->selectRaw('YEAR(venta.fechaVenta) as anio, MONTH(venta.fechaVenta) as mes, SUM(venta_items.subtotal) as total, SUM(venta_items.cantidad) as cantidad, COUNT(DISTINCT venta.id) as ordenes')
+                ->groupByRaw('YEAR(venta.fechaVenta), MONTH(venta.fechaVenta)')
+                ->get()
+                ->keyBy(fn($row) => sprintf('%04d-%02d', $row->anio, $row->mes));
+
+            $cursor = $inicio->copy()->startOfMonth();
+            while ($cursor->lte($fin)) {
+                $fKey = $cursor->format('Y-m');
+                $d = $mesesMap->get($fKey);
+                $puntosGrafico->push([
+                    'fecha'    => $fKey,
+                    'label'    => $cursor->locale('es')->isoFormat('MMM YYYY'),
+                    'total'    => $d ? (float) $d->total : 0.0,
+                    'cantidad' => $d ? (int) $d->cantidad : 0,
+                    'ordenes'  => $d ? (int) $d->ordenes : 0,
+                ]);
+                $cursor->addMonth();
+            }
+        }
+
+        $maxGraficoTotal = $puntosGrafico->max('total') ?: 1;
+
+        // 6. Ranking de proveedores en este rango
+        $rankingProveedores = DB::table('venta_items')
+            ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
+            ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
+            ->leftJoin('proveedor', 'producto.proveedor_id', '=', 'proveedor.id')
+            ->whereBetween('venta.fechaVenta', [$inicio, $fin])
+            ->select(
+                'producto.proveedor_id',
+                DB::raw('COALESCE(proveedor.nombre, "Sin Proveedor") as proveedor_nombre'),
+                'proveedor.codigo',
+                'proveedor.tipo',
+                'proveedor.estado',
+                DB::raw('SUM(venta_items.subtotal) as total_ventas'),
+                DB::raw('SUM(venta_items.cantidad) as total_unidades'),
+                DB::raw('COUNT(DISTINCT venta.id) as total_ordenes')
+            )
+            ->groupBy('producto.proveedor_id', 'proveedor.nombre', 'proveedor.codigo', 'proveedor.tipo', 'proveedor.estado')
+            ->orderByDesc('total_ventas')
+            ->get();
+
+        $maxVentasProveedor = $rankingProveedores->max('total_ventas') ?: 1;
+
+        // 7. Top Productos más vendidos en el rango
+        $topProductos = (clone $itemsPeriodo)
+            ->select(
+                'producto.id',
+                'producto.nombre',
+                'producto.categoria',
+                'producto.precio',
+                'producto.proveedor_id',
+                DB::raw('COALESCE(proveedor.nombre, "Sin Proveedor") as proveedor_nombre'),
+                DB::raw('SUM(venta_items.cantidad) as total_unidades'),
+                DB::raw('SUM(venta_items.subtotal) as total_ventas'),
+                DB::raw('COUNT(DISTINCT venta.id) as total_ordenes')
+            )
+            ->groupBy('producto.id', 'producto.nombre', 'producto.categoria', 'producto.precio', 'producto.proveedor_id', 'proveedor.nombre')
+            ->orderByDesc('total_ventas')
+            ->limit(8)
+            ->get();
+
+        $maxTopUnidades = $topProductos->max('total_unidades') ?: 1;
+
+        // 8. Categorías
+        $distribucionCategorias = (clone $itemsPeriodo)
+            ->select(
+                'producto.categoria',
+                DB::raw('SUM(venta_items.subtotal) as total'),
+                DB::raw('SUM(venta_items.cantidad) as unidades')
+            )
+            ->whereNotNull('producto.categoria')
+            ->groupBy('producto.categoria')
+            ->orderByDesc('total')
+            ->get();
+
+        $totalCategorias = $distribucionCategorias->sum('total') ?: 1;
+
+        // 9. Ventas recientes
+        $ventasRecientesQuery = Venta::with(['items.producto.proveedor', 'usuario'])
+            ->whereBetween('fechaVenta', [$inicio, $fin]);
+
+        if ($proveedorId) {
+            $ventasRecientesQuery->whereHas('items.producto', fn($p) => $p->where('proveedor_id', $proveedorId));
+        }
+
+        $ventasRecientes = $ventasRecientesQuery
+            ->orderByDesc('fechaVenta')
+            ->orderByDesc('id')
+            ->paginate(15)
+            ->withQueryString();
+
+        return view('superadmin.ventas.dashboard', compact(
+            'proveedores', 'proveedorActual', 'proveedorId', 'periodo',
+            'fechaInicio', 'fechaFin', 'inicio', 'fin', 'periodoTexto',
+            'totalIngresos', 'totalUnidades', 'totalOrdenes', 'promedioVenta',
+            'varIngresos', 'varUnidades', 'varOrdenes', 'porcentajeParticipacion', 'totalTiendaIngresos',
+            'puntosGrafico', 'maxGraficoTotal', 'esPorDia',
+            'rankingProveedores', 'maxVentasProveedor',
+            'topProductos', 'maxTopUnidades',
+            'distribucionCategorias', 'totalCategorias',
+            'ventasRecientes'
+        ));
     }
 
     public function store(Request $request)
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'fechaVenta.required'            => 'La fecha de la venta es obligatoria.',
+            'cliente.regex'                  => 'El nombre del cliente solo puede contener letras y espacios (no se permiten números).',
+            'items.required'                 => 'Debes agregar al menos un producto a la venta.',
+            'items.min'                      => 'Debes agregar al menos un producto a la venta.',
+            'items.*.cantidad.required'      => 'La cantidad es obligatoria.',
+            'items.*.cantidad.integer'       => 'La cantidad debe ser un número entero.',
+            'items.*.cantidad.min'           => 'La cantidad debe ser mayor a 0.',
+            'items.*.cantidad.max'           => 'La cantidad no puede superar 999.999.',
+            'items.*.precioUnitario.required'=> 'El precio unitario es obligatorio.',
+            'items.*.precioUnitario.numeric' => 'El precio debe ser un número válido.',
+            'items.*.precioUnitario.min'     => 'El precio no puede ser negativo.',
+            'items.*.precioUnitario.max'     => 'El precio no puede exceder $99.999.999,99.',
+        ];
+
         $request->validate([
             'fechaVenta'              => 'required|date',
-            'cliente'                 => 'nullable|string|max:255',
+            'cliente'                 => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
             'observaciones'           => 'nullable|string|max:500',
             'items'                   => 'required|array|min:1',
             'items.*.idProducto'      => 'required|exists:producto,id',
-            'items.*.cantidad'        => 'required|integer|min:1',
-            'items.*.precioUnitario'  => 'required|numeric|min:0',
-        ]);
+            'items.*.cantidad'        => 'required|integer|min:1|max:999999',
+            'items.*.precioUnitario'  => 'required|numeric|min:0|max:99999999.99',
+        ], $messages);
 
         DB::transaction(function () use ($request) {
             $total = 0;
@@ -189,6 +456,7 @@ class VentaController extends Controller
                 $producto = Producto::find($item['idProducto']);
                 if ($producto) {
                     $this->descontarStockFefo($producto, $item['cantidad'], 'Venta - ' . ($request->cliente ?: 'Sin nombre'));
+                    \App\Services\OrdenPedidoService::verificarYGenerarAutomaticamente($producto, auth()->id());
                 }
             }
 

@@ -74,4 +74,34 @@ class Producto extends Model
         if ($this->stockMinimo !== null && $stock <= $this->stockMinimo) return 'bajo';
         return 'ok';
     }
+
+    /**
+     * Total de stock en lotes ya vencidos.
+     */
+    public function getStockVencidoAttribute(): int
+    {
+        return (int) $this->lotes()
+            ->where('cantidad_disponible', '>', 0)
+            ->whereNotNull('fecha_vencimiento')
+            ->where('fecha_vencimiento', '<', now()->startOfDay())
+            ->sum('cantidad_disponible');
+    }
+
+    /**
+     * Genera un código de barras numérico único estilo EAN-13.
+     */
+    public static function generarCodigoBarras(): string
+    {
+        do {
+            $codigo = '770' . str_pad((string) mt_rand(100000000, 999999999), 9, '0', STR_PAD_LEFT);
+            $sum = 0;
+            for ($i = 0; $i < 12; $i++) {
+                $sum += (int)$codigo[$i] * ($i % 2 === 0 ? 1 : 3);
+            }
+            $checksum = (10 - ($sum % 10)) % 10;
+            $codigoCompleto = $codigo . $checksum;
+        } while (self::where('codigoBarras', $codigoCompleto)->exists());
+
+        return $codigoCompleto;
+    }
 }

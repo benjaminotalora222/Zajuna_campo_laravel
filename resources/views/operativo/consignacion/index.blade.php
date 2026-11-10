@@ -9,14 +9,24 @@
             <h1 class="text-2xl font-extrabold leading-tight">Inventario en Consignación</h1>
             <p class="text-sm mt-1" style="color:#5a5a4f;">Stock por lotes con trazabilidad completa y vencimientos.</p>
         </div>
-        <button onclick="abrirModalIngreso()"
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
-                style="background:#fdc300; color:#71277a;">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
-            </svg>
-            Nuevo Ingreso
-        </button>
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="abrirModalEscaner()"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-white text-sm shadow-sm transition hover:opacity-95 shrink-0"
+                    style="background:#39a900;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h10M7 12h10M7 16h10"/>
+                </svg>
+                Escanear / Salida Rápida
+            </button>
+            <button onclick="abrirModalIngreso()"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
+                    style="background:#fdc300; color:#71277a;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+                </svg>
+                Nuevo Ingreso
+            </button>
+        </div>
     </div>
 
     {{-- ALERTA --}}
@@ -150,6 +160,7 @@
                     @foreach($productos as $p)
                     @php
                         $stock       = $p->stock_calculado;
+                        $stockVencido= $p->stock_vencido;
                         $estado      = $p->stock_estado;
                         $loteProximo = $p->lote_proximo_vencer;
                         $badgeMap    = [
@@ -164,6 +175,19 @@
                             $colBadge   = '#d97706';
                             $labelBadge = 'Próximo a vencer';
                         }
+
+                        $prodJson = json_encode([
+                            'id' => $p->id,
+                            'nombre' => $p->nombre,
+                            'categoria' => $p->categoria,
+                            'unidad' => $p->unidad,
+                            'precio' => (float)$p->precio,
+                            'precio_formateado' => '$' . number_format($p->precio, 0, ',', '.'),
+                            'codigoBarras' => $p->codigoBarras,
+                            'proveedor' => $p->proveedor?->nombre ?? '',
+                            'stock_total' => $stock,
+                            'stock_vencido' => $stockVencido,
+                        ]);
                     @endphp
                     <tr class="border-b last:border-0 hover:bg-gray-50 transition" style="border-color:#f3f0e8;">
                         <td class="px-6 py-4">
@@ -190,31 +214,53 @@
                             @if($loteProximo)
                                 <p class="text-sm font-semibold">{{ $loteProximo->fecha_vencimiento->locale('es')->isoFormat('D MMM YYYY') }}</p>
                                 <p class="text-xs" style="color:#9a9a8a;">{{ number_format($loteProximo->cantidad_disponible) }} {{ $p->unidad }} disponibles</p>
-                                @if($loteProximo->proximo_vencer)
-                                    <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                          style="background:#fef9c3; color:#854d0e;">⚠ Próx. vencer</span>
-                                @elseif($loteProximo->vencido)
+                                @if($loteProximo->vencido)
                                     <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
                                           style="background:#fee2e2; color:#991b1b;">Vencido</span>
+                                @elseif($loteProximo->proximo_vencer)
+                                    <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                          style="background:#fef9c3; color:#854d0e;">⚠ Próx. vencer</span>
                                 @endif
                             @else
                                 <span style="color:#9a9a8a;">—</span>
                             @endif
                         </td>
                         <td class="px-4 py-4">
-                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                                  style="background:{{ $bgBadge }}; color:{{ $colBadge }};">
-                                <span class="w-1.5 h-1.5 rounded-full" style="background:{{ $colBadge }};"></span>
-                                {{ $labelBadge }}
-                            </span>
+                            <div class="flex flex-col gap-1 items-start">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+                                      style="background:{{ $bgBadge }}; color:{{ $colBadge }};">
+                                    <span class="w-1.5 h-1.5 rounded-full" style="background:{{ $colBadge }};"></span>
+                                    {{ $labelBadge }}
+                                </span>
+                                @if($stockVencido > 0)
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-red-100 text-red-700 animate-pulse"
+                                          title="Requiere baja de inventario">
+                                        ⚠️ {{ number_format($stockVencido) }} {{ $p->unidad }} vencidos
+                                    </span>
+                                @endif
+                            </div>
                         </td>
                         <td class="px-6 py-4">
-                            <div class="flex items-center justify-end gap-2">
+                            <div class="flex items-center justify-end gap-1.5">
                                 <a href="{{ route('operativo.inventario.show', $p) }}"
                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
                                    style="background:#39a900;">
                                     Ver lotes
                                 </a>
+                                <button type="button" onclick="abrirModalCodigoBarras({{ $prodJson }})"
+                                        class="p-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition"
+                                        title="Ver e imprimir código de barras">
+                                    <svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h10M7 11h10M7 15h10M3 4h18M3 20h18"/>
+                                    </svg>
+                                </button>
+                                <button type="button" onclick="abrirModalEscaner('{{ $p->codigoBarras ?: $p->id }}')"
+                                        class="p-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition"
+                                        title="Registrar salida rápida">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                                    </svg>
+                                </button>
                             </div>
                         </td>
                     </tr>
@@ -285,9 +331,12 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Cantidad <span style="color:#ef4444;">*</span></label>
-                    <input type="number" name="cantidad" min="1" required value="{{ old('cantidad') }}"
+                    <input type="number" name="cantidad" min="1" max="9999999" required value="{{ old('cantidad') }}"
+                           onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
+                           oninput="this.value = this.value.replace(/\D/g, '')"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
+                    <p class="text-[11px] mt-1 text-gray-400">Solo números enteros.</p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha entrada <span style="color:#ef4444;">*</span></label>
@@ -343,5 +392,9 @@ document.getElementById('modalIngreso').addEventListener('click', function(e) {
     document.addEventListener('DOMContentLoaded', () => abrirModalIngreso());
 @endif
 </script>
+
+{{-- MODALES DE ESCÁNER Y CÓDIGO DE BARRAS --}}
+@include('inventario.partials.scanner-modal')
+@include('inventario.partials.barcode-modal')
 
 </x-operativo-layout>

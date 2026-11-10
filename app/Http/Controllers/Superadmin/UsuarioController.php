@@ -59,14 +59,28 @@ class UsuarioController extends Controller
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'name.required'     => 'El nombre completo es obligatorio.',
+            'name.min'          => 'El nombre debe tener al menos 3 caracteres.',
+            'name.regex'        => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
+            'email.required'    => 'El correo electrónico es obligatorio.',
+            'email.email'       => 'Ingresa un correo electrónico válido.',
+            'email.unique'      => 'Este correo electrónico ya está registrado.',
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.min'      => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed'=> 'La confirmación de la contraseña no coincide.',
+            'role_id.required'  => 'Debes seleccionar un rol.',
+            'role_id.exists'    => 'El rol seleccionado no es válido.',
+        ];
+
         $data = $request->validate([
-            'name'          => 'required|string|max:255',
+            'name'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
             'email'         => 'required|email|unique:users,email',
             'password'      => 'required|string|min:8|confirmed',
             'role_id'       => 'required|exists:roles,id',
             'activo'        => 'boolean',
             'acceso_ventas' => 'nullable|boolean',
-        ]);
+        ], $messages);
 
         $data['password']      = Hash::make($data['password']);
         $data['activo']        = $request->boolean('activo', true);
@@ -74,15 +88,17 @@ class UsuarioController extends Controller
 
         $usuario = User::create($data);
 
-        // Si el rol es proveedor (3), crear registro en tabla proveedor
+        // Si el rol es proveedor (3), crear registro en tabla proveedor y vincular
         if ((int) $data['role_id'] === 3) {
-            Proveedor::create([
+            $proveedor = Proveedor::create([
                 'nombre'   => $usuario->name,
+                'codigo'   => Proveedor::generarCodigo(),
                 'correo'   => $usuario->email,
-                'tipo'     => 'Proveedor',
+                'tipo'     => 'Local',
                 'telefono' => null,
                 'estado'   => $data['activo'],
             ]);
+            $usuario->update(['proveedor_id' => $proveedor->id]);
         }
 
         if ($request->expectsJson()) {
@@ -107,14 +123,27 @@ class UsuarioController extends Controller
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'name.required'     => 'El nombre completo es obligatorio.',
+            'name.min'          => 'El nombre debe tener al menos 3 caracteres.',
+            'name.regex'        => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
+            'email.required'    => 'El correo electrónico es obligatorio.',
+            'email.email'       => 'Ingresa un correo electrónico válido.',
+            'email.unique'      => 'Este correo electrónico ya está registrado.',
+            'password.min'      => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.confirmed'=> 'La confirmación de la contraseña no coincide.',
+            'role_id.required'  => 'Debes seleccionar un rol.',
+            'role_id.exists'    => 'El rol seleccionado no es válido.',
+        ];
+
         $data = $request->validate([
-            'name'          => 'required|string|max:255',
+            'name'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
             'email'         => ['required', 'email', Rule::unique('users', 'email')->ignore($usuario->id)],
             'password'      => 'nullable|string|min:8|confirmed',
             'role_id'       => 'required|exists:roles,id',
             'activo'        => 'boolean',
             'acceso_ventas' => 'nullable|boolean',
-        ]);
+        ], $messages);
 
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
@@ -133,17 +162,55 @@ class UsuarioController extends Controller
         // Sincronizar tabla proveedor según cambio de rol
         if ((int) $data['role_id'] === 3 && (int) $rolAnterior !== 3) {
             // Asignaron rol proveedor → crear registro si no existe
-            Proveedor::firstOrCreate(
+            $proveedor = Proveedor::firstOrCreate(
                 ['correo' => $usuario->email],
-                ['nombre' => $usuario->name, 'tipo' => 'Proveedor', 'telefono' => null, 'estado' => $usuario->activo]
+                [
+                    'nombre'   => $usuario->name,
+                    'codigo'   => Proveedor::generarCodigo(),
+                    'tipo'     => 'Local',
+                    'telefono' => null,
+                    'estado'   => $usuario->activo,
+                ]
             );
+            $usuario->update(['proveedor_id' => $proveedor->id]);
         } elseif ((int) $data['role_id'] !== 3 && (int) $rolAnterior === 3) {
-            // Quitaron rol proveedor → eliminar registro
-            Proveedor::where('correo', $usuario->email)->delete();
+            // Quitaron rol proveedor → eliminar registro y desvincular
+            if ($usuario->proveedor_id) {
+                Proveedor::where('id', $usuario->proveedor_id)->delete();
+            } else {
+                Proveedor::where('correo', $usuario->email)->delete();
+            }
+            $usuario->update(['proveedor_id' => null]);
         } elseif ((int) $data['role_id'] === 3) {
-            // Sigue siendo proveedor → actualizar nombre/estado
-            Proveedor::where('correo', $usuario->email)
-                ->update(['nombre' => $usuario->name, 'estado' => $usuario->activo]);
+            // Sigue siendo proveedor → actualizar nombre/estado y asegurar proveedor_id
+            $proveedor = null;
+            if ($usuario->proveedor_id) {
+                $proveedor = Proveedor::find($usuario->proveedor_id);
+            }
+            if (!$proveedor) {
+                $proveedor = Proveedor::where('correo', $usuario->email)->first();
+            }
+
+            if ($proveedor) {
+                $proveedor->update([
+                    'nombre' => $usuario->name,
+                    'estado' => $usuario->activo,
+                    'correo' => $usuario->email,
+                ]);
+                if (!$usuario->proveedor_id) {
+                    $usuario->update(['proveedor_id' => $proveedor->id]);
+                }
+            } else {
+                $proveedor = Proveedor::create([
+                    'nombre'   => $usuario->name,
+                    'codigo'   => Proveedor::generarCodigo(),
+                    'correo'   => $usuario->email,
+                    'tipo'     => 'Local',
+                    'telefono' => null,
+                    'estado'   => $usuario->activo,
+                ]);
+                $usuario->update(['proveedor_id' => $proveedor->id]);
+            }
         }
 
         if ($request->expectsJson()) {

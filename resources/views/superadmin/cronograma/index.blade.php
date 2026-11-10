@@ -2,9 +2,11 @@
     $title = 'Cronograma de Espacios';
 
     $tipoConfig = [
-        'visita_tecnica' => ['label' => 'Visita Técnica',  'color' => '#71277a', 'bg' => '#faf5ff', 'dot' => '#71277a'],
-        'capacitacion'   => ['label' => 'Capacitación',    'color' => '#854d0e', 'bg' => '#fffbeb', 'dot' => '#fdc300'],
-        'reunion'        => ['label' => 'Reunión',         'color' => '#1e40af', 'bg' => '#dbeafe', 'dot' => '#3b82f6'],
+        'transferencia'  => ['label' => 'Transferencia',   'color' => '#71277a', 'bg' => '#faf5ff', 'dot' => '#71277a'],
+        'show'           => ['label' => 'Show / Evento',   'color' => '#15803d', 'bg' => '#f0fdf4', 'dot' => '#22c55e'],
+        'visita_tecnica' => ['label' => 'Visita Técnica',  'color' => '#b45309', 'bg' => '#fffbeb', 'dot' => '#f59e0b'],
+        'capacitacion'   => ['label' => 'Capacitación',    'color' => '#1d4ed8', 'bg' => '#eff6ff', 'dot' => '#3b82f6'],
+        'reunion'        => ['label' => 'Reunión',         'color' => '#4338ca', 'bg' => '#eef2ff', 'dot' => '#6366f1'],
         'otro'           => ['label' => 'Otro',            'color' => '#374151', 'bg' => '#f3f4f6', 'dot' => '#9ca3af'],
     ];
 
@@ -41,6 +43,27 @@
             <a href="{{ route('superadmin.cronograma.index') }}"
                class="px-4 py-2 rounded-xl text-sm font-bold border hover:bg-gray-50 transition"
                style="border-color:#e7e0cc; color:#5a5a4f;">Hoy</a>
+
+            {{-- Exportar Informes --}}
+            <a href="{{ route('superadmin.reportes.pdf', ['modulo' => 'transferencias_shows', 'periodo' => 'mensual', 'mes' => $mes, 'anio' => $anio]) }}"
+               target="_blank"
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition hover:bg-gray-50 bg-white shadow-sm"
+               style="border-color:#e7e0cc; color:#71277a;"
+               title="Descargar informe de transferencias y shows en PDF">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6M9 15l3 3 3-3"/>
+                </svg>
+                <span>Informe PDF</span>
+            </a>
+            <a href="{{ route('superadmin.reportes.excel', ['modulo' => 'transferencias_shows', 'periodo' => 'mensual', 'mes' => $mes, 'anio' => $anio]) }}"
+               class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition hover:bg-gray-50 bg-white shadow-sm"
+               style="border-color:#e7e0cc; color:#166534;"
+               title="Descargar informe de transferencias y shows en Excel">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h8M8 9h2"/>
+                </svg>
+                <span>Informe Excel</span>
+            </a>
 
             {{-- Nuevo evento --}}
             <button onclick="abrirModalCrear()"
@@ -188,6 +211,8 @@
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Tipo <span style="color:#ef4444;">*</span></label>
                     <select id="inpTipo" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none" style="border-color:#e7e0cc; background:#fafafa;">
+                        <option value="transferencia">Transferencia Tecnológica</option>
+                        <option value="show">Show / Evento</option>
                         <option value="visita_tecnica">Visita Técnica</option>
                         <option value="capacitacion">Capacitación</option>
                         <option value="reunion">Reunión</option>

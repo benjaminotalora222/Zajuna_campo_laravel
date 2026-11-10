@@ -295,11 +295,15 @@
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">
                     Nombre completo <span style="color:#ef4444;">*</span>
                 </label>
-                <input type="text" name="name" id="inputName" placeholder="Ej. María Rodríguez" required
+                <input type="text" name="name" id="inputName" placeholder="Ej. María Rodríguez" required maxlength="255"
+                       pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$"
+                       title="Solo letras y espacios (no se permiten números)"
+                       oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')"
                        class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
                        style="border-color:#e7e0cc; background:#fafafa;"
                        onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
                        onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                <p class="text-xs mt-1 text-gray-500">Solo letras y espacios (sin números).</p>
                 @error('name')<p class="text-xs mt-1 font-semibold" style="color:#ef4444;">{{ $message }}</p>@enderror
             </div>
 

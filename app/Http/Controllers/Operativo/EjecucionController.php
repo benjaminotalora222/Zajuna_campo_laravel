@@ -37,6 +37,15 @@ class EjecucionController extends Controller
             $query->where('prioridad', $prioridad);
         }
 
+        // Filtro rápido por alertas
+        if ($alerta = $request->input('alerta')) {
+            if ($alerta === 'vencidas') {
+                $query->vencidas();
+            } elseif ($alerta === 'proximas') {
+                $query->proximasVencer(3);
+            }
+        }
+
         $tareas = $query->latest()->get();
 
         $columnas = [
@@ -45,17 +54,67 @@ class EjecucionController extends Controller
             'completada'  => $tareas->where('estado', 'completada')->values(),
         ];
 
+        $vencidasCount = Tarea::vencidas()->count();
+        $proximasCount = Tarea::proximasVencer(3)->count();
+
         $stats = [
-            'total'       => $tareas->count(),
-            'completadas' => $tareas->where('estado', 'completada')->count(),
-            'en_progreso' => $tareas->where('estado', 'en_progreso')->count(),
-            'pendientes'  => $tareas->where('estado', 'por_iniciar')->count(),
+            'total'          => Tarea::count(),
+            'completadas'    => Tarea::where('estado', 'completada')->count(),
+            'en_progreso'    => Tarea::where('estado', 'en_progreso')->count(),
+            'pendientes'     => Tarea::where('estado', 'por_iniciar')->count(),
+            'vencidas'       => $vencidasCount,
+            'proximas'       => $proximasCount,
         ];
+
+        // Colecciones para el Centro de Alertas
+        $alertasVencidas = Tarea::with(['responsable', 'proyecto'])->vencidas()->orderBy('fecha_entrega')->get();
+        $alertasProximas = Tarea::with(['responsable', 'proyecto'])->proximasVencer(3)->orderBy('fecha_entrega')->get();
 
         $proyectos = ProyectoInvestigacion::orderBy('nombre')->get();
         $usuarios  = User::where('activo', true)->orderBy('name')->get();
 
-        return view('operativo.ejecucion.index', compact('columnas', 'stats', 'proyectos', 'usuarios'));
+        return view('operativo.ejecucion.index', compact(
+            'columnas', 'stats', 'proyectos', 'usuarios', 'alertasVencidas', 'alertasProximas'
+        ));
+    }
+
+    public function alertas()
+    {
+        $this->soloOperativo();
+
+        $vencidas = Tarea::with(['responsable', 'proyecto'])->vencidas()->orderBy('fecha_entrega')->get();
+        $proximas = Tarea::with(['responsable', 'proyecto'])->proximasVencer(3)->orderBy('fecha_entrega')->get();
+
+        return response()->json([
+            'success'       => true,
+            'vencidas'      => $vencidas,
+            'proximas'      => $proximas,
+            'total_alertas' => $vencidas->count() + $proximas->count(),
+        ]);
+    }
+
+    public function notificarPendientes(Request $request)
+    {
+        $this->soloOperativo();
+
+        $destinatarioTipo = $request->input('destinatario', 'yo');
+
+        if ($destinatarioTipo === 'yo') {
+            $res = \App\Services\NotificacionPendientesService::notificarUsuario(auth()->user(), false);
+            if ($res['ok'] ?? false) {
+                return back()->with('success', $res['mensaje']);
+            }
+            return back()->with('info', $res['mensaje'] ?? 'No se pudo enviar el correo.');
+        }
+
+        $res = \App\Services\NotificacionPendientesService::notificarTodos();
+        $total = $res['total_enviados'] ?? 0;
+
+        if ($total === 0) {
+            return back()->with('info', 'No se encontraron tareas ni requerimientos pendientes para notificar.');
+        }
+
+        return back()->with('success', "Se enviaron con éxito {$total} correos de notificación sobre tareas y requerimientos pendientes.");
     }
 
     public function store(Request $request)

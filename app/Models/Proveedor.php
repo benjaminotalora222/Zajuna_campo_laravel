@@ -14,6 +14,16 @@ class Proveedor extends Model
         return ['estado' => 'boolean'];
     }
 
+    public function productos()
+    {
+        return $this->hasMany(Producto::class, 'proveedor_id');
+    }
+
+    public function user()
+    {
+        return $this->hasOne(User::class, 'proveedor_id');
+    }
+
     public static function generarCodigo(): string
     {
         $maxId = static::max('id') ?? 0;

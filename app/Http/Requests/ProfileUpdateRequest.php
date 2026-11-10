@@ -17,7 +17,7 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
             'email' => [
                 'required',
                 'string',
@@ -26,6 +26,15 @@ class ProfileUpdateRequest extends FormRequest
                 'max:255',
                 Rule::unique(User::class)->ignore($this->user()->id),
             ],
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'El nombre completo es obligatorio.',
+            'name.min'      => 'El nombre debe tener al menos 3 caracteres.',
+            'name.regex'    => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
         ];
     }
 }

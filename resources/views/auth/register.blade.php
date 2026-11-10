@@ -418,8 +418,12 @@
             id="name" type="text" name="name"
             value="{{ old('name') }}"
             placeholder="Ej. María Rodríguez"
-            required autofocus autocomplete="name"
+            required autofocus autocomplete="name" maxlength="255"
+            pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$"
+            title="Solo letras y espacios (no se permiten números)"
+            oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')"
           >
+          <p class="text-[11px] mt-1 text-gray-500" style="font-size:0.75rem; color:#6b7280; margin-top:4px;">Solo letras y espacios (sin números).</p>
           @error('name')
             <span class="field-error">{{ $message }}</span>
           @enderror

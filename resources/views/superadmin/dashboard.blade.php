@@ -205,17 +205,39 @@
                 @endif
             </div>
             @forelse($alertas ?? [] as $a)
+            @php
+                $bgIcon = match($a->tipo ?? '') {
+                    'tarea_vencida' => '#fee2e2',
+                    'tarea_proxima' => '#fef3c7',
+                    'vencimiento'   => '#fee2e2',
+                    'stock'         => '#fef3c7',
+                    default         => '#f3e8ff',
+                };
+                $colorIcon = match($a->tipo ?? '') {
+                    'tarea_vencida' => '#ef4444',
+                    'tarea_proxima' => '#d97706',
+                    'vencimiento'   => '#ef4444',
+                    'stock'         => '#d97706',
+                    default         => '#71277a',
+                };
+            @endphp
             <div class="flex gap-3 mb-3.5 last:mb-0 p-1.5 rounded-xl hover:bg-gray-50 transition-all duration-200">
                 <span class="mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-xs"
-                      style="background:{{ $a->tipo === 'stock' ? '#fef3c7' : ($a->tipo === 'vencimiento' ? '#fee2e2' : '#f3e8ff') }};">
-                    <svg class="w-3.5 h-3.5" style="color:{{ $a->tipo === 'stock' ? '#d97706' : ($a->tipo === 'vencimiento' ? '#ef4444' : '#71277a') }};"
+                      style="background:{{ $bgIcon }};">
+                    <svg class="w-3.5 h-3.5" style="color:{{ $colorIcon }};"
                          fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/>
                         <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                     </svg>
                 </span>
                 <div class="flex-1 min-w-0">
-                    <p class="text-xs font-semibold leading-snug truncate">{{ $a->mensaje }}</p>
+                    @if(!empty($a->link))
+                        <a href="{{ $a->link }}" class="text-xs font-semibold leading-snug truncate hover:underline hover:text-purple-700 block">
+                            {{ $a->mensaje }}
+                        </a>
+                    @else
+                        <p class="text-xs font-semibold leading-snug truncate">{{ $a->mensaje }}</p>
+                    @endif
                     <p class="text-[11px] mt-0.5 font-mono" style="color:#9a9a8a;">
                         {{ $a->fechaGeneracion ? \Carbon\Carbon::parse($a->fechaGeneracion)->diffForHumans() : '—' }}
                     </p>

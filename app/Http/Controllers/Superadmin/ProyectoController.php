@@ -55,6 +55,16 @@ class ProyectoController extends Controller
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'nombre.required'          => 'El nombre del proyecto es obligatorio.',
+            'estado.required'          => 'El estado del proyecto es obligatorio.',
+            'porcentajeAvance.integer' => 'El porcentaje de avance debe ser un número entero entre 0 y 100.',
+            'porcentajeAvance.min'     => 'El porcentaje de avance no puede ser menor a 0.',
+            'porcentajeAvance.max'     => 'El porcentaje de avance no puede ser mayor a 100.',
+            'imagen.image'             => 'El archivo debe ser una imagen válida (JPG, PNG).',
+            'imagen.max'               => 'La imagen no debe superar los 2MB.',
+        ];
+
         $data = $request->validate([
             'nombre'          => 'required|string|max:255',
             'descripcion'     => 'nullable|string|max:1000',
@@ -63,11 +73,11 @@ class ProyectoController extends Controller
             'fecha_inicio'    => 'nullable|date',
             'fecha_fin'       => 'nullable|date',
             'responsable_id'  => 'nullable|exists:users,id',
-            'porcentajeAvance'=> 'nullable|numeric|min:0|max:100',
+            'porcentajeAvance'=> 'nullable|integer|min:0|max:100',
             'imagen'          => 'nullable|image|max:2048',
             'aprendices'      => 'nullable|array',
             'aprendices.*'    => 'exists:aprendices,id',
-        ]);
+        ], $messages);
 
         $aprendicesIds = $request->input('aprendices', []);
         unset($data['aprendices']);
@@ -96,6 +106,16 @@ class ProyectoController extends Controller
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'nombre.required'          => 'El nombre del proyecto es obligatorio.',
+            'estado.required'          => 'El estado del proyecto es obligatorio.',
+            'porcentajeAvance.integer' => 'El porcentaje de avance debe ser un número entero entre 0 y 100.',
+            'porcentajeAvance.min'     => 'El porcentaje de avance no puede ser menor a 0.',
+            'porcentajeAvance.max'     => 'El porcentaje de avance no puede ser mayor a 100.',
+            'imagen.image'             => 'El archivo debe ser una imagen válida (JPG, PNG).',
+            'imagen.max'               => 'La imagen no debe superar los 2MB.',
+        ];
+
         $data = $request->validate([
             'nombre'          => 'required|string|max:255',
             'descripcion'     => 'nullable|string|max:1000',
@@ -104,11 +124,11 @@ class ProyectoController extends Controller
             'fecha_inicio'    => 'nullable|date',
             'fecha_fin'       => 'nullable|date',
             'responsable_id'  => 'nullable|exists:users,id',
-            'porcentajeAvance'=> 'nullable|numeric|min:0|max:100',
+            'porcentajeAvance'=> 'nullable|integer|min:0|max:100',
             'imagen'          => 'nullable|image|max:2048',
             'aprendices'      => 'nullable|array',
             'aprendices.*'    => 'exists:aprendices,id',
-        ]);
+        ], $messages);
 
         $aprendicesIds = $request->input('aprendices', []);
         unset($data['aprendices']);

@@ -80,14 +80,47 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
                                 ->sum('total'),
             'proyectos'    => \Illuminate\Support\Facades\DB::table('proyectoinvestigacion')->count(),
             'usuarios'     => \App\Models\User::where('activo', true)->count(),
-            'alertas'      => \Illuminate\Support\Facades\DB::table('alerta')->where('leida', false)->count(),
+            'alertas'      => \Illuminate\Support\Facades\DB::table('alerta')->where('leida', false)->count()
+                              + \App\Models\Tarea::vencidas()->count()
+                              + \App\Models\Tarea::proximasVencer(3)->count(),
         ];
 
-        $alertas = \Illuminate\Support\Facades\DB::table('alerta')
+        $alertasDb = \Illuminate\Support\Facades\DB::table('alerta')
             ->where('leida', false)
             ->orderByDesc('fechaGeneracion')
             ->limit(5)
             ->get();
+
+        $tareasVencidasAlertas = \App\Models\Tarea::with('proyecto')
+            ->vencidas()
+            ->latest('fecha_entrega')
+            ->limit(4)
+            ->get()
+            ->map(fn($t) => (object)[
+                'id' => 'tv-' . $t->id,
+                'tipo' => 'tarea_vencida',
+                'mensaje' => "⚠️ Tarea vencida: {$t->nombre} (" . $t->dias_restantes_texto . ")",
+                'fechaGeneracion' => $t->fecha_entrega,
+                'link' => route('superadmin.tareas.index', ['alerta' => 'vencidas']),
+            ]);
+
+        $tareasProximasAlertas = \App\Models\Tarea::with('proyecto')
+            ->proximasVencer(3)
+            ->orderBy('fecha_entrega')
+            ->limit(3)
+            ->get()
+            ->map(fn($t) => (object)[
+                'id' => 'tp-' . $t->id,
+                'tipo' => 'tarea_proxima',
+                'mensaje' => "⏰ Tarea por vencer: {$t->nombre} (" . $t->dias_restantes_texto . ")",
+                'fechaGeneracion' => $t->fecha_entrega,
+                'link' => route('superadmin.tareas.index', ['alerta' => 'proximas']),
+            ]);
+
+        $alertas = collect($alertasDb)
+            ->concat($tareasVencidasAlertas)
+            ->concat($tareasProximasAlertas)
+            ->take(6);
 
         $logs = \Illuminate\Support\Facades\DB::table('logauditoria')
             ->orderByDesc('fechaHora')
@@ -120,6 +153,7 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     Route::patch('categorias/{categoria}/toggle', [CategoriaController::class, 'toggleActivo'])->name('categorias.toggle');
 
     // ── Módulo Ventas ──
+    Route::get('ventas/dashboard', [VentaController::class, 'dashboard'])->name('ventas.dashboard');
     Route::resource('ventas', VentaController::class)->except(['show', 'create', 'edit'])->parameters(['ventas' => 'venta']);
     Route::get('ventas/producto/{producto}/precio', [VentaController::class, 'precioProducto'])->name('ventas.precio');
 
@@ -128,6 +162,10 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
 
     // ── Módulo Inventario (lotes + movimientos) ──
     Route::get('inventario', [SuperadminInventarioController::class, 'index'])->name('inventario.index');
+    Route::get('inventario/buscar-codigo/{codigo}', [SuperadminInventarioController::class, 'buscarPorCodigo'])->name('inventario.buscar-codigo');
+    Route::post('inventario/salida-rapida', [SuperadminInventarioController::class, 'storeSalidaRapida'])->name('inventario.salida-rapida');
+    Route::post('inventario/lotes/{lote}/baja', [SuperadminInventarioController::class, 'darDeBajaLote'])->name('inventario.lotes.baja');
+    Route::post('inventario/{producto}/generar-codigo', [SuperadminInventarioController::class, 'generarCodigoBarras'])->name('inventario.generar-codigo');
     Route::get('inventario/{producto}', [SuperadminInventarioController::class, 'show'])->name('inventario.show');
     Route::post('inventario/{producto}/entrada', [SuperadminInventarioController::class, 'storeEntrada'])->name('inventario.entrada');
     Route::post('inventario/{producto}/salida', [SuperadminInventarioController::class, 'storeSalida'])->name('inventario.salida');
@@ -151,6 +189,7 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     // ── Módulo Reportes ──
     Route::get('reportes', [ReporteController::class, 'index'])->name('reportes.index');
     Route::get('reportes/pdf', [ReporteController::class, 'exportarPdf'])->name('reportes.pdf');
+    Route::get('reportes/excel', [ReporteController::class, 'exportarExcel'])->name('reportes.excel');
 
     // ── Módulo Proyectos ──
     Route::resource('proyectos', ProyectoController::class)->except(['show', 'create', 'edit'])->parameters(['proyectos' => 'proyecto']);
@@ -163,6 +202,7 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
 
     // ── Módulo Ejecución de Actividades (Kanban) ──
     // ── Módulo Tareas y Avances (Kanban) ──
+    Route::get('ejecucion/alertas', [EjecucionController::class, 'alertas'])->name('ejecucion.alertas');
     Route::get('ejecucion', [EjecucionController::class, 'index'])->name('ejecucion.index');
     Route::get('tareas', [EjecucionController::class, 'index'])->name('tareas.index'); // alias para sidebar
     Route::post('ejecucion', [EjecucionController::class, 'store'])->name('ejecucion.store');
@@ -170,6 +210,14 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
     Route::put('ejecucion/{tarea}', [EjecucionController::class, 'update'])->name('ejecucion.update');
     Route::patch('ejecucion/{tarea}/estado', [EjecucionController::class, 'moverEstado'])->name('ejecucion.estado');
     Route::delete('ejecucion/{tarea}', [EjecucionController::class, 'destroy'])->name('ejecucion.destroy');
+    Route::post('tareas/notificar-pendientes', [EjecucionController::class, 'notificarPendientes'])->name('tareas.notificar-pendientes');
+
+    // ── Módulo Órdenes de Pedido (Proveedores / Stock Mínimo) ──
+    Route::get('ordenes', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'index'])->name('ordenes.index');
+    Route::post('ordenes', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'store'])->name('ordenes.store');
+    Route::post('ordenes/{orden}/reenviar', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'reenviar'])->name('ordenes.reenviar');
+    Route::patch('ordenes/{orden}/estado', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'cambiarEstado'])->name('ordenes.estado');
+    Route::post('ordenes/revisar-stock-minimo', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'revisarStockMinimo'])->name('ordenes.revisar-stock-minimo');
 });
 
 // ── Operativo (rol 2) ───────────────────────────────────────
@@ -181,11 +229,16 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
 
     // Minimarket
     Route::resource('consignacion', OperativoConsignacionController::class)->except(['show', 'create', 'edit']);
+    Route::get('ventas/dashboard', [OperativoVentaController::class, 'dashboard'])->name('ventas.dashboard');
     Route::resource('ventas', OperativoVentaController::class)->except(['show', 'create', 'edit'])->parameters(['ventas' => 'venta']);
     Route::get('ventas/producto/{producto}/precio', [OperativoVentaController::class, 'precioProducto'])->name('ventas.precio');
 
     // Inventario operativo (solo movimientos, sin editar ficha)
     Route::get('inventario', [OperativoInventarioController::class, 'index'])->name('inventario.index');
+    Route::get('inventario/buscar-codigo/{codigo}', [OperativoInventarioController::class, 'buscarPorCodigo'])->name('inventario.buscar-codigo');
+    Route::post('inventario/salida-rapida', [OperativoInventarioController::class, 'storeSalidaRapida'])->name('inventario.salida-rapida');
+    Route::post('inventario/lotes/{lote}/baja', [OperativoInventarioController::class, 'darDeBajaLote'])->name('inventario.lotes.baja');
+    Route::post('inventario/{producto}/generar-codigo', [OperativoInventarioController::class, 'generarCodigoBarras'])->name('inventario.generar-codigo');
     Route::get('inventario/{producto}', [OperativoInventarioController::class, 'show'])->name('inventario.show');
     Route::post('inventario/{producto}/entrada', [OperativoInventarioController::class, 'storeEntrada'])->name('inventario.entrada');
     Route::post('inventario/{producto}/salida', [OperativoInventarioController::class, 'storeSalida'])->name('inventario.salida');
@@ -200,11 +253,16 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
 
     Route::resource('actividades', OperativoActividadController::class)->except(['show', 'create', 'edit'])->parameters(['actividades' => 'actividad']);
 
+    // Reportes (Transferencias y Shows / Operativos)
+    Route::get('reportes/pdf', [\App\Http\Controllers\Superadmin\ReporteController::class, 'exportarPdf'])->name('reportes.pdf');
+    Route::get('reportes/excel', [\App\Http\Controllers\Superadmin\ReporteController::class, 'exportarExcel'])->name('reportes.excel');
+
     // Investigación
     Route::resource('proyectos', OperativoProyectoController::class)->except(['show', 'create', 'edit'])->parameters(['proyectos' => 'proyecto']);
     Route::post('proyectos/aprendices', [AprendizController::class, 'store'])->name('proyectos.aprendices.store');
     Route::get('proyectos/aprendices', [AprendizController::class, 'index'])->name('proyectos.aprendices.index');
 
+    Route::get('ejecucion/alertas', [OperativoEjecucionController::class, 'alertas'])->name('ejecucion.alertas');
     Route::get('ejecucion', [OperativoEjecucionController::class, 'index'])->name('ejecucion.index');
     Route::get('tareas', [OperativoEjecucionController::class, 'index'])->name('tareas.index');
     Route::post('ejecucion', [OperativoEjecucionController::class, 'store'])->name('ejecucion.store');
@@ -212,6 +270,14 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
     Route::put('ejecucion/{tarea}', [OperativoEjecucionController::class, 'update'])->name('ejecucion.update');
     Route::patch('ejecucion/{tarea}/estado', [OperativoEjecucionController::class, 'moverEstado'])->name('ejecucion.estado');
     Route::delete('ejecucion/{tarea}', [OperativoEjecucionController::class, 'destroy'])->name('ejecucion.destroy');
+    Route::post('tareas/notificar-pendientes', [OperativoEjecucionController::class, 'notificarPendientes'])->name('tareas.notificar-pendientes');
+
+    // ── Módulo Órdenes de Pedido (Proveedores / Stock Mínimo) ──
+    Route::get('ordenes', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'index'])->name('ordenes.index');
+    Route::post('ordenes', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'store'])->name('ordenes.store');
+    Route::post('ordenes/{orden}/reenviar', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'reenviar'])->name('ordenes.reenviar');
+    Route::patch('ordenes/{orden}/estado', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'cambiarEstado'])->name('ordenes.estado');
+    Route::post('ordenes/revisar-stock-minimo', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'revisarStockMinimo'])->name('ordenes.revisar-stock-minimo');
 });
 
 // ── Proveedor (rol 3) ───────────────────────────────────────

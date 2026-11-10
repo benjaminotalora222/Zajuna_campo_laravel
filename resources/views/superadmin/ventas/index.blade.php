@@ -3,6 +3,40 @@
 <x-superadmin-layout :title="$title">
 <div class="px-8 py-8 max-w-screen-xl mx-auto" style="color:#1c2b16;">
 
+    {{-- SUB-NAVEGACIÓN / TABS DE VENTAS --}}
+    <div class="flex items-center gap-2 mb-6 border-b pb-4" style="border-color:#f3f0e8;">
+        <a href="{{ route('superadmin.ventas.index') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white shadow-sm transition"
+           style="background:#71277a;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M4 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 2-1.6L21 8H6"/>
+                <circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/>
+            </svg>
+            <span>Registro y Transacciones</span>
+        </a>
+        <a href="{{ route('superadmin.ventas.dashboard') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border transition hover:bg-gray-50"
+           style="border-color:#e7e0cc; color:#5a5a4f; background:#fff;">
+            <svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="7" height="9" rx="1.5"/>
+                <rect x="14" y="3" width="7" height="5" rx="1.5"/>
+                <rect x="14" y="12" width="7" height="9" rx="1.5"/>
+                <rect x="3" y="16" width="7" height="5" rx="1.5"/>
+            </svg>
+            <span>Dashboard por Proveedor</span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-[#fdc300] text-[#71277a]">BI</span>
+        </a>
+        <a href="{{ route('superadmin.reportes.index') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition hover:bg-gray-50 ml-auto"
+           style="border-color:#e7e0cc; color:#5a5a4f; background:#fff;">
+            <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+            </svg>
+            <span>Reportes Generales</span>
+        </a>
+    </div>
+
     {{-- ENCABEZADO --}}
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
         <div>
@@ -325,6 +359,17 @@
                     </svg>
                 </div>
             </div>
+            <div class="min-w-[160px]">
+                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Proveedor</label>
+                <select name="proveedor_id" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none" style="border-color:#e7e0cc; background:#fafafa;">
+                    <option value="">Todos</option>
+                    @foreach($proveedores as $p)
+                        <option value="{{ $p->id }}" {{ request('proveedor_id') == $p->id ? 'selected' : '' }}>
+                            {{ $p->nombre }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
             <div class="min-w-[120px]">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Mes</label>
                 <select name="mes" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none" style="border-color:#e7e0cc; background:#fafafa;">
@@ -349,7 +394,7 @@
                 </select>
             </div>
             <button type="submit" class="px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:opacity-90" style="background:#39a900;">Filtrar</button>
-            @if(request()->hasAny(['search','mes','anio']))
+            @if(request()->hasAny(['search','mes','anio','proveedor_id']))
             <a href="{{ route('superadmin.ventas.index') }}" class="px-5 py-2.5 rounded-xl font-bold text-sm border hover:bg-gray-50" style="border-color:#e7e0cc; color:#5a5a4f;">Limpiar</a>
             @endif
         </form>
@@ -518,10 +563,14 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Cliente</label>
-                    <input type="text" name="cliente" id="inputCliente" placeholder="Nombre del cliente"
+                    <input type="text" name="cliente" id="inputCliente" placeholder="Nombre del cliente" maxlength="255"
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$"
+                           title="Solo letras y espacios (no se permiten números)"
+                           oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900'" onblur="this.style.borderColor='#e7e0cc'">
+                    <p class="text-[11px] mt-1 text-gray-400">Solo letras y espacios (sin números).</p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha <span style="color:#ef4444;">*</span></label>
@@ -765,17 +814,19 @@ function agregarItem(idProducto = null, cantidad = 1, precio = '') {
             <p id="stock_${i}" class="text-[11px] mt-0.5 font-semibold hidden" style="color:#39a900;"></p>
         </div>
         <div class="col-span-2">
-            <input type="number" name="items[${i}][cantidad]" value="${cantidad}" min="1" required
+            <input type="number" name="items[${i}][cantidad]" value="${cantidad}" min="1" max="999999" required
                    class="w-full px-2 py-2 rounded-lg border text-sm outline-none text-center"
                    style="border-color:#e7e0cc;"
-                   oninput="recalcularTotal()" placeholder="1">
+                   onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
+                   oninput="this.value = this.value.replace(/\\D/g, ''); recalcularTotal()" placeholder="1">
         </div>
         <div class="col-span-3">
             <div class="relative">
                 <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold" style="color:#9a9a8a;">$</span>
-                <input type="number" name="items[${i}][precioUnitario]" value="${precio}" min="0" step="0.01" required
+                <input type="number" name="items[${i}][precioUnitario]" value="${precio}" min="0" max="99999999.99" step="0.01" required
                        class="w-full pl-5 pr-2 py-2 rounded-lg border text-sm outline-none text-right"
                        style="border-color:#e7e0cc;"
+                       onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();"
                        oninput="recalcularTotal()" placeholder="0">
             </div>
         </div>

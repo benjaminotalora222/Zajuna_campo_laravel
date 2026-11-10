@@ -49,7 +49,7 @@ class CronogramaController extends Controller
         $data = $request->validate([
             'titulo'      => 'required|string|max:255',
             'descripcion' => 'nullable|string|max:1000',
-            'tipo'        => 'required|in:visita_tecnica,capacitacion,reunion,otro',
+            'tipo'        => 'required|in:visita_tecnica,capacitacion,reunion,show,transferencia,otro',
             'espacio'     => 'nullable|string|max:255',
             'fecha'       => 'required|date',
             'hora_inicio' => 'nullable|date_format:H:i',
@@ -95,7 +95,7 @@ class CronogramaController extends Controller
         $data = $request->validate([
             'titulo'      => 'required|string|max:255',
             'descripcion' => 'nullable|string|max:1000',
-            'tipo'        => 'required|in:visita_tecnica,capacitacion,reunion,otro',
+            'tipo'        => 'required|in:visita_tecnica,capacitacion,reunion,show,transferencia,otro',
             'espacio'     => 'nullable|string|max:255',
             'fecha'       => 'required|date',
             'hora_inicio' => 'nullable|date_format:H:i',

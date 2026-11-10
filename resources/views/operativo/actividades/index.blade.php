@@ -9,14 +9,35 @@
             <h1 class="text-2xl font-extrabold leading-tight">Ejecución de Actividades</h1>
             <p class="text-sm mt-1" style="color:#5a5a4f;">Consulta el avance y estado de las actividades planificadas en tus proyectos.</p>
         </div>
-        <button onclick="abrirModalCrear()"
-                class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
-                style="background:#fdc300; color:#71277a;">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
-            </svg>
-            Nueva Actividad
-        </button>
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="{{ route('operativo.reportes.pdf', ['modulo' => 'transferencias_shows', 'periodo' => 'anio_actual']) }}"
+               target="_blank"
+               class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold border transition hover:bg-gray-50 bg-white shadow-sm"
+               style="border-color:#e7e0cc; color:#71277a;"
+               title="Descargar informe de transferencias y shows en PDF">
+                <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M12 18v-6M9 15l3 3 3-3"/>
+                </svg>
+                <span>Informe PDF</span>
+            </a>
+            <a href="{{ route('operativo.reportes.excel', ['modulo' => 'transferencias_shows', 'periodo' => 'anio_actual']) }}"
+               class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold border transition hover:bg-gray-50 bg-white shadow-sm"
+               style="border-color:#e7e0cc; color:#166534;"
+               title="Descargar informe de transferencias y shows en Excel">
+                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h8M8 9h2"/>
+                </svg>
+                <span>Informe Excel</span>
+            </a>
+            <button onclick="abrirModalCrear()"
+                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0 shadow-sm"
+                    style="background:#fdc300; color:#71277a;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+                </svg>
+                Nueva Actividad
+            </button>
+        </div>
     </div>
 
     {{-- ALERTA --}}
@@ -353,9 +374,12 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Progreso (%)</label>
-                    <input type="number" name="progreso" id="inpProgreso" min="0" max="100" value="0"
+                    <input type="number" name="progreso" id="inpProgreso" min="0" max="100" value="0" step="1"
+                           onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
+                           oninput="this.value = this.value.replace(/\D/g, ''); if(parseInt(this.value) > 100) this.value = '100';"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
+                    <p class="text-[11px] mt-1 text-gray-400">Solo números enteros (0 a 100).</p>
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha límite</label>

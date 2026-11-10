@@ -37,6 +37,22 @@ class ConsignacionController extends Controller
             $queryProductos->where('proveedor_id', $prv);
         }
 
+        if ($estado = $request->input('estado')) {
+            if ($estado === 'vencido') {
+                $queryProductos->whereHas('lotes', fn($q) => $q
+                    ->where('cantidad_disponible', '>', 0)
+                    ->whereNotNull('fecha_vencimiento')
+                    ->where('fecha_vencimiento', '<', now()->startOfDay())
+                );
+            } elseif ($estado === 'bajo') {
+                $queryProductos->whereNotNull('stockMinimo')
+                      ->whereRaw('(SELECT COALESCE(SUM(cantidad_disponible),0) FROM lotes WHERE lotes.producto_id = producto.id) <= stockMinimo')
+                      ->whereRaw('(SELECT COALESCE(SUM(cantidad_disponible),0) FROM lotes WHERE lotes.producto_id = producto.id) > 0');
+            } elseif ($estado === 'agotado') {
+                $queryProductos->whereDoesntHave('lotes', fn($q) => $q->where('cantidad_disponible', '>', 0));
+            }
+        }
+
         $productos = $queryProductos->paginate(10, ['*'], 'pag_prod')->withQueryString();
 
         // ── TAB CONSIGNACIÓN ─────────────────────────────────────────
@@ -80,15 +96,23 @@ class ConsignacionController extends Controller
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'proveedor_id.required'    => 'Debes seleccionar un proveedor.',
+            'nombre_producto.required' => 'El nombre del producto es obligatorio.',
+            'stock_disponible.integer' => 'El stock disponible debe ser un número entero.',
+            'stock_disponible.min'     => 'El stock disponible no puede ser negativo.',
+            'stock_disponible.max'     => 'El stock disponible no puede superar 9.999.999.',
+        ];
+
         $data = $request->validate([
             'proveedor_id'      => 'required|exists:proveedor,id',
             'nombre_producto'   => 'required|string|max:255',
             'sku'               => 'nullable|string|max:100',
             'unidad'            => 'nullable|string|max:50',
-            'stock_disponible'  => 'required|integer|min:0',
+            'stock_disponible'  => 'required|integer|min:0|max:9999999',
             'fecha_vencimiento' => 'nullable|date',
             'notas'             => 'nullable|string|max:500',
-        ]);
+        ], $messages);
 
         $c = new Consignacion($data);
         $c->recalcularEstado();
@@ -102,15 +126,23 @@ class ConsignacionController extends Controller
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'proveedor_id.required'    => 'Debes seleccionar un proveedor.',
+            'nombre_producto.required' => 'El nombre del producto es obligatorio.',
+            'stock_disponible.integer' => 'El stock disponible debe ser un número entero.',
+            'stock_disponible.min'     => 'El stock disponible no puede ser negativo.',
+            'stock_disponible.max'     => 'El stock disponible no puede superar 9.999.999.',
+        ];
+
         $data = $request->validate([
             'proveedor_id'      => 'required|exists:proveedor,id',
             'nombre_producto'   => 'required|string|max:255',
             'sku'               => 'nullable|string|max:100',
             'unidad'            => 'nullable|string|max:50',
-            'stock_disponible'  => 'required|integer|min:0',
+            'stock_disponible'  => 'required|integer|min:0|max:9999999',
             'fecha_vencimiento' => 'nullable|date',
             'notas'             => 'nullable|string|max:500',
-        ]);
+        ], $messages);
 
         $consignacion->fill($data);
         $consignacion->recalcularEstado();

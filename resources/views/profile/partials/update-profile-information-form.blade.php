@@ -19,7 +19,11 @@
 
         <div>
             <x-input-label for="name" :value="__('Name')" />
-            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name" />
+            <x-text-input id="name" name="name" type="text" class="mt-1 block w-full" :value="old('name', $user->name)" required autofocus autocomplete="name"
+                          pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$"
+                          title="Solo letras y espacios (no se permiten números)"
+                          oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')" />
+            <p class="text-xs mt-1 text-gray-500">Solo letras y espacios (sin números).</p>
             <x-input-error class="mt-2" :messages="$errors->get('name')" />
         </div>
 

@@ -56,6 +56,14 @@ class ActividadController extends Controller
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'tema.required'    => 'El tema o nombre de la actividad es obligatorio.',
+            'estado.required'  => 'El estado de la actividad es obligatorio.',
+            'progreso.integer' => 'El progreso debe ser un número entero entre 0 y 100.',
+            'progreso.min'     => 'El progreso no puede ser menor a 0.',
+            'progreso.max'     => 'El progreso no puede superar el 100%.',
+        ];
+
         $data = $request->validate([
             'tema'           => 'required|string|max:255',
             'descripcion'    => 'nullable|string|max:1000',
@@ -69,7 +77,7 @@ class ActividadController extends Controller
             'documento'      => 'nullable|file|max:20480',
             'documentos'     => 'nullable|array',
             'documentos.*'   => 'nullable|file|max:20480',
-        ]);
+        ], $messages);
 
         $docs = [];
         if ($request->hasFile('documentos')) {
@@ -112,6 +120,14 @@ class ActividadController extends Controller
     {
         $this->soloSuperadmin();
 
+        $messages = [
+            'tema.required'    => 'El tema o nombre de la actividad es obligatorio.',
+            'estado.required'  => 'El estado de la actividad es obligatorio.',
+            'progreso.integer' => 'El progreso debe ser un número entero entre 0 y 100.',
+            'progreso.min'     => 'El progreso no puede ser menor a 0.',
+            'progreso.max'     => 'El progreso no puede superar el 100%.',
+        ];
+
         $data = $request->validate([
             'tema'            => 'required|string|max:255',
             'descripcion'     => 'nullable|string|max:1000',
@@ -127,7 +143,7 @@ class ActividadController extends Controller
             'documentos.*'    => 'nullable|file|max:20480',
             'eliminar_docs'   => 'nullable|array',
             'eliminar_docs.*' => 'nullable|string',
-        ]);
+        ], $messages);
 
         // Documentos existentes
         $docs = $actividad->documentos ?? [];

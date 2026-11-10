@@ -52,6 +52,12 @@ class ConsignacionController extends Controller
                   ->whereRaw('DATEDIFF(fecha_vencimiento, NOW()) <= 30')
                   ->whereRaw('fecha_vencimiento > NOW()')
             );
+        } elseif ($request->input('estado') === 'vencido') {
+            $query->whereHas('lotes', fn($q) => $q
+                ->where('cantidad_disponible', '>', 0)
+                ->whereNotNull('fecha_vencimiento')
+                ->where('fecha_vencimiento', '<', now()->startOfDay())
+            );
         }
 
         $productos   = $query->paginate(10)->withQueryString();
@@ -78,13 +84,24 @@ class ConsignacionController extends Controller
     {
         $this->soloOperativo();
 
+        $messages = [
+            'producto_id.required'             => 'Debes seleccionar un producto.',
+            'cantidad.required'                => 'La cantidad es obligatoria.',
+            'cantidad.integer'                 => 'La cantidad debe ser un número entero.',
+            'cantidad.min'                     => 'La cantidad debe ser mayor a 0.',
+            'cantidad.max'                     => 'La cantidad no puede superar 9.999.999.',
+            'fecha_entrada.required'           => 'La fecha de entrada es obligatoria.',
+            'fecha_vencimiento.after_or_equal' => 'La fecha de vencimiento no puede ser anterior a la fecha de entrada.',
+            'notas.max'                        => 'Las notas no pueden superar los 500 caracteres.',
+        ];
+
         $data = $request->validate([
             'producto_id'       => 'required|exists:producto,id',
-            'cantidad'          => 'required|integer|min:1',
+            'cantidad'          => 'required|integer|min:1|max:9999999',
             'fecha_entrada'     => 'required|date',
             'fecha_vencimiento' => 'nullable|date|after_or_equal:fecha_entrada',
             'notas'             => 'nullable|string|max:500',
-        ]);
+        ], $messages);
 
         $producto = Producto::findOrFail($data['producto_id']);
 

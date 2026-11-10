@@ -16,6 +16,17 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
             <p class="text-sm mt-1" style="color:#5a5a4f;">Análisis detallado del desempeño comercial y operativo.</p>
         </div>
         <div class="flex items-center gap-2 flex-wrap">
+            <a href="{{ route('superadmin.ventas.dashboard') }}"
+               class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-sm text-white shadow-sm transition hover:opacity-90"
+               style="background:#71277a;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="9" rx="1.5"/>
+                    <rect x="14" y="3" width="7" height="5" rx="1.5"/>
+                    <rect x="14" y="12" width="7" height="9" rx="1.5"/>
+                    <rect x="3" y="16" width="7" height="5" rx="1.5"/>
+                </svg>
+                <span>Dashboard de Ventas por Proveedor</span>
+            </a>
             {{-- Selector mes/año --}}
             <form method="GET" action="{{ route('superadmin.reportes.index') }}" class="flex items-center gap-2">
                 <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl border bg-white text-sm"
@@ -201,15 +212,31 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
             {{-- Módulo --}}
             <div class="flex-1 min-w-[160px]">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Módulo</label>
-                <select name="modulo" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none transition focus:border-[#71277a]"
+                <select name="modulo" id="selectModuloPdf" onchange="toggleModuloPdf(this.value)" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none transition focus:border-[#71277a]"
                         style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
-                    <option value="ventas">Ventas</option>
+                    <option value="ventas">Ventas (General)</option>
+                    <option value="ventas_proveedor">Ventas por Proveedor</option>
+                    <option value="transferencias_shows">Transferencias y Shows (Cronograma y Actividades)</option>
                     <option value="mas_vendidos">Productos Más Vendidos (Ranking)</option>
                     <option value="productos">Productos (Catálogo)</option>
                     <option value="ejecucion">Ejecución de Actividades</option>
                     <option value="tareas">Tareas y Avances</option>
                     <option value="proyectos">Proyectos de Investigación</option>
                     <option value="inventario">Inventario</option>
+                </select>
+            </div>
+
+            {{-- Proveedor (si es módulo ventas_proveedor) --}}
+            <div id="divProveedorPdf" class="min-w-[180px]" style="display:none;">
+                <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Proveedor</label>
+                <select name="proveedor_id" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none transition focus:border-[#71277a]"
+                        style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
+                    <option value="">Todos los proveedores (Consolidado)</option>
+                    @if(isset($proveedores))
+                        @foreach($proveedores as $prv)
+                            <option value="{{ $prv->id }}">{{ $prv->nombre }} ({{ $prv->codigo ?? 'PRV-'.$prv->id }})</option>
+                        @endforeach
+                    @endif
                 </select>
             </div>
 
@@ -222,6 +249,7 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
                     <option value="rango" selected>Rango de fechas (Calendario)</option>
                     <option value="diario">Día específico (Calendario)</option>
                     <option value="mensual">Mensual</option>
+                    <option value="anio_actual">Año actual ({{ now()->year }})</option>
                     <option value="semanal">Semanal (esta semana)</option>
                     <option value="hoy">Hoy</option>
                 </select>
@@ -282,16 +310,26 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
                 </select>
             </div>
 
-            {{-- Botón Descargar --}}
-            <button type="submit"
-                    class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:opacity-90 transition shadow-sm"
-                    style="background:#71277a;">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-                </svg>
-                Descargar PDF
-            </button>
+            {{-- Botones Descargar --}}
+            <div class="flex items-center gap-2">
+                <button type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:opacity-90 transition shadow-sm cursor-pointer"
+                        style="background:#71277a;">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Descargar PDF
+                </button>
+                <button type="button" onclick="submitReporteExcel(event)"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:opacity-90 transition shadow-sm cursor-pointer"
+                        style="background:#39a900;">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h8M8 9h2"/>
+                    </svg>
+                    Descargar Excel
+                </button>
+            </div>
 
             {{-- Accesos rápidos de calendario (Presets) --}}
             <div id="divPresets" class="w-full flex items-center gap-1.5 flex-wrap pt-3 mt-1 border-t text-xs" style="border-color:#f1eee4;">
@@ -311,6 +349,7 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
                 <button type="button" onclick="setRangoPreset(30)" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Últimos 30 días</button>
                 <button type="button" onclick="setRangoPreset('este_mes')" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Este mes</button>
                 <button type="button" onclick="setRangoPreset('mes_anterior')" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Mes anterior</button>
+                <button type="button" onclick="setRangoPreset('anio_actual')" class="px-2.5 py-1 rounded-lg border text-xs font-semibold hover:bg-gray-50 transition" style="border-color:#e7e0cc; color:#1c2b16; background:#fff;">Año actual</button>
             </div>
         </form>
     </div>
@@ -514,6 +553,16 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
     </div>
 
 <script>
+function toggleModuloPdf(val) {
+    const divProv = document.getElementById('divProveedorPdf');
+    if (divProv) {
+        const isProv = (val === 'ventas_proveedor');
+        divProv.style.display = isProv ? '' : 'none';
+        const selProv = divProv.querySelector('select');
+        if (selProv) selProv.disabled = !isProv;
+    }
+}
+
 function toggleFechas(val) {
     const divRangoInicio = document.getElementById('divFechaInicio');
     const divRangoFin    = document.getElementById('divFechaFin');
@@ -522,12 +571,24 @@ function toggleFechas(val) {
     const divAnio        = document.getElementById('divAnio');
     const divPresets     = document.getElementById('divPresets');
 
+    const inpInicio = document.getElementById('inputFechaInicio');
+    const inpFin    = document.getElementById('inputFechaFin');
+    const inpDia    = document.getElementById('inputFechaDia');
+    const selMes    = divMes ? divMes.querySelector('select') : null;
+    const selAnio   = divAnio ? divAnio.querySelector('select') : null;
+
     if (divRangoInicio) divRangoInicio.style.display = (val === 'rango') ? '' : 'none';
     if (divRangoFin)    divRangoFin.style.display    = (val === 'rango') ? '' : 'none';
     if (divFechaDia)    divFechaDia.style.display    = (val === 'diario') ? '' : 'none';
     if (divMes)         divMes.style.display         = (val === 'mensual') ? '' : 'none';
-    if (divAnio)        divAnio.style.display        = (val === 'mensual') ? '' : 'none';
+    if (divAnio)        divAnio.style.display        = (val === 'mensual' || val === 'anio_actual') ? '' : 'none';
     if (divPresets)     divPresets.style.display     = (val === 'rango') ? '' : 'none';
+
+    if (inpInicio) inpInicio.disabled = (val !== 'rango');
+    if (inpFin)    inpFin.disabled    = (val !== 'rango');
+    if (inpDia)    inpDia.disabled    = (val !== 'diario');
+    if (selMes)    selMes.disabled    = (val !== 'mensual');
+    if (selAnio)   selAnio.disabled   = (val !== 'mensual' && val !== 'anio_actual');
 }
 
 function formatFechaLocal(d) {
@@ -565,6 +626,9 @@ function setRangoPreset(preset) {
     } else if (preset === 'mes_anterior') {
         inicio = new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1);
         fin = new Date(hoy.getFullYear(), hoy.getMonth(), 0);
+    } else if (preset === 'anio_actual') {
+        inicio = new Date(hoy.getFullYear(), 0, 1);
+        fin = new Date(hoy.getFullYear(), 11, 31);
     }
 
     const inpInicio = document.getElementById('inputFechaInicio');
@@ -573,9 +637,20 @@ function setRangoPreset(preset) {
     if (inpFin)    inpFin.value    = formatFechaLocal(fin);
 }
 
+function submitReporteExcel(e) {
+    if (e) e.preventDefault();
+    const form = e.target.closest('form');
+    const originalAction = form.action;
+    form.action = "{{ route('superadmin.reportes.excel') }}";
+    form.submit();
+    setTimeout(() => { form.action = originalAction; }, 300);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const sel = document.getElementById('selectPeriodo');
     if (sel) toggleFechas(sel.value);
+    const mod = document.getElementById('selectModuloPdf');
+    if (mod) toggleModuloPdf(mod.value);
 });
 </script>
 

@@ -55,7 +55,7 @@ class AprendizController extends Controller
 
         $data = $request->validate([
             // 1. NOMBRE COMPLETO *
-            'nombre_completo'           => 'required|string|max:255',
+            'nombre_completo'           => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
             // 2. TIPO DE DOCUMENTO *
             'tipo_documento'            => 'required|in:T.I,CC,OTRO',
             'tipo_documento_otro'       => 'nullable|string|max:100',
@@ -91,8 +91,12 @@ class AprendizController extends Controller
             'proyecto_id'               => 'nullable|exists:proyectoinvestigacion,id',
         ], [
             'nombre_completo.required'           => 'El nombre completo es obligatorio.',
+            'nombre_completo.regex'              => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
             'tipo_documento.required'            => 'Seleccione el tipo de documento.',
             'numero_documento.required'          => 'El número de documento es obligatorio.',
+            'numero_documento.regex'             => 'El número de documento solo debe contener números.',
+            'telefono.regex'                     => 'El teléfono debe contener exactamente 10 dígitos numéricos.',
+            'ficha_programa.regex'               => 'La ficha del programa solo debe contener números.',
             'numero_documento.regex'             => 'El documento debe contener únicamente números, sin puntos, comas ni letras.',
             'genero.required'                    => 'Seleccione el género.',
             'rh.required'                        => 'Seleccione el grupo sanguíneo y factor RH.',

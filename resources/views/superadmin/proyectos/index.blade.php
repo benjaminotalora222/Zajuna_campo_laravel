@@ -290,9 +290,12 @@ $estadoConfig = [
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Avance (%)</label>
-                    <input type="number" name="porcentajeAvance" id="inpAvance" min="0" max="100" value="0"
+                    <input type="number" name="porcentajeAvance" id="inpAvance" min="0" max="100" value="0" step="1"
+                           onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
+                           oninput="this.value = this.value.replace(/\D/g, ''); if(parseInt(this.value) > 100) this.value = '100';"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
+                    <p class="text-[11px] mt-1 text-gray-400">Solo números enteros (0 a 100).</p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha inicio</label>

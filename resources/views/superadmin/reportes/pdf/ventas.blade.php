@@ -87,7 +87,20 @@
 <hr class="divider-top">
 
 {{-- ══ TÍTULO ══ --}}
-<div class="report-title">Reporte de Ventas</div>
+<div class="report-title">
+    @if(isset($proveedor) && $proveedor)
+        Reporte de Ventas — Proveedor: {{ $proveedor->nombre }}
+    @else
+        Reporte de Ventas
+    @endif
+</div>
+@if(isset($proveedor) && $proveedor)
+<div style="font-size:8.5px; color:#555; margin-bottom:4px;">
+    <strong>Código:</strong> {{ $proveedor->codigo ?? 'N/A' }} &nbsp;·&nbsp;
+    <strong>Tipo:</strong> {{ $proveedor->tipo ?? 'N/A' }} &nbsp;·&nbsp;
+    <strong>Contacto:</strong> {{ $proveedor->correo ?? $proveedor->telefono ?? 'N/A' }}
+</div>
+@endif
 @if($inicio->isSameDay($fin))
 <div class="report-sub">Fecha: {{ $inicio->locale('es')->isoFormat('D [de] MMMM [de] YYYY') }} &nbsp;·&nbsp; {{ $periodoTexto ?? ucfirst($periodo) }}</div>
 @else
@@ -110,7 +123,7 @@
     </div>
     <div class="kpi">
         <div class="lbl">Clientes distintos</div>
-        <div class="val dark">{{ $ventas->whereNotNull('cliente')->unique('cliente')->count() }}</div>
+        <div class="val dark">{{ $ventas->filter(fn($v) => !empty($v->cliente))->unique('cliente')->count() }}</div>
     </div>
 </div>
 
@@ -144,29 +157,42 @@
         </tr>
     </thead>
     <tbody>
-    @forelse($ventas as $v)
+    @php
+        $ventasFiltradas = (isset($proveedor) && $proveedor)
+            ? $ventas->filter(fn($v) => $v->items->contains(fn($it) => $it->producto && $it->producto->proveedor_id == $proveedor->id))
+            : $ventas;
+    @endphp
+    @forelse($ventasFiltradas as $v)
+    @php
+        $itemsFiltrados = (isset($proveedor) && $proveedor)
+            ? $v->items->filter(fn($it) => $it->producto && $it->producto->proveedor_id == $proveedor->id)
+            : $v->items;
+        $totalVentaRow = (isset($proveedor) && $proveedor)
+            ? $itemsFiltrados->sum('subtotal')
+            : $v->total;
+    @endphp
     <tr>
         <td><span class="id-link">#{{ str_pad($v->id, 4, '0', STR_PAD_LEFT) }}</span></td>
         <td style="white-space:nowrap;">
-            {{ $v->fechaVenta ? $v->fechaVenta->format('d/m/Y') : '—' }}
-            <br><span style="color:#aaa; font-size:8px;">{{ $v->fechaVenta ? $v->fechaVenta->format('H:i') : '' }}</span>
+            {{ $v->fechaVenta ? \Carbon\Carbon::parse($v->fechaVenta)->format('d/m/Y') : '—' }}
+            <br><span style="color:#aaa; font-size:8px;">{{ $v->fechaVenta ? \Carbon\Carbon::parse($v->fechaVenta)->format('H:i') : '' }}</span>
         </td>
         <td>{{ $v->cliente ?: '—' }}</td>
         <td>{{ $v->usuario->name ?? '—' }}</td>
         <td>
-            @foreach($v->items as $item)
+            @foreach($itemsFiltrados as $item)
             <div class="item-line">
-                {{ $item->producto->nombre ?? 'Producto eliminado' }} × {{ $item->cantidad }}
+                {{ $item->producto->nombre ?? 'Producto no encontrado' }} × {{ $item->cantidad }}
                 <span style="float:right; color:#39a900;">${{ number_format($item->subtotal, 0, ',', '.') }}</span>
             </div>
             @endforeach
         </td>
-        <td class="td-right" style="font-weight:bold;">${{ number_format($v->total, 0, ',', '.') }}</td>
+        <td class="td-right" style="font-weight:bold;">${{ number_format($totalVentaRow, 0, ',', '.') }}</td>
     </tr>
     @empty
     <tr><td colspan="6" style="text-align:center; color:#aaa; padding:20px;">Sin ventas en este período</td></tr>
     @endforelse
-    @if($ventas->count())
+    @if($ventasFiltradas->count())
     <tr class="total-row">
         <td colspan="5" class="td-right">TOTAL</td>
         <td class="td-right" style="color:#39a900;">${{ number_format($totalIngresos, 0, ',', '.') }}</td>

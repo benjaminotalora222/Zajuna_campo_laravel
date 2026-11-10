@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Work+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -24,6 +25,7 @@
         }
     </script>
     <style>
+        [x-cloak] { display: none !important; }
         #sidebar { transition: width 0.3s cubic-bezier(.4,0,.2,1); }
         #sidebar .sidebar-label { transition: opacity 0.15s ease; white-space: nowrap; overflow: hidden; }
         #sidebar .sidebar-section-label {
@@ -182,6 +184,19 @@
         </a>
         @endif
 
+        <a href="{{ route('operativo.ordenes.index') }}"
+           class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold relative transition
+                  {{ request()->routeIs('operativo.ordenes.*') ? 'bg-zmorado text-white' : 'text-white/90 hover:bg-white/10 hover:text-white' }}"
+           title="Órdenes de pedido">
+            @if(request()->routeIs('operativo.ordenes.*'))
+                <span class="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-5 bg-zdorado rounded-r"></span>
+            @endif
+            <svg class="w-[18px] h-[18px] stroke-current fill-none stroke-2 shrink-0" viewBox="0 0 24 24">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+            </svg>
+            <span class="sidebar-label">Órdenes de pedido</span>
+        </a>
+
         <div class="sidebar-section-label px-2 pt-4 pb-1.5">
             <span class="sidebar-section-pill">Transferencias y shows</span>
         </div>
@@ -231,15 +246,24 @@
 
         <a href="{{ route('operativo.tareas.index') }}"
            class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-semibold relative transition
-                  {{ request()->is('operativo/tareas*') ? 'bg-zmorado text-white' : 'text-white/90 hover:bg-white/10 hover:text-white' }}"
+                  {{ request()->is('operativo/tareas*') || request()->is('operativo/ejecucion*') ? 'bg-zmorado text-white' : 'text-white/90 hover:bg-white/10 hover:text-white' }}"
            title="Tareas y avances">
-            @if(request()->is('operativo/tareas*'))
+            @if(request()->is('operativo/tareas*') || request()->is('operativo/ejecucion*'))
                 <span class="absolute -left-3 top-1/2 -translate-y-1/2 w-1 h-5 bg-zdorado rounded-r"></span>
             @endif
             <svg class="w-[18px] h-[18px] stroke-current fill-none stroke-2 shrink-0" viewBox="0 0 24 24">
                 <rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>
             </svg>
             <span class="sidebar-label">Tareas y avances</span>
+            @php
+                $tareasVencidasSidebarOp = \App\Models\Tarea::vencidas()->count();
+            @endphp
+            @if($tareasVencidasSidebarOp > 0)
+                <span class="sidebar-badge ml-auto bg-red-500 text-white text-[10.5px] font-extrabold px-2 py-0.5 rounded-full shrink-0 animate-pulse"
+                      title="{{ $tareasVencidasSidebarOp }} tarea(s) vencida(s)">
+                    {{ $tareasVencidasSidebarOp }}
+                </span>
+            @endif
         </a>
 
     </nav>

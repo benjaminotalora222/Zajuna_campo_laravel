@@ -211,9 +211,13 @@
                 </div>
                 <div class="col-span-3">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Nombre <span style="color:#ef4444;">*</span></label>
-                    <input type="text" name="nombre" id="inputNombre" required placeholder="Ej: Granos, Frutas..."
+                    <input type="text" name="nombre" id="inputNombre" required maxlength="100" placeholder="Ej: Granos, Frutas..."
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$"
+                           title="Solo letras y espacios (no se permiten números)"
+                           oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '')"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
+                    <p class="text-[11px] mt-1 text-gray-400">Solo letras y espacios (sin números).</p>
                 </div>
             </div>
 

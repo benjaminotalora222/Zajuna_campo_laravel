@@ -9,18 +9,24 @@
             <h1 class="text-2xl font-extrabold leading-tight">Inventario</h1>
             <p class="text-sm mt-1" style="color:#5a5a4f;">Catálogo de productos con lotes y trazabilidad · Consignaciones de proveedores</p>
         </div>
-        {{-- Botón contextual según tab --}}
-        <div id="btnTabCatalogo" class="{{ $tab === 'catalogo' ? '' : 'hidden' }}">
-            {{-- El stock se registra desde el detalle del producto --}}
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="abrirModalEscaner()"
+                    class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-white text-sm shadow-sm transition hover:opacity-95 shrink-0"
+                    style="background:#39a900;">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8h10M7 12h10M7 16h10"/>
+                </svg>
+                Escanear / Salida Rápida
+            </button>
+            <button id="btnTabConsignacion" onclick="abrirModalCrear()"
+                    class="{{ $tab === 'consignacion' ? '' : 'hidden' }} inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
+                    style="background:#fdc300; color:#71277a;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
+                </svg>
+                Nuevo Ingreso
+            </button>
         </div>
-        <button id="btnTabConsignacion" onclick="abrirModalCrear()"
-                class="{{ $tab === 'consignacion' ? '' : 'hidden' }} inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm transition hover:opacity-90 shrink-0"
-                style="background:#fdc300; color:#71277a;">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
-            </svg>
-            Nuevo Ingreso
-        </button>
     </div>
 
     {{-- ALERTA --}}
@@ -123,17 +129,22 @@
                     @endforeach
                 </select>
             </div>
-            @if($tab === 'consignacion')
-            <div class="min-w-[140px]">
+            <div class="min-w-[150px]">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Estado</label>
                 <select name="estado" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none" style="border-color:#e7e0cc; background:#fafafa;">
                     <option value="">Todos</option>
-                    <option value="disponible"     {{ request('estado') === 'disponible'     ? 'selected' : '' }}>Disponible</option>
-                    <option value="proximo_vencer" {{ request('estado') === 'proximo_vencer' ? 'selected' : '' }}>Próximo a vencer</option>
-                    <option value="agotado"        {{ request('estado') === 'agotado'        ? 'selected' : '' }}>Agotado</option>
+                    @if($tab === 'catalogo')
+                        <option value="disponible"     {{ request('estado') === 'disponible'     ? 'selected' : '' }}>Disponible</option>
+                        <option value="bajo"           {{ request('estado') === 'bajo'           ? 'selected' : '' }}>Stock bajo</option>
+                        <option value="agotado"        {{ request('estado') === 'agotado'        ? 'selected' : '' }}>Agotado</option>
+                        <option value="vencido"        {{ request('estado') === 'vencido'        ? 'selected' : '' }}>⚠️ Con productos vencidos</option>
+                    @else
+                        <option value="disponible"     {{ request('estado') === 'disponible'     ? 'selected' : '' }}>Disponible</option>
+                        <option value="proximo_vencer" {{ request('estado') === 'proximo_vencer' ? 'selected' : '' }}>Próximo a vencer</option>
+                        <option value="agotado"        {{ request('estado') === 'agotado'        ? 'selected' : '' }}>Agotado</option>
+                    @endif
                 </select>
             </div>
-            @endif
             <button type="submit" class="px-5 py-2.5 rounded-xl font-bold text-sm text-white hover:opacity-90" style="background:#39a900;">Filtrar</button>
             @if(request()->hasAny(['search','proveedor_id','estado']))
                 <a href="{{ route('superadmin.consignacion.index', ['tab' => $tab]) }}"
@@ -171,6 +182,7 @@
                         @foreach($productos as $p)
                         @php
                             $stock = $p->stock_calculado;
+                            $stockVencido = $p->stock_vencido;
                             $estado = $p->stock_estado;
                             $loteProximo = $p->lote_proximo_vencer;
                             $badgeColor = match($estado) {
@@ -178,6 +190,18 @@
                                 'bajo'    => ['bg:#fef9c3','color:#854d0e','Stock bajo'],
                                 default   => ['bg:#dcfce7','color:#166534','Disponible'],
                             };
+                            $prodJson = json_encode([
+                                'id' => $p->id,
+                                'nombre' => $p->nombre,
+                                'categoria' => $p->categoria,
+                                'unidad' => $p->unidad,
+                                'precio' => (float)$p->precio,
+                                'precio_formateado' => '$' . number_format($p->precio, 0, ',', '.'),
+                                'codigoBarras' => $p->codigoBarras,
+                                'proveedor' => $p->proveedor?->nombre ?? '',
+                                'stock_total' => $stock,
+                                'stock_vencido' => $stockVencido,
+                            ]);
                         @endphp
                         <tr class="border-b last:border-0 hover:bg-gray-50 transition" style="border-color:#f3f0e8;">
                             <td class="px-5 py-4">
@@ -201,30 +225,54 @@
                                     <p class="text-xs" style="color:#9a9a8a;">
                                         {{ $loteProximo->cantidad_disponible }} {{ $p->unidad }} disponibles
                                     </p>
-                                    @if($loteProximo->proximo_vencer)
+                                    @if($loteProximo->vencido)
+                                        <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
+                                              style="background:#fee2e2; color:#991b1b;">Lote vencido</span>
+                                    @elseif($loteProximo->proximo_vencer)
                                         <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
                                               style="background:#fef9c3; color:#854d0e;">⚠ Próx. vencer</span>
-                                    @elseif($loteProximo->vencido)
-                                        <span class="inline-block mt-0.5 px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                              style="background:#fee2e2; color:#991b1b;">Vencido</span>
                                     @endif
                                 @else
                                     <span style="color:#9a9a8a;">—</span>
                                 @endif
                             </td>
                             <td class="px-4 py-4">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                                      style="background:{{ str_replace('bg:','',$badgeColor[0]) }}; color:{{ str_replace('color:','',$badgeColor[1]) }};">
-                                    <span class="w-1.5 h-1.5 rounded-full" style="background:{{ str_replace('color:','',$badgeColor[1]) }};"></span>
-                                    {{ $badgeColor[2] }}
-                                </span>
+                                <div class="flex flex-col gap-1 items-start">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+                                          style="background:{{ str_replace('bg:','',$badgeColor[0]) }}; color:{{ str_replace('color:','',$badgeColor[1]) }};">
+                                        <span class="w-1.5 h-1.5 rounded-full" style="background:{{ str_replace('color:','',$badgeColor[1]) }};"></span>
+                                        {{ $badgeColor[2] }}
+                                    </span>
+                                    @if($stockVencido > 0)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-red-100 text-red-700 animate-pulse"
+                                              title="Requiere baja de inventario">
+                                            ⚠️ {{ number_format($stockVencido) }} {{ $p->unidad }} vencidos
+                                        </span>
+                                    @endif
+                                </div>
                             </td>
                             <td class="px-5 py-4 text-right">
-                                <a href="{{ route('superadmin.inventario.show', $p) }}"
-                                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
-                                   style="background:#71277a;">
-                                    Ver lotes / movimientos
-                                </a>
+                                <div class="inline-flex items-center gap-1.5 justify-end">
+                                    <a href="{{ route('superadmin.inventario.show', $p) }}"
+                                       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-white transition hover:opacity-90"
+                                       style="background:#71277a;">
+                                        Ver lotes / movimientos
+                                    </a>
+                                    <button type="button" onclick="abrirModalCodigoBarras({{ $prodJson }})"
+                                            class="p-1.5 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-100 transition"
+                                            title="Ver e imprimir código de barras">
+                                        <svg class="w-4 h-4 text-purple-700" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h10M7 11h10M7 15h10M3 4h18M3 20h18"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" onclick="abrirModalEscaner('{{ $p->codigoBarras ?: $p->id }}')"
+                                            class="p-1.5 rounded-lg border border-green-200 text-green-700 hover:bg-green-50 transition"
+                                            title="Registrar salida rápida">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+                                        </svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -408,15 +456,21 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Unidad</label>
-                    <input type="text" name="unidad" id="inputUnidad" placeholder="Ej: sacos, kg"
+                    <input type="text" name="unidad" id="inputUnidad" placeholder="Ej: sacos, kg" maxlength="50"
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]+$"
+                           title="Solo letras (no se permiten números)"
+                           oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]/g, '')"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Stock disponible <span style="color:#ef4444;">*</span></label>
-                    <input type="number" name="stock_disponible" id="inputStock" required min="0" value="0"
+                    <input type="number" name="stock_disponible" id="inputStock" required min="0" max="9999999" value="0" step="1"
+                           onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
+                           oninput="this.value = this.value.replace(/\D/g, '')"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
+                    <p class="text-[11px] mt-1 text-gray-400">Solo números enteros.</p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha de vencimiento</label>
@@ -522,5 +576,9 @@ function abrirModalEliminar(id) {
     document.addEventListener('DOMContentLoaded', () => abrirModalCrear());
 @endif
 </script>
+
+{{-- MODALES DE ESCÁNER Y CÓDIGO DE BARRAS --}}
+@include('inventario.partials.scanner-modal')
+@include('inventario.partials.barcode-modal')
 
 </x-superadmin-layout>

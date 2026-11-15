@@ -8,7 +8,7 @@ class Categoria extends Model
 {
     protected $table = 'categoria';
 
-    protected $fillable = ['nombre', 'descripcion', 'icono', 'activo'];
+    protected $fillable = ['nombre', 'descripcion', 'icono', 'imagen', 'activo'];
 
     protected function casts(): array
     {

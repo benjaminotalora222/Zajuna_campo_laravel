@@ -7,12 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class VentaItem extends Model
 {
     protected $table    = 'venta_items';
-    protected $fillable = ['venta_id', 'idProducto', 'cantidad', 'precioUnitario', 'subtotal'];
+    protected $fillable = [
+        'venta_id', 'idProducto', 'cantidad', 'precioUnitario', 'porcentaje_iva', 'valor_iva', 'subtotal',
+    ];
 
     protected function casts(): array
     {
         return [
             'precioUnitario' => 'decimal:2',
+            'porcentaje_iva' => 'decimal:2',
+            'valor_iva'      => 'decimal:2',
             'subtotal'       => 'decimal:2',
         ];
     }

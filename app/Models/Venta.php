@@ -8,13 +8,15 @@ class Venta extends Model
 {
     protected $table    = 'venta';
     protected $fillable = [
-        'total', 'fechaVenta', 'idUsuario', 'cliente', 'observaciones',
+        'total', 'subtotal', 'iva', 'fechaVenta', 'idUsuario', 'cliente', 'observaciones',
     ];
 
     protected function casts(): array
     {
         return [
             'fechaVenta' => 'datetime',
+            'subtotal'   => 'decimal:2',
+            'iva'        => 'decimal:2',
             'total'      => 'decimal:2',
         ];
     }

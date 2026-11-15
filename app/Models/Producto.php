@@ -9,7 +9,7 @@ class Producto extends Model
     protected $table    = 'producto';
     protected $fillable = [
         'proveedor_id',
-        'nombre', 'descripcion', 'precio', 'unidad',
+        'nombre', 'descripcion', 'precio', 'iva', 'unidad',
         'stockMinimo', 'categoria',
         'codigoBarras', 'diasPerecederoMax', 'imagen', 'activo',
     ];
@@ -19,6 +19,7 @@ class Producto extends Model
         return [
             'activo' => 'boolean',
             'precio' => 'decimal:2',
+            'iva'    => 'decimal:2',
         ];
     }
 

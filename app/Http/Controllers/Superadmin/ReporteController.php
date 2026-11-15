@@ -792,7 +792,7 @@ class ReporteController extends Controller
             <?php
                 $itemsFiltrados = $proveedor ? $v->items->filter(fn($it) => $it->producto && $it->producto->proveedor_id == $proveedor->id) : $v->items;
                 $totRow = $proveedor ? $itemsFiltrados->sum('subtotal') : $v->total;
-                $prodsStr = $itemsFiltrados->map(fn($it) => ($it->producto->nombre ?? 'Producto') . ' x' . $it->cantidad . ' ($' . number_format($it->subtotal, 0, ',', '.') . ')')->implode(' | ');
+                $prodsStr = $itemsFiltrados->map(fn($it) => ($it->producto->nombre ?? 'Producto') . ' x' . $it->cantidad . (!empty($it->porcentaje_iva) && $it->porcentaje_iva > 0 ? ' [+' . round($it->porcentaje_iva) . '% IVA]' : '') . ' ($' . number_format($it->subtotal, 0, ',', '.') . ')')->implode(' | ');
             ?>
             <tr>
                 <td class="td-center">#<?= str_pad($v->id, 4, '0', STR_PAD_LEFT) ?></td>

@@ -13,8 +13,12 @@
                     <path d="M15 18l-6-6 6-6"/>
                 </svg>
             </a>
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0" style="background:#faf5ff;">
-                {{ $categoria->icono ?? '📦' }}
+            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0 overflow-hidden border border-gray-100" style="background:#faf5ff;">
+                @if($categoria->imagen)
+                    <img src="{{ Storage::url($categoria->imagen) }}" alt="{{ $categoria->nombre }}" class="w-full h-full object-cover">
+                @else
+                    {{ $categoria->icono ?? '📦' }}
+                @endif
             </div>
             <div>
                 <h1 class="text-2xl font-extrabold leading-tight">{{ $categoria->nombre }}</h1>

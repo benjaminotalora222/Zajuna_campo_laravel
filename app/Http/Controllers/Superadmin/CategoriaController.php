@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use App\Models\Producto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 class CategoriaController extends Controller
@@ -86,17 +87,25 @@ class CategoriaController extends Controller
             'nombre.regex'    => 'El nombre de la categoría solo puede contener letras y espacios (no se permiten números).',
             'nombre.unique'   => 'Ya existe una categoría con este nombre.',
             'descripcion.max' => 'La descripción no puede superar los 500 caracteres.',
+            'imagen.image'    => 'El archivo debe ser una imagen válida (JPG, PNG, WEBP).',
+            'imagen.mimes'    => 'La imagen debe ser de tipo JPG, PNG o WEBP.',
+            'imagen.max'      => 'La imagen no debe superar los 2MB.',
         ];
 
         $data = $request->validate([
             'nombre'      => ['required', 'string', 'min:3', 'max:100', 'regex:/^[\pL\s\-]+$/u', 'unique:categoria,nombre'],
             'descripcion' => 'nullable|string|max:500',
             'icono'       => 'nullable|string|max:10',
+            'imagen'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'activo'      => 'boolean',
         ], $messages);
 
         $data['activo'] = $request->boolean('activo', true);
         $data['icono']  = $data['icono'] ?: '📦';
+
+        if ($request->hasFile('imagen')) {
+            $data['imagen'] = $request->file('imagen')->store('categorias', 'public');
+        }
 
         Categoria::create($data);
 
@@ -114,18 +123,34 @@ class CategoriaController extends Controller
             'nombre.regex'    => 'El nombre de la categoría solo puede contener letras y espacios (no se permiten números).',
             'nombre.unique'   => 'Ya existe una categoría con este nombre.',
             'descripcion.max' => 'La descripción no puede superar los 500 caracteres.',
+            'imagen.image'    => 'El archivo debe ser una imagen válida (JPG, PNG, WEBP).',
+            'imagen.mimes'    => 'La imagen debe ser de tipo JPG, PNG o WEBP.',
+            'imagen.max'      => 'La imagen no debe superar los 2MB.',
         ];
 
         $data = $request->validate([
             'nombre'      => ['required', 'string', 'min:3', 'max:100', 'regex:/^[\pL\s\-]+$/u', Rule::unique('categoria', 'nombre')->ignore($categoria->id)],
             'descripcion' => 'nullable|string|max:500',
             'icono'       => 'nullable|string|max:10',
+            'imagen'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'activo'      => 'boolean',
         ], $messages);
 
         $nombreAnterior = $categoria->nombre;
         $data['activo'] = $request->boolean('activo');
         $data['icono']  = $data['icono'] ?: '📦';
+
+        if ($request->boolean('eliminar_imagen')) {
+            if ($categoria->imagen) {
+                Storage::disk('public')->delete($categoria->imagen);
+            }
+            $data['imagen'] = null;
+        } elseif ($request->hasFile('imagen')) {
+            if ($categoria->imagen) {
+                Storage::disk('public')->delete($categoria->imagen);
+            }
+            $data['imagen'] = $request->file('imagen')->store('categorias', 'public');
+        }
 
         $categoria->update($data);
 
@@ -141,6 +166,9 @@ class CategoriaController extends Controller
     public function destroy(Categoria $categoria)
     {
         $this->soloSuperadmin();
+        if ($categoria->imagen) {
+            Storage::disk('public')->delete($categoria->imagen);
+        }
         $categoria->delete();
 
         return redirect()->route('superadmin.categorias.index')

@@ -183,11 +183,19 @@
             @foreach($itemsFiltrados as $item)
             <div class="item-line">
                 {{ $item->producto->nombre ?? 'Producto no encontrado' }} × {{ $item->cantidad }}
+                @if(isset($item->porcentaje_iva) && $item->porcentaje_iva > 0)
+                    <span style="font-size:7.5px; color:#71277a; font-weight:bold;">(+{{ round($item->porcentaje_iva) }}% IVA)</span>
+                @endif
                 <span style="float:right; color:#39a900;">${{ number_format($item->subtotal, 0, ',', '.') }}</span>
             </div>
             @endforeach
         </td>
-        <td class="td-right" style="font-weight:bold;">${{ number_format($totalVentaRow, 0, ',', '.') }}</td>
+        <td class="td-right" style="font-weight:bold;">
+            ${{ number_format($totalVentaRow, 0, ',', '.') }}
+            @if(isset($v->iva) && $v->iva > 0 && (!isset($proveedor) || !$proveedor))
+                <br><span style="font-size:7.5px; color:#71277a; font-weight:normal;">(IVA: ${{ number_format($v->iva, 0, ',', '.') }})</span>
+            @endif
+        </td>
     </tr>
     @empty
     <tr><td colspan="6" style="text-align:center; color:#aaa; padding:20px;">Sin ventas en este período</td></tr>

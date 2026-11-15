@@ -383,6 +383,19 @@
                     <p class="text-[11px] mt-1" style="color:#9a9a8a;">Selecciona la unidad de medida.</p>
                 </div>
 
+                {{-- Tarifa IVA Sugerida --}}
+                <div>
+                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">IVA sugerido (%)</label>
+                    <select name="iva" id="inputIva"
+                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
+                            style="border-color:#e7e0cc; background:#fafafa;">
+                        <option value="0">0% (Sin IVA / Exento)</option>
+                        <option value="5">5%</option>
+                        <option value="19">19% (Tarifa General)</option>
+                    </select>
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Tarifa por defecto en el formulario de venta.</p>
+                </div>
+
                 {{-- Stock mínimo (alertas) — el stock real viene de lotes/movimientos --}}
                 <div class="col-span-2 sm:col-span-1">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Stock mínimo de alerta</label>
@@ -766,6 +779,7 @@ function abrirModalCrear() {
     document.getElementById('inputStockMinimo').value = '';
     document.getElementById('inputCodigoBarras').value = '';
     document.getElementById('inputDiasPerecedero').value = '';
+    document.getElementById('inputIva').value = '0';
     document.getElementById('inputActivo').checked = true;
     document.getElementById('inputProveedorId').value = '';
     resetForm();
@@ -790,6 +804,8 @@ function abrirModalEditar(p) {
     document.getElementById('inputStockMinimo').value    = p.stockMinimo !== null ? p.stockMinimo : '';
     document.getElementById('inputCodigoBarras').value   = p.codigoBarras || '';
     document.getElementById('inputDiasPerecedero').value = p.diasPerecederoMax !== null ? p.diasPerecederoMax : '';
+    const ivaVal = p.iva !== null && p.iva !== undefined ? Math.round(p.iva) : 0;
+    document.getElementById('inputIva').value            = [0, 5, 19].includes(ivaVal) ? String(ivaVal) : '0';
     document.getElementById('inputActivo').checked       = p.activo == 1 || p.activo === true;
     document.getElementById('inputCategoria').value      = p.categoria || '';
     document.getElementById('inputProveedorId').value    = p.proveedor_id || '';
@@ -831,6 +847,7 @@ function abrirModalEliminar(id, nombre) {
         document.getElementById('inputStockMinimo').value = @json(old('stockMinimo', ''));
         document.getElementById('inputCodigoBarras').value = @json(old('codigoBarras', ''));
         document.getElementById('inputDiasPerecedero').value = @json(old('diasPerecederoMax', ''));
+        document.getElementById('inputIva').value = @json(old('iva', '0'));
         document.getElementById('inputCategoria').value = @json(old('categoria', ''));
         document.getElementById('inputProveedorId').value = @json(old('proveedor_id', ''));
         const catVal = @json(old('categoria', ''));

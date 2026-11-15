@@ -9,6 +9,7 @@ use App\Models\Producto;
 use App\Models\Proveedor;
 use App\Models\Venta;
 use App\Models\VentaItem;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -426,6 +427,9 @@ class VentaController extends Controller
             'items.*.precioUnitario.numeric' => 'El precio debe ser un número válido.',
             'items.*.precioUnitario.min'     => 'El precio no puede ser negativo.',
             'items.*.precioUnitario.max'     => 'El precio no puede exceder $99.999.999,99.',
+            'items.*.porcentaje_iva.numeric' => 'El porcentaje de IVA debe ser un número.',
+            'items.*.porcentaje_iva.min'     => 'El IVA no puede ser negativo.',
+            'items.*.porcentaje_iva.max'     => 'El IVA no puede superar el 100%.',
         ];
 
         $request->validate([
@@ -436,26 +440,43 @@ class VentaController extends Controller
             'items.*.idProducto'      => 'required|exists:producto,id',
             'items.*.cantidad'        => 'required|integer|min:1|max:999999',
             'items.*.precioUnitario'  => 'required|numeric|min:0|max:99999999.99',
+            'items.*.porcentaje_iva'  => 'nullable|numeric|min:0|max:100',
         ], $messages);
 
-        DB::transaction(function () use ($request) {
-            $total = 0;
-            $itemsData = [];
+        $ventaCreada = null;
+
+        DB::transaction(function () use ($request, &$ventaCreada) {
+            $totalSubtotal = 0;
+            $totalIva      = 0;
+            $totalGeneral  = 0;
+            $itemsData     = [];
 
             foreach ($request->items as $item) {
-                $subtotal    = $item['cantidad'] * $item['precioUnitario'];
-                $total      += $subtotal;
+                $cantidad       = (int) $item['cantidad'];
+                $precioUnitario = (float) $item['precioUnitario'];
+                $porcentajeIva  = isset($item['porcentaje_iva']) && $item['porcentaje_iva'] !== '' ? (float) $item['porcentaje_iva'] : 0.0;
+
+                $baseNeto       = round($cantidad * $precioUnitario, 2);
+                $valorIva       = round($baseNeto * ($porcentajeIva / 100), 2);
+                $subtotalLinea  = round($baseNeto + $valorIva, 2);
+
+                $totalSubtotal += $baseNeto;
+                $totalIva      += $valorIva;
+                $totalGeneral  += $subtotalLinea;
+
                 $itemsData[] = [
                     'idProducto'     => $item['idProducto'],
-                    'cantidad'       => $item['cantidad'],
-                    'precioUnitario' => $item['precioUnitario'],
-                    'subtotal'       => $subtotal,
+                    'cantidad'       => $cantidad,
+                    'precioUnitario' => $precioUnitario,
+                    'porcentaje_iva' => $porcentajeIva,
+                    'valor_iva'      => $valorIva,
+                    'subtotal'       => $subtotalLinea,
                 ];
 
                 // Descontar stock FEFO en lotes
                 $producto = Producto::find($item['idProducto']);
                 if ($producto) {
-                    $this->descontarStockFefo($producto, $item['cantidad'], 'Venta - ' . ($request->cliente ?: 'Sin nombre'));
+                    $this->descontarStockFefo($producto, $cantidad, 'Venta - ' . ($request->cliente ?: 'Sin nombre'));
                     \App\Services\OrdenPedidoService::verificarYGenerarAutomaticamente($producto, auth()->id());
                 }
             }
@@ -464,9 +485,13 @@ class VentaController extends Controller
                 'fechaVenta'    => $request->fechaVenta,
                 'cliente'       => $request->cliente,
                 'observaciones' => $request->observaciones,
-                'total'         => $total,
+                'subtotal'      => $totalSubtotal,
+                'iva'           => $totalIva,
+                'total'         => $totalGeneral,
                 'idUsuario'     => auth()->id(),
             ]);
+
+            $ventaCreada = $venta;
 
             foreach ($itemsData as $item) {
                 $item['venta_id'] = $venta->id;
@@ -477,7 +502,8 @@ class VentaController extends Controller
         LogAuditoria::registrar('Ventas', 'Creación', "Se registró una nueva venta al cliente: " . ($request->cliente ?: 'Sin nombre'));
 
         return redirect()->route('superadmin.ventas.index')
-                         ->with('success', 'Venta registrada correctamente.');
+                         ->with('success', 'Venta registrada correctamente.')
+                         ->with('venta_creada_id', $ventaCreada?->id);
     }
 
     public function update(Request $request, Venta $venta)
@@ -492,6 +518,7 @@ class VentaController extends Controller
             'items.*.idProducto'      => 'required|exists:producto,id',
             'items.*.cantidad'        => 'required|integer|min:1',
             'items.*.precioUnitario'  => 'required|numeric|min:0',
+            'items.*.porcentaje_iva'  => 'nullable|numeric|min:0|max:100',
         ]);
 
         DB::transaction(function () use ($request, $venta) {
@@ -506,23 +533,37 @@ class VentaController extends Controller
             // Eliminar ítems anteriores
             $venta->items()->delete();
 
-            $total = 0;
+            $totalSubtotal = 0;
+            $totalIva      = 0;
+            $totalGeneral  = 0;
+
             foreach ($request->items as $item) {
-                $subtotal = $item['cantidad'] * $item['precioUnitario'];
-                $total   += $subtotal;
+                $cantidad       = (int) $item['cantidad'];
+                $precioUnitario = (float) $item['precioUnitario'];
+                $porcentajeIva  = isset($item['porcentaje_iva']) && $item['porcentaje_iva'] !== '' ? (float) $item['porcentaje_iva'] : 0.0;
+
+                $baseNeto       = round($cantidad * $precioUnitario, 2);
+                $valorIva       = round($baseNeto * ($porcentajeIva / 100), 2);
+                $subtotalLinea  = round($baseNeto + $valorIva, 2);
+
+                $totalSubtotal += $baseNeto;
+                $totalIva      += $valorIva;
+                $totalGeneral  += $subtotalLinea;
 
                 VentaItem::create([
                     'venta_id'       => $venta->id,
                     'idProducto'     => $item['idProducto'],
-                    'cantidad'       => $item['cantidad'],
-                    'precioUnitario' => $item['precioUnitario'],
-                    'subtotal'       => $subtotal,
+                    'cantidad'       => $cantidad,
+                    'precioUnitario' => $precioUnitario,
+                    'porcentaje_iva' => $porcentajeIva,
+                    'valor_iva'      => $valorIva,
+                    'subtotal'       => $subtotalLinea,
                 ]);
 
                 // Descontar nuevo stock FEFO en lotes
                 $producto = Producto::find($item['idProducto']);
                 if ($producto) {
-                    $this->descontarStockFefo($producto, $item['cantidad'], 'Venta (edición) - ' . ($request->cliente ?: 'Sin nombre'));
+                    $this->descontarStockFefo($producto, $cantidad, 'Venta (edición) - ' . ($request->cliente ?: 'Sin nombre'));
                 }
             }
 
@@ -530,7 +571,9 @@ class VentaController extends Controller
                 'fechaVenta'    => $request->fechaVenta,
                 'cliente'       => $request->cliente,
                 'observaciones' => $request->observaciones,
-                'total'         => $total,
+                'subtotal'      => $totalSubtotal,
+                'iva'           => $totalIva,
+                'total'         => $totalGeneral,
             ]);
         });
 
@@ -554,5 +597,42 @@ class VentaController extends Controller
 
         return redirect()->route('superadmin.ventas.index')
                          ->with('success', 'Venta eliminada y stock revertido.');
+    }
+
+    public function facturaPos(Venta $venta, Request $request)
+    {
+        $this->soloSuperadmin();
+
+        $venta->load(['items.producto.proveedor', 'usuario']);
+
+        $empresa = [
+            'nombre'     => 'ZAJUNA CAMPO',
+            'subtitulo'  => 'SENA - Centro Agropecuario de Buga',
+            'nit'        => 'NIT: 899.999.034-1',
+            'direccion'  => 'Km 1 Vía Buga - Tuluá',
+            'telefono'   => 'Tel: (602) 237 0000',
+            'ciudad'     => 'Buga, Valle del Cauca - Colombia',
+            'regimen'    => 'Documento Equivalente POS / Control Interno',
+        ];
+
+        $logoSenaFile = public_path('img/logo-sena.png');
+        $logoZajunaFile = public_path('img/logo-zajuna-campo.png');
+
+        $logoSena = file_exists($logoSenaFile)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoSenaFile))
+            : null;
+
+        $logoZajuna = file_exists($logoZajunaFile)
+            ? 'data:image/png;base64,' . base64_encode(file_get_contents($logoZajunaFile))
+            : null;
+
+        if ($request->boolean('pdf') || $request->query('formato') === 'pdf') {
+            $altoEstimado = max(420, 260 + ($venta->items->count() * 40) + ($venta->observaciones ? 35 : 0));
+            $pdf = Pdf::loadView('superadmin.ventas.factura_pos_pdf', compact('venta', 'empresa', 'logoSena', 'logoZajuna'))
+                ->setPaper([0, 0, 226.77, $altoEstimado], 'portrait');
+            return $pdf->stream("factura-pos-{$venta->id}.pdf");
+        }
+
+        return view('superadmin.ventas.factura_pos', compact('venta', 'empresa', 'logoSena', 'logoZajuna'));
     }
 }

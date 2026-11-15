@@ -46,12 +46,27 @@
 
     {{-- ALERTA --}}
     @if(session('success'))
-    <div class="flex items-center gap-3 px-4 py-3 rounded-xl mb-6 text-sm font-semibold"
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 py-3 rounded-xl mb-6 text-sm font-semibold"
          style="background:#f0fdf4; border:1px solid #86efac; color:#166534;">
-        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
-        </svg>
-        {{ session('success') }}
+        <div class="flex items-center gap-2.5">
+            <svg class="w-5 h-5 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/>
+            </svg>
+            <span>{{ session('success') }}</span>
+        </div>
+        @if(session('venta_creada_id'))
+        <a href="{{ route('operativo.ventas.facturaPos', session('venta_creada_id')) }}"
+           target="_blank"
+           class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition hover:opacity-90 shrink-0"
+           style="background:#71277a;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <polyline points="6 9 6 2 18 2 18 9"/>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            <span>Imprimir Factura POS #{{ str_pad(session('venta_creada_id'), 6, '0', STR_PAD_LEFT) }}</span>
+        </a>
+        @endif
     </div>
     @endif
 
@@ -375,16 +390,21 @@
                     <td class="px-4 py-4">
                         <div class="space-y-1">
                             @foreach($v->items->take(3) as $item)
-                            <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="w-1.5 h-1.5 rounded-full shrink-0" style="background:#39a900;"></span>
                                 <span class="text-xs" style="color:#1c2b16;">
                                     {{ $item->producto->nombre ?? '—' }}
                                     <span style="color:#9a9a8a;">× {{ $item->cantidad }}</span>
                                 </span>
+                                @if(isset($item->porcentaje_iva) && $item->porcentaje_iva > 0)
+                                    <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style="background:#f3e8ff; color:#71277a; border: 1px solid #e9d5ff;">
+                                        +{{ round($item->porcentaje_iva) }}% IVA
+                                    </span>
+                                @endif
                             </div>
                             @endforeach
                             @if($v->items->count() > 3)
-                            <span class="text-xs" style="color:#71277a;">+{{ $v->items->count() - 3 }} más...</span>
+                            <span class="text-xs font-semibold block mt-0.5" style="color:#71277a;">+{{ $v->items->count() - 3 }} más...</span>
                             @endif
                         </div>
                     </td>
@@ -394,8 +414,15 @@
                             {{ $v->items->count() }} ítem{{ $v->items->count() != 1 ? 's' : '' }}
                         </span>
                     </td>
-                    <td class="px-4 py-4 text-right font-extrabold" style="color:#39a900;">
-                        ${{ number_format($v->total, 0, ',', '.') }}
+                    <td class="px-4 py-4 text-right">
+                        <span class="font-extrabold text-sm block" style="color:#39a900;">
+                            ${{ number_format($v->total, 0, ',', '.') }}
+                        </span>
+                        @if(isset($v->iva) && $v->iva > 0)
+                            <span class="text-[11px] font-semibold block text-purple-700">
+                                (IVA: ${{ number_format($v->iva, 0, ',', '.') }})
+                            </span>
+                        @endif
                     </td>
                     <td class="px-4 py-4">
                         @if($v->fechaVenta)
@@ -406,6 +433,15 @@
                     </td>
                     <td class="px-6 py-4">
                         <div class="flex items-center justify-end gap-2">
+                            <a href="{{ route('operativo.ventas.facturaPos', $v) }}" target="_blank"
+                               class="w-9 h-9 rounded-xl flex items-center justify-center transition hover:scale-105"
+                               style="background:#f3e8ff; color:#71277a;" title="Factura POS (Imprimir / Descargar)">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <polyline points="6 9 6 2 18 2 18 9"/>
+                                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+                                    <rect x="6" y="14" width="12" height="8"/>
+                                </svg>
+                            </a>
                             <button onclick='abrirModalEditar(@json($v->load("items.producto")))'
                                     class="w-9 h-9 rounded-xl flex items-center justify-center transition hover:scale-105"
                                     style="background:#f0fdf4; color:#39a900;" title="Editar">
@@ -478,22 +514,25 @@
     </div>
 </div>
 
-{{-- ══ MODAL CREAR / EDITAR (multi-ítem) ══════════════════ --}}
-<div id="modalForm" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-y-auto" onclick="event.stopPropagation()">
+{{-- ══ MODAL CREAR / EDITAR (multi-ítem con IVA) ══════════════════ --}}
+<div id="modalForm" class="fixed inset-0 z-50 hidden items-center justify-center p-4 backdrop-blur-xs" style="background:rgba(0,0,0,0.5);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] overflow-y-auto" onclick="event.stopPropagation()">
 
         {{-- Header --}}
         <div class="flex items-center justify-between px-7 py-5 border-b sticky top-0 bg-white z-10" style="border-color:#f3f0e8;">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-xl flex items-center justify-center" style="background:#f0fdf4;">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-xs" style="background:#f0fdf4; border: 1px solid #bbf7d0;">
                     <svg class="w-5 h-5" style="color:#39a900;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                         <path d="M4 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 2-1.6L21 8H6"/>
                         <circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/>
                     </svg>
                 </div>
-                <h2 id="modalFormTitle" class="text-lg font-extrabold" style="color:#1c2b16;">Nueva Venta</h2>
+                <div>
+                    <h2 id="modalFormTitle" class="text-lg font-extrabold" style="color:#1c2b16;">Nueva Venta</h2>
+                    <p class="text-xs text-gray-500">Agrega productos, define cantidades, precios e impuestos (IVA).</p>
+                </div>
             </div>
-            <button onclick="cerrarModal('modalForm')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100" style="color:#9a9a8a;">
+            <button onclick="cerrarModal('modalForm')" class="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 transition" style="color:#9a9a8a;">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </button>
         </div>
@@ -512,14 +551,14 @@
             @endif
 
             {{-- Info general --}}
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Cliente</label>
                     <input type="text" name="cliente" id="inputCliente" placeholder="Nombre del cliente" maxlength="255"
                            pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$"
                            title="Solo letras y espacios (no se permiten números)"
                            oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')"
-                           class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
+                           class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900'" onblur="this.style.borderColor='#e7e0cc'">
                     <p class="text-[11px] mt-1 text-gray-400">Solo letras y espacios (sin números).</p>
@@ -527,7 +566,7 @@
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha <span style="color:#ef4444;">*</span></label>
                     <input type="date" name="fechaVenta" id="inputFechaVenta" required value="{{ now()->toDateString() }}"
-                           class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
+                           class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900'" onblur="this.style.borderColor='#e7e0cc'">
                 </div>
@@ -536,11 +575,14 @@
             {{-- ── ÍTEMS ── --}}
             <div>
                 <div class="flex items-center justify-between mb-3">
-                    <label class="text-sm font-bold" style="color:#1c2b16;">
-                        Productos <span style="color:#ef4444;">*</span>
-                    </label>
+                    <div>
+                        <label class="text-sm font-bold block" style="color:#1c2b16;">
+                            Productos y Detalle de Venta <span style="color:#ef4444;">*</span>
+                        </label>
+                        <span class="text-xs text-gray-400">Puedes asignar la tarifa de IVA a cada producto individualmente</span>
+                    </div>
                     <button type="button" onclick="agregarItem()"
-                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition hover:opacity-90"
+                            class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold transition hover:opacity-90 shadow-xs"
                             style="background:#fdc300; color:#71277a;">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/>
@@ -550,34 +592,48 @@
                 </div>
 
                 {{-- Cabecera de la tabla de ítems --}}
-                <div class="grid grid-cols-12 gap-2 mb-2 px-2">
-                    <div class="col-span-5 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">Producto</div>
-                    <div class="col-span-2 text-xs font-bold uppercase tracking-wider text-center" style="color:#9a9a8a;">Cant.</div>
-                    <div class="col-span-3 text-xs font-bold uppercase tracking-wider text-right" style="color:#9a9a8a;">Precio unit.</div>
-                    <div class="col-span-2 text-xs font-bold uppercase tracking-wider text-right" style="color:#9a9a8a;"></div>
+                <div class="hidden sm:grid grid-cols-12 gap-2.5 mb-2 px-3 text-xs font-bold uppercase tracking-wider" style="color:#9a9a8a;">
+                    <div class="col-span-4">Producto</div>
+                    <div class="col-span-2 text-center">Cant.</div>
+                    <div class="col-span-2 text-right">Precio Unit.</div>
+                    <div class="col-span-2 text-center">IVA (%)</div>
+                    <div class="col-span-2 text-right">Total Ítem</div>
                 </div>
 
-                <div id="itemsContainer" class="space-y-2"></div>
+                <div id="itemsContainer" class="space-y-2.5"></div>
 
                 <p id="itemsVacioMsg" class="text-center py-6 text-sm" style="color:#9a9a8a;">
                     Haz clic en "Agregar producto" para añadir ítems a la venta.
                 </p>
             </div>
 
-            {{-- Total --}}
-            <div class="flex items-center justify-between px-5 py-4 rounded-2xl" style="background:#f0fdf4; border:1.5px solid #86efac;">
-                <div>
-                    <p class="text-xs font-semibold" style="color:#166534;">Total de la venta</p>
-                    <p class="text-xs" style="color:#9a9a8a;" id="totalItemsCount">0 ítems</p>
+            {{-- Resumen de totales con IVA --}}
+            <div class="rounded-2xl p-4 space-y-2 border" style="background:#f9fdf7; border-color:#86efac;">
+                <div class="flex items-center justify-between text-xs" style="color:#5a5a4f;">
+                    <span>Subtotal neto (sin IVA):</span>
+                    <span id="subtotalDisplay" class="font-bold text-sm" style="color:#1c2b16;">$0</span>
                 </div>
-                <p id="totalDisplay" class="text-2xl font-extrabold" style="color:#166534;">$0</p>
+                <div class="flex items-center justify-between text-xs pb-2 border-b" style="border-color:#dcfce7; color:#5a5a4f;">
+                    <span class="flex items-center gap-1.5">
+                        <span>IVA total:</span>
+                        <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700">Impuesto</span>
+                    </span>
+                    <span id="ivaDisplay" class="font-bold text-sm text-purple-700">+$0</span>
+                </div>
+                <div class="flex items-center justify-between pt-1">
+                    <div>
+                        <p class="text-xs font-bold uppercase tracking-wider" style="color:#166534;">Total a pagar</p>
+                        <p class="text-[11px]" style="color:#9a9a8a;" id="totalItemsCount">0 productos agregados</p>
+                    </div>
+                    <p id="totalDisplay" class="text-2xl font-extrabold" style="color:#166534;">$0</p>
+                </div>
             </div>
 
             {{-- Observaciones --}}
             <div>
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Observaciones</label>
                 <textarea name="observaciones" id="inputObservaciones" rows="2" placeholder="Notas adicionales..."
-                          class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none resize-none"
+                          class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none resize-none transition"
                           style="border-color:#e7e0cc; background:#fafafa;"
                           onfocus="this.style.borderColor='#39a900'" onblur="this.style.borderColor='#e7e0cc'"></textarea>
             </div>
@@ -585,12 +641,12 @@
             {{-- Botones --}}
             <div class="flex items-center gap-3 pt-2 border-t" style="border-color:#f3f0e8;">
                 <button type="submit" id="btnGuardar"
-                        class="flex-1 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90"
+                        class="flex-1 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90 transition shadow-sm cursor-pointer"
                         style="background:#39a900;">
                     Registrar venta
                 </button>
                 <button type="button" onclick="cerrarModal('modalForm')"
-                        class="flex-1 py-3 rounded-xl font-bold text-sm border hover:bg-gray-50"
+                        class="flex-1 py-3 rounded-xl font-bold text-sm border hover:bg-gray-50 transition cursor-pointer"
                         style="border-color:#e7e0cc; color:#5a5a4f;">
                     Cancelar
                 </button>
@@ -600,7 +656,7 @@
 </div>
 
 {{-- ══ MODAL ELIMINAR ══════════════════════════════════════ --}}
-<div id="modalEliminar" class="fixed inset-0 z-50 hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.5);">
+<div id="modalEliminar" class="fixed inset-0 z-50 hidden items-center justify-center p-4 backdrop-blur-xs" style="background:rgba(0,0,0,0.5);">
     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md" onclick="event.stopPropagation()">
         <div class="px-7 py-7 text-center">
             <div class="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style="background:#fef2f2;">
@@ -613,8 +669,8 @@
             <form id="formEliminar" method="POST">
                 @csrf @method('DELETE')
                 <div class="flex gap-3">
-                    <button type="submit" class="flex-1 py-3 rounded-xl font-bold text-sm text-white" style="background:#ef4444;">Sí, eliminar</button>
-                    <button type="button" onclick="cerrarModal('modalEliminar')" class="flex-1 py-3 rounded-xl font-bold text-sm border hover:bg-gray-50" style="border-color:#e7e0cc; color:#5a5a4f;">Cancelar</button>
+                    <button type="submit" class="flex-1 py-3 rounded-xl font-bold text-sm text-white hover:opacity-90 transition cursor-pointer" style="background:#ef4444;">Sí, eliminar</button>
+                    <button type="button" onclick="cerrarModal('modalEliminar')" class="flex-1 py-3 rounded-xl font-bold text-sm border hover:bg-gray-50 transition cursor-pointer" style="border-color:#e7e0cc; color:#5a5a4f;">Cancelar</button>
                 </div>
             </form>
         </div>
@@ -630,6 +686,7 @@ $productosJs = $productos->map(function($p) {
         'precio' => (float)$p->precio,
         'unidad' => $p->unidad,
         'stock'  => $p->stock_calculado,
+        'iva'    => (float)($p->iva ?? 0),
     ];
 })->values()->toJson();
 @endphp
@@ -649,59 +706,150 @@ function cerrarModal(id) {
     document.body.style.overflow = '';
 }
 ['modalForm','modalEliminar'].forEach(id => {
-    document.getElementById(id).addEventListener('click', function(e) {
-        if (e.target === this) cerrarModal(id);
-    });
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener('click', function(e) {
+            if (e.target === this) cerrarModal(id);
+        });
+    }
 });
 
 function buildSelectOptions(selectedId = null) {
     let opts = '<option value="">Selecciona producto...</option>';
     PRODUCTOS.forEach(p => {
-        opts += `<option value="${p.id}" data-precio="${p.precio}" data-unidad="${p.unidad}" data-stock="${p.stock}" ${p.id == selectedId ? 'selected' : ''}>${p.nombre} (Stock: ${p.stock ?? 0} ${p.unidad ?? ''})</option>`;
+        opts += `<option value="${p.id}" data-precio="${p.precio}" data-unidad="${p.unidad || ''}" data-stock="${p.stock}" data-iva="${p.iva ?? 0}" ${p.id == selectedId ? 'selected' : ''}>${p.nombre} (Stock: ${p.stock ?? 0} ${p.unidad ?? ''})</option>`;
     });
     return opts;
 }
 
-function agregarItem(idProducto = null, cantidad = 1, precio = '') {
+function setIvaValue(i, val) {
+    const num = (val !== null && val !== undefined && val !== '') ? parseFloat(val) : 0;
+    const select = document.getElementById(`ivaSelect_${i}`);
+    const customWrap = document.getElementById(`ivaCustomWrap_${i}`);
+    const customInput = document.getElementById(`ivaCustomInput_${i}`);
+    const hiddenInput = document.getElementById(`porcentajeIvaFinal_${i}`);
+
+    if (!select || !hiddenInput) return;
+
+    if ([0, 5, 19].includes(num)) {
+        select.value = String(num);
+        if (customWrap) customWrap.classList.add('hidden');
+        if (customInput) customInput.value = '';
+        hiddenInput.value = num;
+    } else {
+        select.value = 'custom';
+        if (customWrap) customWrap.classList.remove('hidden');
+        if (customInput) customInput.value = num;
+        hiddenInput.value = num;
+    }
+}
+
+function onIvaSelectChange(i) {
+    const select = document.getElementById(`ivaSelect_${i}`);
+    const customWrap = document.getElementById(`ivaCustomWrap_${i}`);
+    const customInput = document.getElementById(`ivaCustomInput_${i}`);
+    const hiddenInput = document.getElementById(`porcentajeIvaFinal_${i}`);
+
+    if (!select || !hiddenInput) return;
+
+    if (select.value === 'custom') {
+        if (customWrap) customWrap.classList.remove('hidden');
+        if (customInput) {
+            customInput.focus();
+            hiddenInput.value = parseFloat(customInput.value) || 0;
+        }
+    } else {
+        if (customWrap) customWrap.classList.add('hidden');
+        if (customInput) customInput.value = '';
+        hiddenInput.value = parseFloat(select.value) || 0;
+    }
+    recalcularTotal();
+}
+
+function onCustomIvaInput(i) {
+    const customInput = document.getElementById(`ivaCustomInput_${i}`);
+    const hiddenInput = document.getElementById(`porcentajeIvaFinal_${i}`);
+    if (!customInput || !hiddenInput) return;
+
+    let val = parseFloat(customInput.value);
+    if (isNaN(val) || val < 0) val = 0;
+    if (val > 100) {
+        val = 100;
+        customInput.value = 100;
+    }
+    hiddenInput.value = val;
+    recalcularTotal();
+}
+
+function agregarItem(idProducto = null, cantidad = 1, precio = '', porcentajeIva = null) {
     const i = itemIndex++;
     const container = document.getElementById('itemsContainer');
     document.getElementById('itemsVacioMsg').classList.add('hidden');
 
     const row = document.createElement('div');
     row.id = `item_${i}`;
-    row.className = 'grid grid-cols-12 gap-2 items-center p-3 rounded-xl border';
+    row.className = 'grid grid-cols-12 gap-2.5 items-start p-3 rounded-xl border transition';
     row.style = 'border-color:#f3f0e8; background:#fafafa;';
     row.innerHTML = `
-        <div class="col-span-5">
+        <div class="col-span-12 sm:col-span-4">
+            <label class="block text-[11px] font-bold text-gray-500 sm:hidden mb-1">Producto</label>
             <select name="items[${i}][idProducto]" required
-                    class="w-full px-3 py-2 rounded-lg border text-sm outline-none"
+                    class="w-full px-3 py-2 rounded-lg border text-xs outline-none bg-white font-medium"
                     style="border-color:#e7e0cc;"
                     onchange="onProductoChange(this, ${i})">
                 ${buildSelectOptions(idProducto)}
             </select>
-            <p id="stock_${i}" class="text-[11px] mt-0.5 font-semibold hidden" style="color:#39a900;"></p>
+            <p id="stock_${i}" class="text-[11px] mt-1 font-semibold hidden" style="color:#39a900;"></p>
         </div>
-        <div class="col-span-2">
-            <input type="number" name="items[${i}][cantidad]" value="${cantidad}" min="1" max="999999" required
-                   class="w-full px-2 py-2 rounded-lg border text-sm outline-none text-center"
+        <div class="col-span-4 sm:col-span-2">
+            <label class="block text-[11px] font-bold text-gray-500 sm:hidden mb-1">Cantidad</label>
+            <input type="number" name="items[${i}][cantidad]" id="cant_${i}" value="${cantidad}" min="1" max="999999" required
+                   class="w-full px-2 py-2 rounded-lg border text-xs outline-none text-center bg-white font-medium"
                    style="border-color:#e7e0cc;"
                    onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
                    oninput="this.value = this.value.replace(/\\D/g, ''); recalcularTotal()" placeholder="1">
         </div>
-        <div class="col-span-3">
+        <div class="col-span-8 sm:col-span-2">
+            <label class="block text-[11px] font-bold text-gray-500 sm:hidden mb-1">Precio Unit.</label>
             <div class="relative">
-                <span class="absolute left-2 top-1/2 -translate-y-1/2 text-xs font-bold" style="color:#9a9a8a;">$</span>
-                <input type="number" name="items[${i}][precioUnitario]" value="${precio}" min="0" max="99999999.99" step="0.01" required
-                       class="w-full pl-5 pr-2 py-2 rounded-lg border text-sm outline-none text-right"
+                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">$</span>
+                <input type="number" name="items[${i}][precioUnitario]" id="precio_${i}" value="${precio}" min="0" max="99999999.99" step="0.01" required
+                       class="w-full pl-6 pr-2 py-2 rounded-lg border text-xs outline-none text-right bg-white font-medium"
                        style="border-color:#e7e0cc;"
                        onkeydown="if(['e','E','+','-'].includes(event.key)) event.preventDefault();"
                        oninput="recalcularTotal()" placeholder="0">
             </div>
         </div>
-        <div class="col-span-2 flex justify-end">
+        <div class="col-span-6 sm:col-span-2">
+            <label class="block text-[11px] font-bold text-gray-500 sm:hidden mb-1">IVA (%)</label>
+            <input type="hidden" name="items[${i}][porcentaje_iva]" id="porcentajeIvaFinal_${i}" value="0">
+            <select id="ivaSelect_${i}" onchange="onIvaSelectChange(${i})"
+                    class="w-full px-2 py-2 rounded-lg border text-xs outline-none bg-white font-medium cursor-pointer"
+                    style="border-color:#e7e0cc;">
+                <option value="0">0% (Sin IVA)</option>
+                <option value="5">5%</option>
+                <option value="19">19% (General)</option>
+                <option value="custom">Otro %</option>
+            </select>
+            <div id="ivaCustomWrap_${i}" class="mt-1 hidden">
+                <div class="relative">
+                    <input type="number" id="ivaCustomInput_${i}" min="0" max="100" step="0.1"
+                           placeholder="%"
+                           class="w-full pl-2 pr-5 py-1 rounded-lg border text-xs text-right bg-white outline-none"
+                           style="border-color:#e7e0cc;"
+                           oninput="onCustomIvaInput(${i})">
+                    <span class="absolute right-1.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 font-bold">%</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-span-6 sm:col-span-2 flex items-center justify-between gap-1 pt-1 sm:pt-0">
+            <div class="text-right flex-1 min-w-0 pr-1">
+                <div id="subtotalLinea_${i}" class="text-xs font-bold truncate" style="color:#1c2b16;">$0</div>
+                <div id="subtotalIvaNota_${i}" class="text-[10px] font-medium truncate text-gray-400">Sin IVA</div>
+            </div>
             <button type="button" onclick="eliminarItem(${i})"
-                    class="w-8 h-8 rounded-lg flex items-center justify-center hover:scale-110 transition"
-                    style="background:#fef2f2; color:#ef4444;">
+                    class="w-8 h-8 rounded-lg flex items-center justify-center hover:scale-110 transition shrink-0"
+                    style="background:#fef2f2; color:#ef4444;" title="Eliminar ítem">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path d="M18 6 6 18M6 6l12 12"/>
                 </svg>
@@ -710,26 +858,44 @@ function agregarItem(idProducto = null, cantidad = 1, precio = '') {
     `;
     container.appendChild(row);
 
-    // Si viene con producto precargado, mostrar stock
+    // Determinar IVA inicial
+    let ivaInicial = 0;
+    if (porcentajeIva !== null && porcentajeIva !== undefined) {
+        ivaInicial = porcentajeIva;
+    } else if (idProducto) {
+        const prod = PRODUCTOS.find(p => p.id == idProducto);
+        if (prod && prod.iva !== undefined) {
+            ivaInicial = prod.iva;
+        }
+    }
+    setIvaValue(i, ivaInicial);
+
+    // Si viene con producto precargado, mostrar stock y precio
     if (idProducto) {
         const sel = row.querySelector('select');
-        onProductoChange(sel, i);
-        // restaurar precio
-        row.querySelector(`input[name="items[${i}][precioUnitario]"]`).value = precio;
+        onProductoChange(sel, i, false);
+        if (precio !== '') {
+            row.querySelector(`input[name="items[${i}][precioUnitario]"]`).value = precio;
+        }
     }
 
     recalcularTotal();
 }
 
-function onProductoChange(sel, i) {
+function onProductoChange(sel, i, updateIva = true) {
     const opt   = sel.options[sel.selectedIndex];
     const precio = opt ? opt.getAttribute('data-precio') : '';
     const stock  = opt ? opt.getAttribute('data-stock') : null;
     const unidad = opt ? opt.getAttribute('data-unidad') : '';
+    const iva    = opt ? opt.getAttribute('data-iva') : 0;
     const row    = document.getElementById(`item_${i}`);
 
     if (precio && row) {
         row.querySelector(`input[name="items[${i}][precioUnitario]"]`).value = precio;
+    }
+
+    if (updateIva && opt && opt.value) {
+        setIvaValue(i, parseFloat(iva) || 0);
     }
 
     const stockEl = document.getElementById(`stock_${i}`);
@@ -754,17 +920,52 @@ function eliminarItem(i) {
 }
 
 function recalcularTotal() {
-    let total = 0;
+    let subtotalNeto = 0;
+    let totalIva = 0;
+    let totalPagar = 0;
     let count = 0;
+
     document.querySelectorAll('#itemsContainer > div').forEach(row => {
-        const cant  = parseFloat(row.querySelector('input[type="number"]:first-of-type')?.value) || 0;
-        const priceInput = row.querySelectorAll('input[type="number"]');
-        const precio = priceInput.length >= 2 ? parseFloat(priceInput[1]?.value) || 0 : 0;
-        total += cant * precio;
+        const i = row.id.replace('item_', '');
+        const cant = parseFloat(document.getElementById(`cant_${i}`)?.value) || 0;
+        const precio = parseFloat(document.getElementById(`precio_${i}`)?.value) || 0;
+        const pctIva = parseFloat(document.getElementById(`porcentajeIvaFinal_${i}`)?.value) || 0;
+
+        const baseLinea = Math.round(cant * precio * 100) / 100;
+        const ivaLinea = Math.round(baseLinea * (pctIva / 100) * 100) / 100;
+        const totalLinea = Math.round((baseLinea + ivaLinea) * 100) / 100;
+
+        const subtotalLineaEl = document.getElementById(`subtotalLinea_${i}`);
+        const subtotalIvaNotaEl = document.getElementById(`subtotalIvaNota_${i}`);
+
+        if (subtotalLineaEl) {
+            subtotalLineaEl.textContent = '$' + Math.round(totalLinea).toLocaleString('es-CO');
+        }
+        if (subtotalIvaNotaEl) {
+            if (pctIva > 0) {
+                subtotalIvaNotaEl.textContent = `+IVA (${pctIva}%): $` + Math.round(ivaLinea).toLocaleString('es-CO');
+                subtotalIvaNotaEl.className = 'text-[10px] font-semibold truncate text-purple-700';
+            } else {
+                subtotalIvaNotaEl.textContent = 'Sin IVA (0%)';
+                subtotalIvaNotaEl.className = 'text-[10px] font-medium truncate text-gray-400';
+            }
+        }
+
+        subtotalNeto += baseLinea;
+        totalIva += ivaLinea;
+        totalPagar += totalLinea;
         if (cant > 0) count++;
     });
-    document.getElementById('totalDisplay').textContent = '$' + total.toLocaleString('es-CO', {maximumFractionDigits: 0});
-    document.getElementById('totalItemsCount').textContent = count + ' ítem' + (count !== 1 ? 's' : '');
+
+    const subtotalEl = document.getElementById('subtotalDisplay');
+    const ivaEl = document.getElementById('ivaDisplay');
+    const totalEl = document.getElementById('totalDisplay');
+    const countEl = document.getElementById('totalItemsCount');
+
+    if (subtotalEl) subtotalEl.textContent = '$' + Math.round(subtotalNeto).toLocaleString('es-CO');
+    if (ivaEl) ivaEl.textContent = '+$' + Math.round(totalIva).toLocaleString('es-CO');
+    if (totalEl) totalEl.textContent = '$' + Math.round(totalPagar).toLocaleString('es-CO');
+    if (countEl) countEl.textContent = `${count} producto${count !== 1 ? 's' : ''} agregado${count !== 1 ? 's' : ''}`;
 }
 
 function limpiarItems() {
@@ -777,7 +978,7 @@ function limpiarItems() {
 function abrirModalCrear() {
     document.getElementById('modalFormTitle').textContent = 'Nueva Venta';
     document.getElementById('btnGuardar').textContent     = 'Registrar venta';
-    document.getElementById('formVenta').action = '{{ route("superadmin.ventas.store") }}';
+    document.getElementById('formVenta').action = '{{ route("operativo.ventas.store") }}';
     document.getElementById('formMethod').value = 'POST';
     document.getElementById('inputCliente').value       = '';
     document.getElementById('inputFechaVenta').value    = '{{ now()->toDateString() }}';
@@ -798,7 +999,8 @@ function abrirModalEditar(venta) {
     limpiarItems();
     if (venta.items && venta.items.length > 0) {
         venta.items.forEach(item => {
-            agregarItem(item.idProducto, item.cantidad, item.precioUnitario);
+            const pct = (item.porcentaje_iva !== undefined && item.porcentaje_iva !== null) ? item.porcentaje_iva : 0;
+            agregarItem(item.idProducto, item.cantidad, item.precioUnitario, pct);
         });
     } else {
         agregarItem();

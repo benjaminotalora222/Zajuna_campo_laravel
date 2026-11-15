@@ -243,24 +243,54 @@
 
   /* ---------- testimonial ---------- */
   .testimonial{
-    background:var(--gold);
-    position:relative;overflow:hidden;
+    background:#ffffff;
+    border-top:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+    position:relative;
+    overflow:hidden;
+    padding:72px 0;
   }
-  .testimonial .wrap{
-    display:grid;grid-template-columns:auto 1fr;gap:40px;align-items:center;
+  .testimonial-card{
+    background:#ffffff;
+    border:2.5px solid var(--gold);
+    border-radius:24px;
+    padding:44px 54px;
+    box-shadow:0 14px 34px -14px rgba(253,195,0,0.32), 0 4px 16px rgba(31,52,16,0.04);
+    display:grid;
+    grid-template-columns:auto 1fr;
+    gap:36px;
+    align-items:center;
+    position:relative;
   }
   .quote-mark{
-    font-family:var(--display);font-size:5.5rem;color:var(--purple-deep);opacity:0.35;line-height:1;
+    font-family:var(--display);
+    font-size:6.5rem;
+    color:var(--gold);
+    opacity:0.95;
+    line-height:0.8;
   }
   .testimonial blockquote{
-    margin:0;font-family:var(--display);font-weight:500;
-    font-size:clamp(1.3rem,2.4vw,1.9rem);color:var(--green-ink);line-height:1.35;
+    margin:0;
+    font-family:var(--display);
+    font-weight:500;
+    font-size:clamp(1.25rem,2.2vw,1.75rem);
+    color:var(--green-ink);
+    line-height:1.45;
   }
   .testimonial cite{
-    display:block;margin-top:20px;font-style:normal;font-weight:700;color:var(--purple-deep);font-size:0.95rem;
+    display:block;
+    margin-top:20px;
+    font-style:normal;
+    font-weight:700;
+    color:var(--purple-deep);
+    font-size:0.95rem;
   }
   .testimonial cite span{
-    display:block;font-weight:500;color:var(--ink);opacity:0.75;font-size:0.85rem;margin-top:2px;
+    display:block;
+    font-weight:500;
+    color:var(--ink-soft);
+    font-size:0.85rem;
+    margin-top:2px;
   }
 
   /* ---------- cta ---------- */
@@ -679,6 +709,7 @@
     .process-steps{grid-template-columns:1fr;}
     .impact .wrap{grid-template-columns:1fr 1fr;}
     .testimonial .wrap{grid-template-columns:1fr;text-align:left;}
+    .testimonial-card{grid-template-columns:1fr;padding:30px 22px;text-align:left;}
     .quote-mark{display:none;}
     .footer-grid{grid-template-columns:1fr;}
   }
@@ -1131,10 +1162,12 @@ proveedores consultan sus propias ventas en modo solo lectura.</p>
   <!-- ================= TESTIMONIO ================= -->
   <section class="testimonial" id="comunidad">
     <div class="wrap">
-      <div class="quote-mark" aria-hidden="true">&ldquo;</div>
-      <div data-reveal>
-        <blockquote>Antes no sabíamos cuánto se vendía de nuestros productos en el Minimarket. Ahora entramos al sistema y vemos las ventas, el inventario y hasta las alertas cuando algo se está agotando.&rdquo;</blockquote>
-        <cite>Proveedor del Minimarket Zajuna Campo<span>Café y productos agroindustriales</span></cite>
+      <div class="testimonial-card" data-reveal>
+        <div class="quote-mark" aria-hidden="true">&ldquo;</div>
+        <div>
+          <blockquote>Antes no sabíamos cuánto se vendía de nuestros productos en el Minimarket. Ahora entramos al sistema y vemos las ventas, el inventario y hasta las alertas cuando algo se está agotando.&rdquo;</blockquote>
+          <cite>Proveedor del Minimarket Zajuna Campo<span>Café y productos agroindustriales</span></cite>
+        </div>
       </div>
     </div>
   </section>

@@ -612,7 +612,6 @@ $catColors = ['#fdc300','#71277a','#39a900','#ef4444','#3b82f6','#f97316','#8b5c
                                 <div class="flex items-center gap-1.5 flex-wrap">
                                     <span class="font-bold text-gray-800">{{ $item->cantidad }}x</span>
                                     <span class="text-gray-700">{{ $item->producto->nombre ?? 'Producto eliminado' }}</span>
-                                    <span class="text-gray-400 text-[10px]">(${number_format($item->subtotal,0,',','.')})</span>
                                     @if(!$proveedorId && $item->producto && $item->producto->proveedor)
                                         <span class="text-[10px] px-1.5 py-0.2 rounded bg-gray-100 text-gray-600 font-semibold">
                                             {{ $item->producto->proveedor->nombre }}

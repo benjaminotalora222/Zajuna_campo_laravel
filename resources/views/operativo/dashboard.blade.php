@@ -223,7 +223,7 @@
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
             @php
             $accesos = [
-                ['label'=>'Inventario y consignación','route'=>'operativo.consignacion.index','bg'=>'#f0fdf4','color'=>'#39a900',
+                ['label'=>'Inventario','route'=>'operativo.consignacion.index','bg'=>'#f0fdf4','color'=>'#39a900',
                  'icon'=>'M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7Z|M8 5V3a4 4 0 0 1 8 0v2'],
                 ['label'=>'Ventas','route'=>'operativo.ventas.index','bg'=>'#fffbeb','color'=>'#d97706',
                  'icon'=>'M4 4h2l2.4 12.4a2 2 0 0 0 2 1.6h7.4a2 2 0 0 0 2-1.6L21 8H6|circle cx=9 cy=20 r=1.5|circle cx=18 cy=20 r=1.5'],

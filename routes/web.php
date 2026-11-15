@@ -154,6 +154,7 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
 
     // ── Módulo Ventas ──
     Route::get('ventas/dashboard', [VentaController::class, 'dashboard'])->name('ventas.dashboard');
+    Route::get('ventas/{venta}/factura-pos', [VentaController::class, 'facturaPos'])->name('ventas.facturaPos');
     Route::resource('ventas', VentaController::class)->except(['show', 'create', 'edit'])->parameters(['ventas' => 'venta']);
     Route::get('ventas/producto/{producto}/precio', [VentaController::class, 'precioProducto'])->name('ventas.precio');
 
@@ -230,6 +231,7 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
     // Minimarket
     Route::resource('consignacion', OperativoConsignacionController::class)->except(['show', 'create', 'edit']);
     Route::get('ventas/dashboard', [OperativoVentaController::class, 'dashboard'])->name('ventas.dashboard');
+    Route::get('ventas/{venta}/factura-pos', [OperativoVentaController::class, 'facturaPos'])->name('ventas.facturaPos');
     Route::resource('ventas', OperativoVentaController::class)->except(['show', 'create', 'edit'])->parameters(['ventas' => 'venta']);
     Route::get('ventas/producto/{producto}/precio', [OperativoVentaController::class, 'precioProducto'])->name('ventas.precio');
 

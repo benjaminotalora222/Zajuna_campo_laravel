@@ -59,8 +59,8 @@ class PasswordResetLinkController extends Controller
 
         session(['reset_email' => $request->email]);
 
-        // Si el entorno usa mailer log o local, se pasa dev_code para ayudar en pruebas
-        if (config('mail.default') === 'log' || app()->environment('local')) {
+        // Si el mailer es 'log', pasamos dev_code a la sesión para pruebas locales sin servidor SMTP
+        if (config('mail.default') === 'log') {
             session(['dev_code' => $codigo]);
         }
 

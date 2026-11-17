@@ -18,8 +18,8 @@ class OrdenPedidoController extends Controller
     private function verificarAcceso(): void
     {
         $roleId = (int) auth()->user()->role_id;
-        if (!in_array($roleId, [1, 2])) {
-            abort(403, 'Acceso denegado al módulo de órdenes de pedido.');
+        if ($roleId !== 1) {
+            abort(403, 'Acceso denegado al módulo de órdenes de pedido. Solo disponible para superadministradores.');
         }
     }
 
@@ -27,7 +27,13 @@ class OrdenPedidoController extends Controller
     {
         $this->verificarAcceso();
 
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         $query = OrdenPedido::with(['proveedor', 'producto', 'user'])->latest();
+
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -59,9 +65,9 @@ class OrdenPedidoController extends Controller
             ->values();
 
         $stats = [
-            'total_ordenes'   => OrdenPedido::count(),
-            'enviadas'        => OrdenPedido::where('estado', 'enviada')->count(),
-            'recibidas'       => OrdenPedido::where('estado', 'recibida')->count(),
+            'total_ordenes'   => OrdenPedido::when($userId, fn($q) => $q->where('user_id', $userId))->count(),
+            'enviadas'        => OrdenPedido::when($userId, fn($q) => $q->where('user_id', $userId))->where('estado', 'enviada')->count(),
+            'recibidas'       => OrdenPedido::when($userId, fn($q) => $q->where('user_id', $userId))->where('estado', 'recibida')->count(),
             'productos_alerta'=> $productosStockBajo->count(),
         ];
 
@@ -109,6 +115,11 @@ class OrdenPedidoController extends Controller
     public function reenviar(OrdenPedido $orden)
     {
         $this->verificarAcceso();
+
+        if (auth()->user()->role_id === 2 && $orden->user_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para gestionar esta orden.');
+        }
+
         $orden->loadMissing(['proveedor', 'producto']);
 
         $proveedor = $orden->proveedor;
@@ -152,6 +163,10 @@ class OrdenPedidoController extends Controller
     public function cambiarEstado(Request $request, OrdenPedido $orden)
     {
         $this->verificarAcceso();
+
+        if (auth()->user()->role_id === 2 && $orden->user_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para modificar esta orden.');
+        }
 
         $request->validate([
             'estado' => 'required|in:generada,enviada,recibida,cancelada',

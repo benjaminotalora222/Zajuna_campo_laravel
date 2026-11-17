@@ -372,9 +372,12 @@ class ReporteController extends Controller
 
     private function datosMasVendidos($inicio, $fin): array
     {
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         $productos = DB::table('venta_items')
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
+            ->when($userId, fn($q) => $q->where('venta.idUsuario', $userId))
             ->whereBetween('venta.fechaVenta', [$inicio, $fin])
             ->select(
                 'producto.id',
@@ -400,7 +403,10 @@ class ReporteController extends Controller
 
     private function datosVentas($inicio, $fin): array
     {
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         $ventas = Venta::with(['items.producto', 'usuario'])
+            ->when($userId, fn($q) => $q->where('idUsuario', $userId))
             ->whereBetween('fechaVenta', [$inicio, $fin])
             ->orderByDesc('fechaVenta')
             ->get();
@@ -411,6 +417,7 @@ class ReporteController extends Controller
         $topProductos = DB::table('venta_items')
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
+            ->when($userId, fn($q) => $q->where('venta.idUsuario', $userId))
             ->whereBetween('venta.fechaVenta', [$inicio, $fin])
             ->select('producto.id', 'producto.nombre', 'producto.categoria', DB::raw('SUM(venta_items.subtotal) as total_ventas'), DB::raw('SUM(venta_items.cantidad) as unidades'))
             ->groupBy('producto.id', 'producto.nombre', 'producto.categoria')
@@ -424,9 +431,11 @@ class ReporteController extends Controller
 
     private function datosVentasProveedor($inicio, $fin, $proveedorId = null): array
     {
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
         $proveedor = $proveedorId ? Proveedor::find($proveedorId) : null;
 
         $ventasQuery = Venta::with(['items.producto.proveedor', 'usuario'])
+            ->when($userId, fn($q) => $q->where('idUsuario', $userId))
             ->whereBetween('fechaVenta', [$inicio, $fin]);
 
         if ($proveedorId) {
@@ -438,6 +447,7 @@ class ReporteController extends Controller
         $itemsQuery = DB::table('venta_items')
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
+            ->when($userId, fn($q) => $q->where('venta.idUsuario', $userId))
             ->whereBetween('venta.fechaVenta', [$inicio, $fin]);
 
         if ($proveedorId) {
@@ -473,7 +483,13 @@ class ReporteController extends Controller
 
     private function datosActividades($inicio, $fin): array
     {
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         $actividades = Actividad::with(['proyecto','responsableUser'])
+            ->when($userId, fn($q) => $q->where(function($sub) use ($userId) {
+                $sub->where('responsable_id', $userId)
+                    ->orWhere('responsable', auth()->user()->name);
+            }))
             ->whereBetween('created_at', [$inicio, $fin])
             ->orderByDesc('created_at')
             ->get();
@@ -489,7 +505,10 @@ class ReporteController extends Controller
 
     private function datosProyectos(): array
     {
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         $proyectos = ProyectoInvestigacion::with(['responsable', 'tareas'])
+            ->when($userId, fn($q) => $q->where('responsable_id', $userId))
             ->orderByDesc('created_at')
             ->get();
 
@@ -521,7 +540,10 @@ class ReporteController extends Controller
 
     private function dareasTareas($inicio, $fin): array
     {
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         $tareas = Tarea::with(['proyecto','responsable'])
+            ->when($userId, fn($q) => $q->where('responsable_id', $userId))
             ->whereBetween('created_at', [$inicio, $fin])
             ->orderByDesc('created_at')
             ->get();
@@ -537,7 +559,10 @@ class ReporteController extends Controller
 
     private function datosTransferenciasShows(Carbon $inicio, Carbon $fin, ?string $filtroTipo = null, ?string $filtroEspacio = null): array
     {
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         $eventosQuery = Evento::with(['creadoPor', 'actividad'])
+            ->when($userId, fn($q) => $q->where('creado_por', $userId))
             ->whereBetween('fecha', [$inicio->toDateString(), $fin->toDateString()]);
 
         if ($filtroTipo) {
@@ -550,6 +575,10 @@ class ReporteController extends Controller
         $eventos = $eventosQuery->orderBy('fecha')->orderBy('hora_inicio')->get();
 
         $actividadesQuery = Actividad::with(['proyecto', 'responsableUser', 'evento'])
+            ->when($userId, fn($q) => $q->where(function($sub) use ($userId) {
+                $sub->where('responsable_id', $userId)
+                    ->orWhere('responsable', auth()->user()->name);
+            }))
             ->where(function ($q) use ($inicio, $fin) {
                 $q->whereBetween('fecha_limite', [$inicio->toDateString(), $fin->toDateString()])
                   ->orWhereBetween('fecha_hora', [$inicio, $fin])

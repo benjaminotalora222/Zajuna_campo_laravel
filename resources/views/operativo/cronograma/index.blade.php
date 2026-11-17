@@ -266,7 +266,7 @@
 let eventoActualId = null;
 
 const ROUTES = {
-    store:   '{{ route("superadmin.cronograma.store") }}',
+    store:   '{{ route("operativo.cronograma.store") }}',
     show:    '/operativo/cronograma/',
     update:  '/operativo/cronograma/',
     destroy: '/operativo/cronograma/',

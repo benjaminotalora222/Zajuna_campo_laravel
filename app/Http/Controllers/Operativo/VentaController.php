@@ -80,7 +80,13 @@ class VentaController extends Controller
     {
         $this->soloOperativo();
 
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         $query = Venta::with(['items.producto', 'usuario'])->orderByDesc('fechaVenta')->orderByDesc('id');
+
+        if ($userId) {
+            $query->where('idUsuario', $userId);
+        }
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -107,28 +113,33 @@ class VentaController extends Controller
 
         $hoy   = now();
         $stats = [
-            'total_mes'    => Venta::whereMonth('fechaVenta', $hoy->month)->whereYear('fechaVenta', $hoy->year)->count(),
-            'ingresos_mes' => Venta::whereMonth('fechaVenta', $hoy->month)->whereYear('fechaVenta', $hoy->year)->sum('total'),
-            'total_hoy'    => Venta::whereDate('fechaVenta', $hoy->toDateString())->count(),
-            'ingresos_hoy' => Venta::whereDate('fechaVenta', $hoy->toDateString())->sum('total'),
+            'total_mes'    => Venta::when($userId, fn($q) => $q->where('idUsuario', $userId))->whereMonth('fechaVenta', $hoy->month)->whereYear('fechaVenta', $hoy->year)->count(),
+            'ingresos_mes' => Venta::when($userId, fn($q) => $q->where('idUsuario', $userId))->whereMonth('fechaVenta', $hoy->month)->whereYear('fechaVenta', $hoy->year)->sum('total'),
+            'total_hoy'    => Venta::when($userId, fn($q) => $q->where('idUsuario', $userId))->whereDate('fechaVenta', $hoy->toDateString())->count(),
+            'ingresos_hoy' => Venta::when($userId, fn($q) => $q->where('idUsuario', $userId))->whereDate('fechaVenta', $hoy->toDateString())->sum('total'),
         ];
 
-        $ventasMes = collect(range(5, 0))->map(function ($i) use ($hoy) {
+        $ventasMes = collect(range(5, 0))->map(function ($i) use ($hoy, $userId) {
             $fecha = $hoy->copy()->subMonths($i);
             return [
                 'mes'      => $fecha->locale('es')->isoFormat('MMM'),
-                'cantidad' => Venta::whereMonth('fechaVenta', $fecha->month)->whereYear('fechaVenta', $fecha->year)->count(),
-                'ingresos' => (float) Venta::whereMonth('fechaVenta', $fecha->month)->whereYear('fechaVenta', $fecha->year)->sum('total'),
+                'cantidad' => Venta::when($userId, fn($q) => $q->where('idUsuario', $userId))->whereMonth('fechaVenta', $fecha->month)->whereYear('fechaVenta', $fecha->year)->count(),
+                'ingresos' => (float) Venta::when($userId, fn($q) => $q->where('idUsuario', $userId))->whereMonth('fechaVenta', $fecha->month)->whereYear('fechaVenta', $fecha->year)->sum('total'),
             ];
         });
 
-        $anios = Venta::selectRaw('YEAR(fechaVenta) as anio')
+        $anios = Venta::when($userId, fn($q) => $q->where('idUsuario', $userId))
+                      ->selectRaw('YEAR(fechaVenta) as anio')
                       ->whereNotNull('fechaVenta')->distinct()->orderByDesc('anio')->pluck('anio');
 
         // Top productos más vendidos (respeta filtros de mes y año)
         $topProductosQuery = DB::table('venta_items')
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id');
+
+        if ($userId) {
+            $topProductosQuery->where('venta.idUsuario', $userId);
+        }
 
         if ($proveedorId) {
             $topProductosQuery->where('producto.proveedor_id', $proveedorId);
@@ -240,11 +251,17 @@ class VentaController extends Controller
         $proveedores = Proveedor::orderBy('nombre')->get();
         $proveedorActual = $proveedorId ? Proveedor::find($proveedorId) : null;
 
+        $userId = auth()->user()->role_id === 2 ? auth()->id() : null;
+
         // 3. Query base
         $baseItemsQuery = DB::table('venta_items')
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
             ->leftJoin('proveedor', 'producto.proveedor_id', '=', 'proveedor.id');
+
+        if ($userId) {
+            $baseItemsQuery->where('venta.idUsuario', $userId);
+        }
 
         if ($proveedorId) {
             $baseItemsQuery->where('producto.proveedor_id', $proveedorId);
@@ -269,6 +286,7 @@ class VentaController extends Controller
         // Participación en total tienda
         $totalTiendaIngresos = (float) DB::table('venta_items')
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
+            ->when($userId, fn($q) => $q->where('venta.idUsuario', $userId))
             ->whereBetween('venta.fechaVenta', [$inicio, $fin])
             ->sum('venta_items.subtotal');
         $porcentajeParticipacion = $totalTiendaIngresos > 0 ? round(($totalIngresos / $totalTiendaIngresos) * 100, 1) : 0;
@@ -326,6 +344,7 @@ class VentaController extends Controller
             ->join('venta', 'venta_items.venta_id', '=', 'venta.id')
             ->join('producto', 'venta_items.idProducto', '=', 'producto.id')
             ->leftJoin('proveedor', 'producto.proveedor_id', '=', 'proveedor.id')
+            ->when($userId, fn($q) => $q->where('venta.idUsuario', $userId))
             ->whereBetween('venta.fechaVenta', [$inicio, $fin])
             ->select(
                 'producto.proveedor_id',
@@ -503,6 +522,10 @@ class VentaController extends Controller
     {
         $this->soloOperativo();
 
+        if (auth()->user()->role_id === 2 && $venta->idUsuario !== auth()->id()) {
+            abort(403, 'No tienes permiso para modificar esta venta.');
+        }
+
         $request->validate([
             'fechaVenta'             => 'required|date',
             'cliente'                => 'nullable|string|max:255',
@@ -574,6 +597,10 @@ class VentaController extends Controller
     {
         $this->soloOperativo();
 
+        if (auth()->user()->role_id === 2 && $venta->idUsuario !== auth()->id()) {
+            abort(403, 'No tienes permiso para anular esta venta.');
+        }
+
         DB::transaction(function () use ($venta) {
             foreach ($venta->items as $item) {
                 $producto = Producto::find($item->idProducto);
@@ -597,6 +624,10 @@ class VentaController extends Controller
     public function facturaPos(Venta $venta, Request $request)
     {
         $this->soloOperativo();
+
+        if (auth()->user()->role_id === 2 && $venta->idUsuario !== auth()->id()) {
+            abort(403, 'No tienes permiso para ver esta factura.');
+        }
 
         $venta->load(['items.producto.proveedor', 'usuario']);
 

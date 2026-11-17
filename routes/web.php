@@ -59,7 +59,7 @@ Route::get('/dashboard', function () {
 })->middleware(['auth'])->name('dashboard');
 
 // ── Superadmin (rol 1) ──────────────────────────────────────
-Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(function () {
+Route::middleware(['auth', 'role:1'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::get('/dashboard', function () {
         if (auth()->user()->role_id !== 1) abort(403);
 
@@ -222,7 +222,7 @@ Route::middleware(['auth'])->prefix('superadmin')->name('superadmin.')->group(fu
 });
 
 // ── Operativo (rol 2) ───────────────────────────────────────
-Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(function () {
+Route::middleware(['auth', 'role:2'])->prefix('operativo')->name('operativo.')->group(function () {
     Route::get('/dashboard', function () {
         if (auth()->user()->role_id !== 2) abort(403);
         return view('operativo.dashboard');
@@ -273,17 +273,10 @@ Route::middleware(['auth'])->prefix('operativo')->name('operativo.')->group(func
     Route::patch('ejecucion/{tarea}/estado', [OperativoEjecucionController::class, 'moverEstado'])->name('ejecucion.estado');
     Route::delete('ejecucion/{tarea}', [OperativoEjecucionController::class, 'destroy'])->name('ejecucion.destroy');
     Route::post('tareas/notificar-pendientes', [OperativoEjecucionController::class, 'notificarPendientes'])->name('tareas.notificar-pendientes');
-
-    // ── Módulo Órdenes de Pedido (Proveedores / Stock Mínimo) ──
-    Route::get('ordenes', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'index'])->name('ordenes.index');
-    Route::post('ordenes', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'store'])->name('ordenes.store');
-    Route::post('ordenes/{orden}/reenviar', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'reenviar'])->name('ordenes.reenviar');
-    Route::patch('ordenes/{orden}/estado', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'cambiarEstado'])->name('ordenes.estado');
-    Route::post('ordenes/revisar-stock-minimo', [\App\Http\Controllers\Superadmin\OrdenPedidoController::class, 'revisarStockMinimo'])->name('ordenes.revisar-stock-minimo');
 });
 
 // ── Proveedor (rol 3) ───────────────────────────────────────
-Route::middleware(['auth'])->prefix('proveedor')->name('proveedor.')->group(function () {
+Route::middleware(['auth', 'role:3'])->prefix('proveedor')->name('proveedor.')->group(function () {
     Route::get('/dashboard', [\App\Http\Controllers\Proveedor\DashboardController::class, 'index'])->name('dashboard');
 
     // Solo lectura

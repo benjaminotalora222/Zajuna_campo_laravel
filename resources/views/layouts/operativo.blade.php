@@ -170,19 +170,7 @@
         </a>
         @endif
 
-        @php $isOrdenesOp = request()->routeIs('operativo.ordenes.*'); @endphp
-        <a href="{{ route('operativo.ordenes.index') }}"
-           class="sidebar-nav-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition relative group
-                  {{ $isOrdenesOp ? 'bg-zdorado text-gray-900 font-bold shadow-xs' : 'text-gray-800 font-semibold hover:bg-purple-50/70 hover:text-zmorado' }}"
-           title="Órdenes de pedido">
-            @if($isOrdenesOp)
-                <span class="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-zdorado rounded-r"></span>
-            @endif
-            <svg class="w-[19px] h-[19px] stroke-current fill-none stroke-2 shrink-0 {{ $isOrdenesOp ? 'text-gray-900' : 'text-zmorado' }}" viewBox="0 0 24 24">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
-            </svg>
-            <span class="sidebar-label">Órdenes de pedido</span>
-        </a>
+
 
         <div class="sidebar-section-divider flex items-center gap-2 px-3 pt-4 pb-1.5">
             <span class="text-[10.5px] font-extrabold uppercase tracking-wider text-zverde">TRANSFERENCIAS Y SHOWS</span>
@@ -254,7 +242,9 @@
             </svg>
             <span class="sidebar-label">Tareas y avances</span>
             @php
-                $tareasVencidasSidebarOp = \App\Models\Tarea::vencidas()->count();
+                $tareasVencidasSidebarOp = \App\Models\Tarea::vencidas()
+                    ->when(auth()->user()->role_id === 2, fn($q) => $q->where('responsable_id', auth()->id()))
+                    ->count();
             @endphp
             @if($tareasVencidasSidebarOp > 0)
                 <span class="sidebar-badge ml-auto bg-red-500 text-white text-[10.5px] font-extrabold px-2 py-0.5 rounded-full shrink-0 animate-pulse"

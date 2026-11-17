@@ -30,6 +30,9 @@ class CronogramaController extends Controller
         $filtroTipo = $request->input('tipo', '');
 
         $query = Evento::whereYear('fecha', $anio)->whereMonth('fecha', $mes);
+        if (auth()->user()->role_id === 2) {
+            $query->where('creado_por', auth()->id());
+        }
         if ($filtroTipo) {
             $query->where('tipo', $filtroTipo);
         }
@@ -85,12 +88,21 @@ class CronogramaController extends Controller
     public function show(Evento $evento)
     {
         $this->soloOperativo();
+
+        if (auth()->user()->role_id === 2 && $evento->creado_por !== auth()->id()) {
+            abort(403, 'No tienes permiso para acceder a este evento.');
+        }
+
         return response()->json($evento);
     }
 
     public function update(Request $request, Evento $evento)
     {
         $this->soloOperativo();
+
+        if (auth()->user()->role_id === 2 && $evento->creado_por !== auth()->id()) {
+            abort(403, 'No tienes permiso para modificar este evento.');
+        }
 
         $data = $request->validate([
             'titulo'      => 'required|string|max:255',
@@ -130,6 +142,11 @@ class CronogramaController extends Controller
     public function destroy(Evento $evento)
     {
         $this->soloOperativo();
+
+        if (auth()->user()->role_id === 2 && $evento->creado_por !== auth()->id()) {
+            abort(403, 'No tienes permiso para eliminar este evento.');
+        }
+
         Actividad::where('evento_id', $evento->id)->delete();
         $evento->delete();
         return response()->json(['ok' => true, 'message' => 'Evento eliminado.']);

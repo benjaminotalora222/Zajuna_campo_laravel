@@ -23,6 +23,13 @@ class ActividadController extends Controller
 
         $query = Actividad::with(['proyecto', 'responsableUser', 'evento'])->latest();
 
+        if (auth()->user()->role_id === 2) {
+            $query->where(function ($q) {
+                $q->where('responsable_id', auth()->id())
+                  ->orWhere('responsable', auth()->user()->name);
+            });
+        }
+
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('tema', 'like', "%{$search}%")
@@ -46,8 +53,12 @@ class ActividadController extends Controller
         }
 
         $actividades = $query->paginate(10)->withQueryString();
-        $proyectos   = ProyectoInvestigacion::orderBy('nombre')->get();
-        $usuarios    = User::where('activo', true)->orderBy('name')->get();
+        $proyectos   = auth()->user()->role_id === 2
+            ? ProyectoInvestigacion::where('responsable_id', auth()->id())->orderBy('nombre')->get()
+            : ProyectoInvestigacion::orderBy('nombre')->get();
+        $usuarios    = auth()->user()->role_id === 2
+            ? collect([auth()->user()])
+            : User::where('activo', true)->orderBy('name')->get();
 
         return view('operativo.actividades.index', compact('actividades', 'proyectos', 'usuarios'));
     }
@@ -108,6 +119,11 @@ class ActividadController extends Controller
             $data['documento_nombre'] = null;
         }
 
+        if (auth()->user()->role_id === 2) {
+            $data['responsable_id'] = auth()->id();
+            $data['responsable']    = auth()->user()->name;
+        }
+
         Actividad::create($data);
         LogAuditoria::registrar('Actividades', 'Creación', "Se creó la actividad: {$data['tema']}");
 
@@ -118,6 +134,10 @@ class ActividadController extends Controller
     public function update(Request $request, Actividad $actividad)
     {
         $this->soloOperativo();
+
+        if (auth()->user()->role_id === 2 && $actividad->responsable_id !== auth()->id() && $actividad->responsable !== auth()->user()->name) {
+            abort(403, 'No tienes permiso para modificar esta actividad.');
+        }
 
         $messages = [
             'tema.required'    => 'El tema o nombre de la actividad es obligatorio.',
@@ -198,6 +218,11 @@ class ActividadController extends Controller
             $data['documento_nombre'] = null;
         }
 
+        if (auth()->user()->role_id === 2) {
+            $data['responsable_id'] = auth()->id();
+            $data['responsable']    = auth()->user()->name;
+        }
+
         $actividad->update($data);
         LogAuditoria::registrar('Actividades', 'Actualización', "Se actualizó la actividad: {$actividad->tema}");
 
@@ -208,6 +233,10 @@ class ActividadController extends Controller
     public function destroy(Actividad $actividad)
     {
         $this->soloOperativo();
+
+        if (auth()->user()->role_id === 2 && $actividad->responsable_id !== auth()->id() && $actividad->responsable !== auth()->user()->name) {
+            abort(403, 'No tienes permiso para eliminar esta actividad.');
+        }
 
         if ($actividad->documento) {
             Storage::disk('public')->delete($actividad->documento);

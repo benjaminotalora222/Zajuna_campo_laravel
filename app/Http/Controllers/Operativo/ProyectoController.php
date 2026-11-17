@@ -22,6 +22,10 @@ class ProyectoController extends Controller
 
         $query = ProyectoInvestigacion::with(['responsable', 'aprendices']);
 
+        if (auth()->user()->role_id === 2) {
+            $query->where('responsable_id', auth()->id());
+        }
+
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('nombre', 'like', "%{$search}%")
@@ -42,9 +46,13 @@ class ProyectoController extends Controller
         };
 
         $proyectos = $query->get();
-        $usuarios  = User::where('activo', true)->orderBy('name')->get();
+        $usuarios  = auth()->user()->role_id === 2 ? collect([auth()->user()]) : User::where('activo', true)->orderBy('name')->get();
         $total     = $proyectos->count();
-        $aprendices = \App\Models\Aprendiz::with('proyecto')->latest()->get();
+
+        $proyectoIds = $proyectos->pluck('id');
+        $aprendices = \App\Models\Aprendiz::with('proyecto')
+            ->when(auth()->user()->role_id === 2, fn($q) => $q->whereIn('proyecto_id', $proyectoIds))
+            ->latest()->get();
         $totalAprendices = $aprendices->count();
 
         return view('operativo.proyectos.index', compact('proyectos', 'usuarios', 'total', 'aprendices', 'totalAprendices'));
@@ -85,6 +93,10 @@ class ProyectoController extends Controller
             $data['imagen'] = $request->file('imagen')->store('proyectos', 'public');
         }
 
+        if (auth()->user()->role_id === 2) {
+            $data['responsable_id'] = auth()->id();
+        }
+
         $proyecto = ProyectoInvestigacion::create($data);
 
         if (!empty($aprendicesIds)) {
@@ -104,6 +116,10 @@ class ProyectoController extends Controller
     public function update(Request $request, ProyectoInvestigacion $proyecto)
     {
         $this->soloOperativo();
+
+        if (auth()->user()->role_id === 2 && $proyecto->responsable_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para modificar este proyecto.');
+        }
 
         $messages = [
             'nombre.required'           => 'El nombre del proyecto es obligatorio.',
@@ -156,6 +172,11 @@ class ProyectoController extends Controller
     public function destroy(ProyectoInvestigacion $proyecto)
     {
         $this->soloOperativo();
+
+        if (auth()->user()->role_id === 2 && $proyecto->responsable_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para eliminar este proyecto.');
+        }
+
         if ($proyecto->imagen) Storage::disk('public')->delete($proyecto->imagen);
         $proyecto->delete();
         LogAuditoria::registrar('Proyectos', 'Eliminación', "Se eliminó el proyecto: {$proyecto->nombre}");

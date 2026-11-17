@@ -19,32 +19,42 @@
     </div>
 
     @php
+        $userId = auth()->id();
+
         // KPIs
         $ventasMes    = \Illuminate\Support\Facades\DB::table('venta')
+                            ->where('idUsuario', $userId)
                             ->whereMonth('fechaVenta', now()->month)
                             ->whereYear('fechaVenta', now()->year)
                             ->count();
         $totalMes     = \Illuminate\Support\Facades\DB::table('venta')
+                            ->where('idUsuario', $userId)
                             ->whereMonth('fechaVenta', now()->month)
                             ->whereYear('fechaVenta', now()->year)
                             ->sum('total');
         $consignaciones = \App\Models\Consignacion::where('estado', 'proximo_vencer')->count();
-        $proyectos    = \Illuminate\Support\Facades\DB::table('proyectoinvestigacion')->count();
+        $proyectos    = \Illuminate\Support\Facades\DB::table('proyectoinvestigacion')
+                            ->where('responsable_id', $userId)
+                            ->count();
         $tareasPendientes = \Illuminate\Support\Facades\DB::table('tarea')
-                            ->where('estado', '!=', 'completado')
+                            ->where('responsable_id', $userId)
+                            ->where('estado', '!=', 'completada')
                             ->count();
         $eventosHoy   = \Illuminate\Support\Facades\DB::table('evento')
+                            ->where('creado_por', $userId)
                             ->whereDate('fecha', now()->toDateString())
                             ->count();
 
         // Últimas ventas
         $ultimasVentas = \Illuminate\Support\Facades\DB::table('venta')
+                            ->where('idUsuario', $userId)
                             ->orderByDesc('fechaVenta')
                             ->limit(5)
                             ->get();
 
         // Proyectos con avance
         $proyectosAvance = \Illuminate\Support\Facades\DB::table('proyectoinvestigacion')
+                            ->where('responsable_id', $userId)
                             ->select('nombre', 'porcentajeAvance', 'estado')
                             ->orderByDesc('porcentajeAvance')
                             ->limit(4)

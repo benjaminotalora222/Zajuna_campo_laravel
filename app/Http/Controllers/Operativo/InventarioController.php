@@ -67,6 +67,7 @@ class InventarioController extends Controller
 
         $movimientos = $producto->movimientos()
             ->with(['usuario', 'lote'])
+            ->when(auth()->user()->role_id === 2, fn($q) => $q->where('user_id', auth()->id()))
             ->orderByDesc('fechaMovimiento')
             ->paginate(10, ['*'], 'mov_page');
 
@@ -447,6 +448,10 @@ class InventarioController extends Controller
     public function updateMovimiento(Request $request, MovimientoInventario $movimiento)
     {
         Gate::authorize('registrarMovimiento', $movimiento->producto);
+
+        if (auth()->user()->role_id === 2 && $movimiento->user_id !== auth()->id()) {
+            abort(403, 'No tienes permiso para modificar este movimiento.');
+        }
 
         $data = $request->validate([
             'cantidad' => 'required|integer|min:1',

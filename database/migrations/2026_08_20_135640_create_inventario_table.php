@@ -10,13 +10,13 @@ return new class extends Migration
     {
         Schema::create('Inventario', function (Blueprint $table) {
             $table->increments('idInventario');
-            $table->unsignedInteger('idProducto');
+            $table->unsignedBigInteger('idProducto');
             $table->integer('cantidadActual')->default(0);
             $table->string('ubicacion', 255)->nullable();
             $table->dateTime('fechaActualizacion')->nullable()->useCurrent();
 
             $table->foreign('idProducto')
-                ->references('idProducto')->on('Producto')
+                ->references('id')->on('producto')
                 ->cascadeOnDelete();
         });
     }

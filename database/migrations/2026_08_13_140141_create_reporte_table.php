@@ -8,23 +8,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('Reporte', function (Blueprint $table) {
-            $table->increments('idReporte');
+        Schema::create('reporte', function (Blueprint $table) {
+            $table->id();
             $table->string('tipo', 255)->nullable();
             $table->date('fechaInicio')->nullable();
             $table->date('fechaFin')->nullable();
             $table->string('formato', 255)->nullable();
             $table->dateTime('fechaGeneracion')->nullable();
-            $table->unsignedInteger('idVenta')->nullable();
+            $table->unsignedBigInteger('idVenta')->nullable();
+            $table->timestamps();
 
             $table->foreign('idVenta')
-                ->references('idVenta')->on('Venta')
+                ->references('id')->on('venta')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('Reporte');
+        Schema::dropIfExists('reporte');
     }
 };

@@ -8,8 +8,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('Actividad', function (Blueprint $table) {
-            $table->increments('idActividad');
+        Schema::create('actividad', function (Blueprint $table) {
+            $table->id();
             $table->string('tipo', 255)->nullable();
             $table->string('tema', 255)->nullable();
             $table->dateTime('fechaHora')->nullable();
@@ -17,16 +17,17 @@ return new class extends Migration
             $table->string('espacioFisico', 255)->nullable();
             $table->string('responsable', 255)->nullable();
             $table->string('estado', 255)->nullable();
-            $table->unsignedInteger('idProyecto')->nullable();
+            $table->unsignedBigInteger('idProyecto')->nullable();
+            $table->timestamps();
 
             $table->foreign('idProyecto')
-                ->references('idProyecto')->on('ProyectoInvestigacion')
+                ->references('id')->on('proyectoinvestigacion')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('Actividad');
+        Schema::dropIfExists('actividad');
     }
 };

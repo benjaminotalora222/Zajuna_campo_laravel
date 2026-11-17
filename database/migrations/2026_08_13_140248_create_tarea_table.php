@@ -8,24 +8,25 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('Tarea', function (Blueprint $table) {
-            $table->increments('idTarea');
+        Schema::create('tarea', function (Blueprint $table) {
+            $table->id();
             $table->string('nombre', 255)->nullable();
             $table->text('descripcion')->nullable();
             $table->string('responsable', 255)->nullable();
             $table->date('fechaEntrega')->nullable();
             $table->string('estado', 255)->nullable();
-            $table->decimal('porcentajeAvance', 5, 2)->nullable();
-            $table->unsignedInteger('idProyecto')->nullable();
+            $table->decimal('porcentajeAvance', 5, 2)->nullable()->default(0);
+            $table->unsignedBigInteger('idProyecto')->nullable();
+            $table->timestamps();
 
             $table->foreign('idProyecto')
-                ->references('idProyecto')->on('ProyectoInvestigacion')
+                ->references('id')->on('proyectoinvestigacion')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('Tarea');
+        Schema::dropIfExists('tarea');
     }
 };

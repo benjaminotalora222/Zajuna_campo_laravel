@@ -8,19 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('Producto', function (Blueprint $table) {
-            $table->increments('idProducto');
+        Schema::create('producto', function (Blueprint $table) {
+            $table->id();
             $table->string('nombre', 255)->nullable();
             $table->decimal('precio', 10, 2)->nullable();
             $table->integer('stockActual')->nullable();
             $table->integer('stockMinimo')->nullable();
             $table->string('codigoBarras', 255)->nullable();
             $table->integer('diasPerecederoMax')->nullable();
+            $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('Producto');
+        Schema::dropIfExists('producto');
     }
 };

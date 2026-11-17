@@ -8,23 +8,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('MovimientoInventario', function (Blueprint $table) {
-            $table->increments('idMovimiento');
+        Schema::create('movimientoinventario', function (Blueprint $table) {
+            $table->id();
             $table->string('tipo', 255)->nullable();
             $table->integer('cantidad')->nullable();
             $table->dateTime('fechaMovimiento')->nullable();
             $table->date('fechaVencimiento')->nullable();
             $table->string('motivo', 255)->nullable();
-            $table->unsignedInteger('idProducto')->nullable();
+            $table->unsignedBigInteger('idProducto')->nullable();
+            $table->timestamps();
 
             $table->foreign('idProducto')
-                ->references('idProducto')->on('Producto')
+                ->references('id')->on('producto')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('MovimientoInventario');
+        Schema::dropIfExists('movimientoinventario');
     }
 };

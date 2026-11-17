@@ -8,20 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('Cronograma', function (Blueprint $table) {
-            $table->increments('idCronograma');
+        Schema::create('cronograma', function (Blueprint $table) {
+            $table->id();
             $table->string('espacioFisico', 255)->nullable();
             $table->date('fechaVisita')->nullable();
-            $table->unsignedInteger('idActividad')->nullable();
+            $table->unsignedBigInteger('idActividad')->nullable();
+            $table->timestamps();
 
             $table->foreign('idActividad')
-                ->references('idActividad')->on('Actividad')
+                ->references('id')->on('actividad')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('Cronograma');
+        Schema::dropIfExists('cronograma');
     }
 };

@@ -8,22 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('Alerta', function (Blueprint $table) {
-            $table->increments('idAlerta');
+        Schema::create('alerta', function (Blueprint $table) {
+            $table->id();
             $table->string('tipo', 255)->nullable();
             $table->string('mensaje', 255)->nullable();
             $table->dateTime('fechaGeneracion')->nullable();
-            $table->boolean('leida')->nullable();
-            $table->unsignedInteger('idProducto')->nullable();
+            $table->boolean('leida')->nullable()->default(false);
+            $table->unsignedBigInteger('idProducto')->nullable();
+            $table->timestamps();
 
             $table->foreign('idProducto')
-                ->references('idProducto')->on('Producto')
+                ->references('id')->on('producto')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('Alerta');
+        Schema::dropIfExists('alerta');
     }
 };

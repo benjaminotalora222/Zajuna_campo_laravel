@@ -8,23 +8,24 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('ReporteActividades', function (Blueprint $table) {
-            $table->increments('idReporte');
+        Schema::create('reporteactividades', function (Blueprint $table) {
+            $table->id();
             $table->string('tipo', 255)->nullable();
             $table->integer('totalActividades')->nullable();
             $table->integer('totalParticipantes')->nullable();
             $table->decimal('promedioAsistencia', 5, 2)->nullable();
             $table->dateTime('fechaGeneracion')->nullable();
-            $table->unsignedInteger('idProyecto')->nullable();
+            $table->unsignedBigInteger('idProyecto')->nullable();
+            $table->timestamps();
 
             $table->foreign('idProyecto')
-                ->references('idProyecto')->on('ProyectoInvestigacion')
+                ->references('id')->on('proyectoinvestigacion')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('ReporteActividades');
+        Schema::dropIfExists('reporteactividades');
     }
 };

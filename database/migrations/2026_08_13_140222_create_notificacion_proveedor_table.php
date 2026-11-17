@@ -8,22 +8,23 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('NotificacionProveedor', function (Blueprint $table) {
-            $table->increments('idNotificacion');
+        Schema::create('notificacionproveedor', function (Blueprint $table) {
+            $table->id();
             $table->string('asunto', 255)->nullable();
             $table->dateTime('fechaEnvio')->nullable();
             $table->string('estadoEnvio', 255)->nullable();
             $table->string('tipoNotificacion', 255)->nullable();
-            $table->unsignedInteger('idOrden')->nullable();
+            $table->unsignedBigInteger('idOrden')->nullable();
+            $table->timestamps();
 
             $table->foreign('idOrden')
-                ->references('idOrden')->on('OrdenPedido')
+                ->references('id')->on('ordenpedido')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('NotificacionProveedor');
+        Schema::dropIfExists('notificacionproveedor');
     }
 };

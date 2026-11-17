@@ -8,21 +8,22 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('EvidenciaActividad', function (Blueprint $table) {
-            $table->increments('idEvidencia');
+        Schema::create('evidenciaactividad', function (Blueprint $table) {
+            $table->id();
             $table->string('urlDocumento', 255)->nullable();
             $table->string('orientador', 255)->nullable();
             $table->string('registroFotografico', 255)->nullable();
-            $table->unsignedInteger('idActividad')->nullable();
+            $table->unsignedBigInteger('idActividad')->nullable();
+            $table->timestamps();
 
             $table->foreign('idActividad')
-                ->references('idActividad')->on('Actividad')
+                ->references('id')->on('actividad')
                 ->nullOnDelete();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('EvidenciaActividad');
+        Schema::dropIfExists('evidenciaactividad');
     }
 };

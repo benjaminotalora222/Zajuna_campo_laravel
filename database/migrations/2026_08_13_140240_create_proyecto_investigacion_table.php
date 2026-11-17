@@ -8,19 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('ProyectoInvestigacion', function (Blueprint $table) {
-            $table->increments('idProyecto');
+        Schema::create('proyectoinvestigacion', function (Blueprint $table) {
+            $table->id();
             $table->string('nombre', 255)->nullable();
             $table->text('objetivos')->nullable();
             $table->text('justificacion')->nullable();
             $table->text('marcoTeorico')->nullable();
             $table->text('instructores')->nullable();
-            $table->decimal('porcentajeAvance', 5, 2)->nullable();
+            $table->decimal('porcentajeAvance', 5, 2)->nullable()->default(0);
+            $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('ProyectoInvestigacion');
+        Schema::dropIfExists('proyectoinvestigacion');
     }
 };

@@ -62,7 +62,7 @@ class UsuarioController extends Controller
         $messages = [
             'name.required'     => 'El nombre completo es obligatorio.',
             'name.min'          => 'El nombre debe tener al menos 3 caracteres.',
-            'name.regex'        => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
+            'name.regex'        => 'El nombre no puede comenzar con números y solo debe contener letras.',
             'email.required'    => 'El correo electrónico es obligatorio.',
             'email.email'       => 'Ingresa un correo electrónico válido.',
             'email.unique'      => 'Este correo electrónico ya está registrado.',
@@ -74,7 +74,7 @@ class UsuarioController extends Controller
         ];
 
         $data = $request->validate([
-            'name'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
+            'name'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'email'         => 'required|email|unique:users,email',
             'password'      => 'required|string|min:8|confirmed',
             'role_id'       => 'required|exists:roles,id',
@@ -126,7 +126,7 @@ class UsuarioController extends Controller
         $messages = [
             'name.required'     => 'El nombre completo es obligatorio.',
             'name.min'          => 'El nombre debe tener al menos 3 caracteres.',
-            'name.regex'        => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
+            'name.regex'        => 'El nombre no puede comenzar con números y solo debe contener letras.',
             'email.required'    => 'El correo electrónico es obligatorio.',
             'email.email'       => 'Ingresa un correo electrónico válido.',
             'email.unique'      => 'Este correo electrónico ya está registrado.',
@@ -137,7 +137,7 @@ class UsuarioController extends Controller
         ];
 
         $data = $request->validate([
-            'name'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
+            'name'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'email'         => ['required', 'email', Rule::unique('users', 'email')->ignore($usuario->id)],
             'password'      => 'nullable|string|min:8|confirmed',
             'role_id'       => 'required|exists:roles,id',

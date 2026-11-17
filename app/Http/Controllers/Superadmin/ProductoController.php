@@ -77,7 +77,7 @@ class ProductoController extends Controller
         $messages = [
             'nombre.required'           => 'El nombre del producto es obligatorio.',
             'nombre.min'                => 'El nombre debe tener al menos 3 caracteres.',
-            'nombre.regex'              => 'El nombre solo puede contener letras y espacios (no se permiten números).',
+            'nombre.regex'              => 'El nombre del producto no puede comenzar con números y solo debe contener letras.',
             'descripcion.max'           => 'La descripción no puede superar los 1000 caracteres.',
             'precio.required'           => 'El precio es obligatorio.',
             'precio.numeric'            => 'El precio debe ser un número válido.',
@@ -88,7 +88,7 @@ class ProductoController extends Controller
             'stockMinimo.max'           => 'El stock mínimo no puede superar 9.999.999.',
             'categoria.required'        => 'La categoría es obligatoria.',
             'categoria.min'             => 'La categoría debe tener al menos 3 caracteres.',
-            'categoria.regex'           => 'La categoría solo puede contener letras y espacios (no se permiten números).',
+            'categoria.regex'           => 'La categoría no puede comenzar con números y solo debe contener letras.',
             'codigoBarras.regex'        => 'El código de barras solo debe contener números.',
             'codigoBarras.max'          => 'El código de barras no puede exceder 50 dígitos.',
             'diasPerecederoMax.integer' => 'Los días perecederos deben ser un número entero (sin letras ni decimales).',
@@ -104,13 +104,13 @@ class ProductoController extends Controller
         ];
 
         $data = $request->validate([
-            'nombre'            => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
+            'nombre'            => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'descripcion'       => ['nullable', 'string', 'max:1000'],
             'precio'            => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'iva'               => ['nullable', 'numeric', 'min:0', 'max:100'],
             'unidad'            => ['required', 'string', 'max:50', 'in:kg,g,lb,litro,saco,caja,unidad,bulto,canasta'],
             'stockMinimo'       => ['nullable', 'integer', 'min:0', 'max:9999999'],
-            'categoria'         => ['required', 'string', 'min:3', 'max:100', 'regex:/^[\pL\s\-]+$/u'],
+            'categoria'         => ['required', 'string', 'min:3', 'max:100', 'regex:/^\p{L}[\p{L}\s\-]*$/u'],
             'codigoBarras'      => ['nullable', 'string', 'max:50', 'regex:/^[0-9]+$/'],
             'diasPerecederoMax' => ['nullable', 'integer', 'min:0', 'max:3650'],
             'imagen'            => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],
@@ -138,7 +138,7 @@ class ProductoController extends Controller
         $messages = [
             'nombre.required'           => 'El nombre del producto es obligatorio.',
             'nombre.min'                => 'El nombre debe tener al menos 3 caracteres.',
-            'nombre.regex'              => 'El nombre solo puede contener letras y espacios (no se permiten números).',
+            'nombre.regex'              => 'El nombre del producto no puede comenzar con números y solo debe contener letras.',
             'descripcion.max'           => 'La descripción no puede superar los 1000 caracteres.',
             'precio.required'           => 'El precio es obligatorio.',
             'precio.numeric'            => 'El precio debe ser un número válido.',
@@ -149,7 +149,7 @@ class ProductoController extends Controller
             'stockMinimo.max'           => 'El stock mínimo no puede superar 9.999.999.',
             'categoria.required'        => 'La categoría es obligatoria.',
             'categoria.min'             => 'La categoría debe tener al menos 3 caracteres.',
-            'categoria.regex'           => 'La categoría solo puede contener letras y espacios (no se permiten números).',
+            'categoria.regex'           => 'La categoría no puede comenzar con números y solo debe contener letras.',
             'codigoBarras.regex'        => 'El código de barras solo debe contener números.',
             'codigoBarras.max'          => 'El código de barras no puede exceder 50 dígitos.',
             'diasPerecederoMax.integer' => 'Los días perecederos deben ser un número entero (sin letras ni decimales).',
@@ -165,13 +165,13 @@ class ProductoController extends Controller
         ];
 
         $data = $request->validate([
-            'nombre'            => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
+            'nombre'            => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'descripcion'       => ['nullable', 'string', 'max:1000'],
             'precio'            => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'iva'               => ['nullable', 'numeric', 'min:0', 'max:100'],
             'unidad'            => ['required', 'string', 'max:50', 'in:kg,g,lb,litro,saco,caja,unidad,bulto,canasta'],
             'stockMinimo'       => ['nullable', 'integer', 'min:0', 'max:9999999'],
-            'categoria'         => ['required', 'string', 'min:3', 'max:100', 'regex:/^[\pL\s\-]+$/u'],
+            'categoria'         => ['required', 'string', 'min:3', 'max:100', 'regex:/^\p{L}[\p{L}\s\-]*$/u'],
             'codigoBarras'      => ['nullable', 'string', 'max:50', 'regex:/^[0-9]+$/'],
             'diasPerecederoMax' => ['nullable', 'integer', 'min:0', 'max:3650'],
             'imagen'            => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:2048'],

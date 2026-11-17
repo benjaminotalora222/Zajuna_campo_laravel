@@ -147,13 +147,20 @@ class EjecucionController extends Controller
         $this->soloOperativo();
 
         $data = $request->validate([
-            'nombre'         => 'required|string|max:255',
+            'nombre'         => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'descripcion'    => 'nullable|string|max:1000',
             'responsable_id' => 'nullable|exists:users,id',
-            'fecha_entrega'  => 'nullable|date',
+            'fecha_entrega'  => 'nullable|date|after_or_equal:today',
             'estado'         => 'required|in:por_iniciar,en_progreso,completada',
             'prioridad'      => 'required|in:alta,media,baja',
             'proyecto_id'    => 'nullable|exists:proyectoinvestigacion,id',
+        ], [
+            'nombre.required'              => 'El nombre de la tarea es obligatorio.',
+            'nombre.min'                   => 'El nombre debe tener al menos 3 caracteres.',
+            'nombre.regex'                 => 'El nombre de la tarea no puede comenzar con números.',
+            'fecha_entrega.after_or_equal' => 'La fecha de entrega no puede ser una fecha pasada.',
+            'estado.required'              => 'El estado de la tarea es obligatorio.',
+            'prioridad.required'           => 'La prioridad es obligatoria.',
         ]);
 
         if (auth()->user()->role_id === 2) {
@@ -186,13 +193,20 @@ class EjecucionController extends Controller
         }
 
         $data = $request->validate([
-            'nombre'         => 'required|string|max:255',
+            'nombre'         => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'descripcion'    => 'nullable|string|max:1000',
             'responsable_id' => 'nullable|exists:users,id',
-            'fecha_entrega'  => 'nullable|date',
+            'fecha_entrega'  => 'nullable|date|after_or_equal:today',
             'estado'         => 'required|in:por_iniciar,en_progreso,completada',
             'prioridad'      => 'required|in:alta,media,baja',
             'proyecto_id'    => 'nullable|exists:proyectoinvestigacion,id',
+        ], [
+            'nombre.required'              => 'El nombre de la tarea es obligatorio.',
+            'nombre.min'                   => 'El nombre debe tener al menos 3 caracteres.',
+            'nombre.regex'                 => 'El nombre de la tarea no puede comenzar con números.',
+            'fecha_entrega.after_or_equal' => 'La fecha de entrega no puede ser una fecha pasada.',
+            'estado.required'              => 'El estado de la tarea es obligatorio.',
+            'prioridad.required'           => 'La prioridad es obligatoria.',
         ]);
 
         if (auth()->user()->role_id === 2) {

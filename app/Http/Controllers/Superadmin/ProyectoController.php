@@ -57,21 +57,24 @@ class ProyectoController extends Controller
 
         $messages = [
             'nombre.required'          => 'El nombre del proyecto es obligatorio.',
+            'nombre.min'               => 'El nombre del proyecto debe tener al menos 3 caracteres.',
+            'nombre.regex'             => 'El nombre del proyecto no puede comenzar con números.',
             'estado.required'          => 'El estado del proyecto es obligatorio.',
             'porcentajeAvance.integer' => 'El porcentaje de avance debe ser un número entero entre 0 y 100.',
             'porcentajeAvance.min'     => 'El porcentaje de avance no puede ser menor a 0.',
             'porcentajeAvance.max'     => 'El porcentaje de avance no puede ser mayor a 100.',
+            'fecha_fin.after_or_equal' => 'La fecha de fin no puede ser anterior a la fecha de inicio.',
             'imagen.image'             => 'El archivo debe ser una imagen válida (JPG, PNG).',
             'imagen.max'               => 'La imagen no debe superar los 2MB.',
         ];
 
         $data = $request->validate([
-            'nombre'          => 'required|string|max:255',
+            'nombre'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'descripcion'     => 'nullable|string|max:1000',
             'objetivos'       => 'nullable|string',
             'estado'          => 'required|in:en_progreso,planificado,completado,pausado',
             'fecha_inicio'    => 'nullable|date',
-            'fecha_fin'       => 'nullable|date',
+            'fecha_fin'       => 'nullable|date|after_or_equal:fecha_inicio',
             'responsable_id'  => 'nullable|exists:users,id',
             'porcentajeAvance'=> 'nullable|integer|min:0|max:100',
             'imagen'          => 'nullable|image|max:2048',
@@ -108,21 +111,24 @@ class ProyectoController extends Controller
 
         $messages = [
             'nombre.required'          => 'El nombre del proyecto es obligatorio.',
+            'nombre.min'               => 'El nombre del proyecto debe tener al menos 3 caracteres.',
+            'nombre.regex'             => 'El nombre del proyecto no puede comenzar con números.',
             'estado.required'          => 'El estado del proyecto es obligatorio.',
             'porcentajeAvance.integer' => 'El porcentaje de avance debe ser un número entero entre 0 y 100.',
             'porcentajeAvance.min'     => 'El porcentaje de avance no puede ser menor a 0.',
             'porcentajeAvance.max'     => 'El porcentaje de avance no puede ser mayor a 100.',
+            'fecha_fin.after_or_equal' => 'La fecha de fin no puede ser anterior a la fecha de inicio.',
             'imagen.image'             => 'El archivo debe ser una imagen válida (JPG, PNG).',
             'imagen.max'               => 'La imagen no debe superar los 2MB.',
         ];
 
         $data = $request->validate([
-            'nombre'          => 'required|string|max:255',
+            'nombre'          => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'descripcion'     => 'nullable|string|max:1000',
             'objetivos'       => 'nullable|string',
             'estado'          => 'required|in:en_progreso,planificado,completado,pausado',
             'fecha_inicio'    => 'nullable|date',
-            'fecha_fin'       => 'nullable|date',
+            'fecha_fin'       => 'nullable|date|after_or_equal:fecha_inicio',
             'responsable_id'  => 'nullable|exists:users,id',
             'porcentajeAvance'=> 'nullable|integer|min:0|max:100',
             'imagen'          => 'nullable|image|max:2048',

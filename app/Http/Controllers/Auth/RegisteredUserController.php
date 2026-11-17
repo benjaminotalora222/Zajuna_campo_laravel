@@ -33,13 +33,13 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name'     => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
+            'name'     => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'email'    => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ], [
             'name.required' => 'El nombre completo es obligatorio.',
             'name.min'      => 'El nombre debe tener al menos 3 caracteres.',
-            'name.regex'    => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
+            'name.regex'    => 'El nombre no puede comenzar con números y solo debe contener letras.',
         ]);
 
         DB::transaction(function () use ($request) {

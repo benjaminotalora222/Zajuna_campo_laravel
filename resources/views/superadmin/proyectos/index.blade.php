@@ -258,6 +258,9 @@ $estadoConfig = [
             <div>
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Nombre <span style="color:#ef4444;">*</span></label>
                 <input type="text" name="nombre" id="inpNombre" required placeholder="Ej: Renovación de Cafetales"
+                       pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ].*"
+                       title="El nombre del proyecto debe comenzar con una letra y no puede comenzar con números"
+                       oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '');"
                        class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                        style="border-color:#e7e0cc; background:#fafafa;">
             </div>
@@ -525,6 +528,28 @@ function seleccionarTodosAprendices(marcar) {
     });
     actualizarContadorAprendices();
 }
+
+document.getElementById('inpFechaInicio')?.addEventListener('change', function() {
+    if (this.value) {
+        document.getElementById('inpFechaFin').min = this.value;
+    }
+});
+
+document.getElementById('formProyecto')?.addEventListener('submit', function(e) {
+    const nombre = document.getElementById('inpNombre').value.trim();
+    if (!nombre) {
+        e.preventDefault();
+        alert('El nombre del proyecto es obligatorio.');
+        return false;
+    }
+    const ini = document.getElementById('inpFechaInicio').value;
+    const fin = document.getElementById('inpFechaFin').value;
+    if (ini && fin && fin < ini) {
+        e.preventDefault();
+        alert('La fecha de fin no puede ser anterior a la fecha de inicio.');
+        return false;
+    }
+});
 
 function filtrarAprendicesModal(q) {
     const query = q.toLowerCase().trim();

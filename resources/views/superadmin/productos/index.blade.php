@@ -327,9 +327,9 @@
                 <div class="col-span-2">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Nombre <span style="color:#ef4444;">*</span></label>
                     <input type="text" name="nombre" id="inputNombre" placeholder="Ej. Café Especial" required maxlength="255"
-                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$"
-                           title="Solo letras y espacios (no se permiten números)"
-                           oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')"
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]*$"
+                           title="El nombre del producto debe comenzar con una letra y solo contener letras (no se permiten números)"
+                           oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
@@ -435,9 +435,9 @@
                     {{-- Este input SIEMPRE está presente y tiene el valor real --}}
                     <input type="text" name="categoria" id="inputCategoria"
                            placeholder="Escribe o selecciona una categoría" required maxlength="100"
-                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$"
-                           title="Solo letras y espacios (no se permiten números)"
-                           oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '')"
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]*$"
+                           title="La categoría debe comenzar con una letra y solo contener letras (no se permiten números)"
+                           oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '');"
                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"

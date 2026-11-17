@@ -97,11 +97,12 @@ class ConsignacionController extends Controller
         $this->soloSuperadmin();
 
         $messages = [
-            'proveedor_id.required'    => 'Debes seleccionar un proveedor.',
-            'nombre_producto.required' => 'El nombre del producto es obligatorio.',
-            'stock_disponible.integer' => 'El stock disponible debe ser un número entero.',
-            'stock_disponible.min'     => 'El stock disponible no puede ser negativo.',
-            'stock_disponible.max'     => 'El stock disponible no puede superar 9.999.999.',
+            'proveedor_id.required'     => 'Debes seleccionar un proveedor.',
+            'nombre_producto.required'  => 'El nombre del producto es obligatorio.',
+            'stock_disponible.integer'  => 'El stock disponible debe ser un número entero.',
+            'stock_disponible.min'      => 'El stock disponible no puede ser negativo.',
+            'stock_disponible.max'      => 'El stock disponible no puede superar 9.999.999.',
+            'fecha_vencimiento.after'   => 'La fecha de vencimiento debe ser posterior al día de hoy.',
         ];
 
         $data = $request->validate([
@@ -110,7 +111,7 @@ class ConsignacionController extends Controller
             'sku'               => 'nullable|string|max:100',
             'unidad'            => 'nullable|string|max:50',
             'stock_disponible'  => 'required|integer|min:0|max:9999999',
-            'fecha_vencimiento' => 'nullable|date',
+            'fecha_vencimiento' => 'nullable|date|after:today',
             'notas'             => 'nullable|string|max:500',
         ], $messages);
 
@@ -127,11 +128,12 @@ class ConsignacionController extends Controller
         $this->soloSuperadmin();
 
         $messages = [
-            'proveedor_id.required'    => 'Debes seleccionar un proveedor.',
-            'nombre_producto.required' => 'El nombre del producto es obligatorio.',
-            'stock_disponible.integer' => 'El stock disponible debe ser un número entero.',
-            'stock_disponible.min'     => 'El stock disponible no puede ser negativo.',
-            'stock_disponible.max'     => 'El stock disponible no puede superar 9.999.999.',
+            'proveedor_id.required'     => 'Debes seleccionar un proveedor.',
+            'nombre_producto.required'  => 'El nombre del producto es obligatorio.',
+            'stock_disponible.integer'  => 'El stock disponible debe ser un número entero.',
+            'stock_disponible.min'      => 'El stock disponible no puede ser negativo.',
+            'stock_disponible.max'      => 'El stock disponible no puede superar 9.999.999.',
+            'fecha_vencimiento.after'   => 'La fecha de vencimiento debe ser posterior al día de hoy.',
         ];
 
         $data = $request->validate([
@@ -140,7 +142,7 @@ class ConsignacionController extends Controller
             'sku'               => 'nullable|string|max:100',
             'unidad'            => 'nullable|string|max:50',
             'stock_disponible'  => 'required|integer|min:0|max:9999999',
-            'fecha_vencimiento' => 'nullable|date',
+            'fecha_vencimiento' => 'nullable|date|after:today',
             'notas'             => 'nullable|string|max:500',
         ], $messages);
 

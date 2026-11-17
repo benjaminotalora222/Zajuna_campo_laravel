@@ -104,6 +104,7 @@ $catColors = ['#fdc300','#71277a','#39a900','#ef4444','#3b82f6','#f97316','#8b5c
                 <label class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:#5a5a4f;">Desde</label>
                 <input type="date" name="fecha_inicio" id="inputFechaInicio"
                        value="{{ $fechaInicio ?? $inicio->toDateString() }}"
+                       max="{{ date('Y-m-d') }}"
                        onclick="this.showPicker && this.showPicker()"
                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none cursor-pointer transition focus:border-[#71277a]"
                        style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">
@@ -114,6 +115,7 @@ $catColors = ['#fdc300','#71277a','#39a900','#ef4444','#3b82f6','#f97316','#8b5c
                 <label class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:#5a5a4f;">Hasta</label>
                 <input type="date" name="fecha_fin" id="inputFechaFin"
                        value="{{ $fechaFin ?? $fin->toDateString() }}"
+                       max="{{ date('Y-m-d') }}"
                        onclick="this.showPicker && this.showPicker()"
                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none cursor-pointer transition focus:border-[#71277a]"
                        style="border-color:#e7e0cc; background:#fafafa; color:#1c2b16;">

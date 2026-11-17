@@ -129,13 +129,13 @@
                     </div>
                     <div class="col-span-2 sm:col-span-1">
                         <label class="block text-xs font-semibold mb-1">Fecha entrada *</label>
-                        <input type="date" name="fecha_entrada" value="{{ now()->toDateString() }}" required
+                        <input type="date" name="fecha_entrada" max="{{ date('Y-m-d') }}" value="{{ now()->toDateString() }}" required
                                class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
                                style="border-color:#e7e0cc; background:#fafafa;">
                     </div>
                     <div class="col-span-2">
                         <label class="block text-xs font-semibold mb-1">Fecha vencimiento <span style="color:#9a9a8a;">(opcional)</span></label>
-                        <input type="date" name="fecha_vencimiento"
+                        <input type="date" name="fecha_vencimiento" min="{{ date('Y-m-d', strtotime('+1 day')) }}"
                                class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
                                style="border-color:#e7e0cc; background:#fafafa;">
                     </div>

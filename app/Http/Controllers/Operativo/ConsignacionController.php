@@ -91,6 +91,8 @@ class ConsignacionController extends Controller
             'cantidad.min'                     => 'La cantidad debe ser mayor a 0.',
             'cantidad.max'                     => 'La cantidad no puede superar 9.999.999.',
             'fecha_entrada.required'           => 'La fecha de entrada es obligatoria.',
+            'fecha_entrada.before_or_equal'    => 'La fecha de entrada no puede ser una fecha futura.',
+            'fecha_vencimiento.after'          => 'La fecha de vencimiento debe ser posterior al día de hoy (no se permiten lotes vencidos).',
             'fecha_vencimiento.after_or_equal' => 'La fecha de vencimiento no puede ser anterior a la fecha de entrada.',
             'notas.max'                        => 'Las notas no pueden superar los 500 caracteres.',
         ];
@@ -98,8 +100,8 @@ class ConsignacionController extends Controller
         $data = $request->validate([
             'producto_id'       => 'required|exists:producto,id',
             'cantidad'          => 'required|integer|min:1|max:9999999',
-            'fecha_entrada'     => 'required|date',
-            'fecha_vencimiento' => 'nullable|date|after_or_equal:fecha_entrada',
+            'fecha_entrada'     => 'required|date|before_or_equal:today',
+            'fecha_vencimiento' => 'nullable|date|after:today|after_or_equal:fecha_entrada',
             'notas'             => 'nullable|string|max:500',
         ], $messages);
 

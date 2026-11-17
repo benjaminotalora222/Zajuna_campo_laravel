@@ -108,8 +108,7 @@ class OrdenPedidoController extends Controller
             $msg .= " (El proveedor no cuenta con correo electrónico registrado).";
         }
 
-        $rutaRedireccion = (int) auth()->user()->role_id === 2 ? 'operativo.ordenes.index' : 'superadmin.ordenes.index';
-        return redirect()->route($rutaRedireccion)->with('success', $msg);
+        return redirect()->route('superadmin.ordenes.index')->with('success', $msg);
     }
 
     public function reenviar(OrdenPedido $orden)

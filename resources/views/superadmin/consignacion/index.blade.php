@@ -474,7 +474,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha de vencimiento</label>
-                    <input type="date" name="fecha_vencimiento" id="inputFecha"
+                    <input type="date" name="fecha_vencimiento" id="inputFecha" min="{{ date('Y-m-d', strtotime('+1 day')) }}"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
                 </div>

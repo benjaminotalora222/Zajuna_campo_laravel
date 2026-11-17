@@ -349,6 +349,9 @@
             <div>
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Nombre <span style="color:#ef4444;">*</span></label>
                 <input type="text" id="inpNombre" placeholder="Ej: Análisis de suelo - Lote 7B"
+                       pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ].*"
+                       title="El nombre de la tarea debe comenzar con una letra y no puede comenzar con números"
+                       oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '');"
                        class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                        style="border-color:#e7e0cc; background:#fafafa;">
             </div>
@@ -381,7 +384,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha de entrega</label>
-                    <input type="date" id="inpFecha"
+                    <input type="date" id="inpFecha" min="{{ date('Y-m-d') }}"
                            class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
                 </div>
@@ -532,6 +535,7 @@ function limpiar() {
 function abrirModalCrear() {
     tareaActualId = null;
     limpiar();
+    document.getElementById('inpFecha').min = new Date().toISOString().split('T')[0];
     document.getElementById('modalTitle').textContent   = 'Nueva Tarea';
     document.getElementById('btnGuardar').textContent   = 'Crear tarea';
     abrirModal();
@@ -547,6 +551,7 @@ async function cargarTarea(id) {
     const t   = await res.json();
     tareaActualId = t.id;
     limpiar();
+    document.getElementById('inpFecha').removeAttribute('min');
     document.getElementById('modalTitle').textContent      = 'Editar Tarea';
     document.getElementById('btnGuardar').textContent      = 'Guardar cambios';
     document.getElementById('inpNombre').value             = t.nombre || '';
@@ -572,9 +577,17 @@ async function guardarTarea() {
         _token:         R.csrf,
     };
 
+    const al = document.getElementById('modalAlerta');
+
     if (!body.nombre) {
-        const al = document.getElementById('modalAlerta');
-        al.textContent = 'El nombre es obligatorio.';
+        al.textContent = 'El nombre de la tarea es obligatorio.';
+        al.classList.remove('hidden');
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    if (!tareaActualId && body.fecha_entrega && body.fecha_entrega < today) {
+        al.textContent = 'La fecha de entrega no puede ser una fecha pasada.';
         al.classList.remove('hidden');
         return;
     }
@@ -587,12 +600,19 @@ async function guardarTarea() {
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': R.csrf, 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify(body),
     });
-    const data = await res.json();
 
-    if (data.ok) { cerrarModal(); location.reload(); }
-    else {
-        const al = document.getElementById('modalAlerta');
-        al.textContent = data.message || 'Error al guardar.';
+    let data = {};
+    try { data = await res.json(); } catch(e) {}
+
+    if (res.ok && data.ok) {
+        cerrarModal();
+        location.reload();
+    } else {
+        let msg = data.message || 'Error al guardar la tarea.';
+        if (data.errors) {
+            msg = Object.values(data.errors).flat().join(' ');
+        }
+        al.textContent = msg;
         al.classList.remove('hidden');
     }
 }

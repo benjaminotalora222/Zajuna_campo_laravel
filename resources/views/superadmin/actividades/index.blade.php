@@ -333,6 +333,9 @@
             <div>
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Tema / Nombre <span style="color:#ef4444;">*</span></label>
                 <input type="text" name="tema" id="inpTema" required placeholder="Ej: Investigación de Suelos"
+                       pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ].*"
+                       title="El tema o nombre de la actividad debe comenzar con una letra y no puede comenzar con números"
+                       oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '');"
                        class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                        style="border-color:#e7e0cc; background:#fafafa;">
             </div>
@@ -383,7 +386,7 @@
                 </div>
                 <div class="col-span-2">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha límite</label>
-                    <input type="date" name="fecha_limite" id="inpFecha"
+                    <input type="date" name="fecha_limite" id="inpFecha" min="{{ date('Y-m-d') }}"
                            class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
                            style="border-color:#e7e0cc; background:#fafafa;">
                 </div>
@@ -593,6 +596,7 @@ function abrirModalCrear() {
     document.getElementById('btnGuardar').textContent  = 'Crear actividad';
     document.getElementById('formActividad').action    = '{{ route("superadmin.actividades.store") }}';
     document.getElementById('formMethod').value        = 'POST';
+    document.getElementById('inpFecha').min            = new Date().toISOString().split('T')[0];
     document.getElementById('inpTema').value           = '';
     document.getElementById('inpDescripcion').value    = '';
     document.getElementById('inpProyecto').value       = '';
@@ -612,6 +616,7 @@ function abrirModalEditar(act) {
     document.getElementById('btnGuardar').textContent  = 'Guardar cambios';
     document.getElementById('formActividad').action    = '/superadmin/actividades/' + act.id;
     document.getElementById('formMethod').value        = 'PUT';
+    document.getElementById('inpFecha').removeAttribute('min');
     document.getElementById('inpTema').value           = act.tema || '';
     document.getElementById('inpDescripcion').value    = act.descripcion || '';
     document.getElementById('inpProyecto').value       = act.proyecto_id || '';
@@ -633,6 +638,17 @@ function abrirModalEditar(act) {
 
     abrirModal('modalForm');
 }
+
+document.getElementById('formActividad').addEventListener('submit', function(e) {
+    const isCreate = document.getElementById('formMethod').value === 'POST';
+    const fecha = document.getElementById('inpFecha').value;
+    const today = new Date().toISOString().split('T')[0];
+    if (isCreate && fecha && fecha < today) {
+        e.preventDefault();
+        alert('La fecha límite no puede ser una fecha pasada.');
+        return false;
+    }
+});
 
 function confirmarEliminar(id) {
     document.getElementById('formEliminar').action = '/superadmin/actividades/' + id;

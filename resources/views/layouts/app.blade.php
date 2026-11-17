@@ -32,5 +32,6 @@
                 {{ $slot }}
             </main>
         </div>
+        @include('partials.name-field-guards')
     </body>
 </html>

@@ -55,6 +55,10 @@ class ProveedorController extends Controller
 
         $messages = [
             'nombre.required'       => 'El nombre o razón social del proveedor es obligatorio.',
+            'nombre.min'            => 'El nombre debe tener al menos 3 caracteres.',
+            'nombre.regex'          => 'El nombre del proveedor no puede comenzar con números.',
+            'user_name.min'         => 'El nombre de contacto debe tener al menos 3 caracteres.',
+            'user_name.regex'       => 'El nombre de contacto no puede comenzar con números y solo debe contener letras.',
             'tipo.required'         => 'El tipo de proveedor es obligatorio.',
             'correo.required'       => 'El correo electrónico es obligatorio.',
             'correo.email'          => 'Ingresa un correo electrónico válido.',
@@ -67,13 +71,13 @@ class ProveedorController extends Controller
         ];
 
         $request->validate([
-            'nombre'                => 'required|string|max:255',
+            'nombre'                => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'codigo'                => 'nullable|string|max:50|unique:proveedor,codigo',
             'tipo'                  => 'nullable|string|max:50',
             'correo'                => 'required|email|max:255|unique:proveedor,correo',
             'telefono'              => ['nullable', 'string', 'max:25', 'regex:/^[0-9+\s\-\(\)]+$/'],
             'estado'                => 'boolean',
-            'user_name'             => 'nullable|string|max:255',
+            'user_name'             => ['nullable', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'password'              => ['required', 'confirmed', Rules\Password::defaults()],
         ], $messages);
 
@@ -139,6 +143,10 @@ class ProveedorController extends Controller
 
         $messages = [
             'nombre.required'       => 'El nombre del proveedor es obligatorio.',
+            'nombre.min'            => 'El nombre debe tener al menos 3 caracteres.',
+            'nombre.regex'          => 'El nombre del proveedor no puede comenzar con números.',
+            'user_name.min'         => 'El nombre de contacto debe tener al menos 3 caracteres.',
+            'user_name.regex'       => 'El nombre de contacto no puede comenzar con números y solo debe contener letras.',
             'tipo.required'         => 'El tipo de proveedor es obligatorio.',
             'correo.required'       => 'El correo electrónico es obligatorio.',
             'correo.email'          => 'Ingresa un correo electrónico válido.',
@@ -150,13 +158,13 @@ class ProveedorController extends Controller
         ];
 
         $data = $request->validate([
-            'nombre'                => 'required|string|max:255',
+            'nombre'                => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'codigo'                => ['nullable', 'string', 'max:50', Rule::unique('proveedor', 'codigo')->ignore($proveedor->id)],
             'tipo'                  => 'nullable|string|max:50',
             'correo'                => ['required', 'email', 'max:255', Rule::unique('proveedor', 'correo')->ignore($proveedor->id)],
             'telefono'              => ['nullable', 'string', 'max:25', 'regex:/^[0-9+\s\-\(\)]+$/'],
             'estado'                => 'boolean',
-            'user_name'             => 'nullable|string|max:255',
+            'user_name'             => ['nullable', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'password'              => 'nullable|string|min:8|confirmed',
         ], $messages);
 

@@ -57,23 +57,27 @@ class ActividadController extends Controller
         $this->soloSuperadmin();
 
         $messages = [
-            'tema.required'    => 'El tema o nombre de la actividad es obligatorio.',
-            'estado.required'  => 'El estado de la actividad es obligatorio.',
-            'progreso.integer' => 'El progreso debe ser un número entero entre 0 y 100.',
-            'progreso.min'     => 'El progreso no puede ser menor a 0.',
-            'progreso.max'     => 'El progreso no puede superar el 100%.',
+            'tema.required'              => 'El tema o nombre de la actividad es obligatorio.',
+            'tema.min'                   => 'El tema debe tener al menos 3 caracteres.',
+            'tema.regex'                 => 'El tema o nombre de la actividad no puede comenzar con números.',
+            'estado.required'            => 'El estado de la actividad es obligatorio.',
+            'progreso.integer'           => 'El progreso debe ser un número entero entre 0 y 100.',
+            'progreso.min'               => 'El progreso no puede ser menor a 0.',
+            'progreso.max'               => 'El progreso no puede superar el 100%.',
+            'fecha_limite.after_or_equal'=> 'La fecha límite no puede ser una fecha pasada.',
+            'fecha_hora.after_or_equal'  => 'La fecha y hora no puede ser en el pasado.',
         ];
 
         $data = $request->validate([
-            'tema'           => 'required|string|max:255',
+            'tema'           => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'descripcion'    => 'nullable|string|max:1000',
             'tipo'           => 'nullable|string|max:100',
             'proyecto_id'    => 'nullable|exists:proyectoinvestigacion,id',
             'responsable_id' => 'nullable|exists:users,id',
             'progreso'       => 'nullable|integer|min:0|max:100',
             'estado'         => 'required|in:pendiente,en_ejecucion,finalizado,pausado',
-            'fecha_limite'   => 'nullable|date',
-            'fecha_hora'     => 'nullable|date',
+            'fecha_limite'   => 'nullable|date|after_or_equal:today',
+            'fecha_hora'     => 'nullable|date|after_or_equal:today',
             'documento'      => 'nullable|file|max:20480',
             'documentos'     => 'nullable|array',
             'documentos.*'   => 'nullable|file|max:20480',
@@ -122,6 +126,8 @@ class ActividadController extends Controller
 
         $messages = [
             'tema.required'    => 'El tema o nombre de la actividad es obligatorio.',
+            'tema.min'         => 'El tema debe tener al menos 3 caracteres.',
+            'tema.regex'       => 'El tema o nombre de la actividad no puede comenzar con números.',
             'estado.required'  => 'El estado de la actividad es obligatorio.',
             'progreso.integer' => 'El progreso debe ser un número entero entre 0 y 100.',
             'progreso.min'     => 'El progreso no puede ser menor a 0.',
@@ -129,7 +135,7 @@ class ActividadController extends Controller
         ];
 
         $data = $request->validate([
-            'tema'            => 'required|string|max:255',
+            'tema'            => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'descripcion'     => 'nullable|string|max:1000',
             'tipo'            => 'nullable|string|max:100',
             'proyecto_id'     => 'nullable|exists:proyectoinvestigacion,id',

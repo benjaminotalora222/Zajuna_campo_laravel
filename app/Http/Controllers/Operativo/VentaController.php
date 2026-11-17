@@ -429,7 +429,8 @@ class VentaController extends Controller
 
         $messages = [
             'fechaVenta.required'            => 'La fecha de la venta es obligatoria.',
-            'cliente.regex'                  => 'El nombre del cliente solo puede contener letras y espacios (no se permiten números).',
+            'fechaVenta.before_or_equal'     => 'La fecha de la venta no puede ser una fecha futura.',
+            'cliente.regex'                  => 'El nombre del cliente no puede comenzar con números y solo debe contener letras.',
             'items.required'                 => 'Debes agregar al menos un producto a la venta.',
             'items.min'                      => 'Debes agregar al menos un producto a la venta.',
             'items.*.cantidad.required'      => 'La cantidad es obligatoria.',
@@ -446,8 +447,8 @@ class VentaController extends Controller
         ];
 
         $request->validate([
-            'fechaVenta'             => 'required|date',
-            'cliente'                => ['nullable', 'string', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
+            'fechaVenta'             => 'required|date|before_or_equal:today',
+            'cliente'                => ['nullable', 'string', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'observaciones'          => 'nullable|string|max:500',
             'items'                  => 'required|array|min:1',
             'items.*.idProducto'     => 'required|exists:producto,id',

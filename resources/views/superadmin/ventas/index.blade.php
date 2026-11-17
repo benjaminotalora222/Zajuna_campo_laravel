@@ -603,9 +603,9 @@
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Cliente</label>
                     <input type="text" name="cliente" id="inputCliente" placeholder="Nombre del cliente" maxlength="255"
-                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]+$"
-                           title="Solo letras y espacios (no se permiten números)"
-                           oninput="this.value = this.value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '')"
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]*$"
+                           title="El nombre del cliente debe comenzar con una letra y solo contener letras (no se permiten números)"
+                           oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '');"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900'" onblur="this.style.borderColor='#e7e0cc'">
@@ -613,7 +613,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha <span style="color:#ef4444;">*</span></label>
-                    <input type="date" name="fechaVenta" id="inputFechaVenta" required value="{{ now()->toDateString() }}"
+                    <input type="date" name="fechaVenta" id="inputFechaVenta" max="{{ date('Y-m-d') }}" required value="{{ now()->toDateString() }}"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900'" onblur="this.style.borderColor='#e7e0cc'">

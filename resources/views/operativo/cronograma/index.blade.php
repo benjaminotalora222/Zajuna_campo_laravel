@@ -203,6 +203,9 @@
             <div>
                 <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Título <span style="color:#ef4444;">*</span></label>
                 <input type="text" id="inpTitulo" placeholder="Ej: Visita técnica Finca La Esperanza"
+                       pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ].*"
+                       title="El título del evento debe comenzar con una letra y no puede comenzar con números"
+                       oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '');"
                        class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none"
                        style="border-color:#e7e0cc; background:#fafafa;">
             </div>
@@ -221,7 +224,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Fecha <span style="color:#ef4444;">*</span></label>
-                    <input type="date" id="inpFecha" class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none" style="border-color:#e7e0cc; background:#fafafa;">
+                    <input type="date" id="inpFecha" min="{{ date('Y-m-d') }}" required class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none" style="border-color:#e7e0cc; background:#fafafa;">
                 </div>
                 <div>
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Hora inicio</label>
@@ -309,6 +312,11 @@ function abrirModalCrear() {
 }
 
 function abrirModalCrearFecha(fecha) {
+    const today = new Date().toISOString().split('T')[0];
+    if (fecha < today) {
+        alert('No se pueden agendar eventos en fechas pasadas.');
+        return;
+    }
     abrirModalCrear();
     document.getElementById('inpFecha').value = fecha;
 }
@@ -318,6 +326,7 @@ async function cargarEvento(id) {
     const ev   = await res.json();
     eventoActualId = ev.id;
     limpiarForm();
+    document.getElementById('inpFecha').removeAttribute('min');
     document.getElementById('modalFormTitle').textContent     = 'Editar Evento';
     document.getElementById('btnGuardar').textContent         = 'Guardar cambios';
     document.getElementById('inpTitulo').value                = ev.titulo;
@@ -343,9 +352,23 @@ async function guardarEvento() {
         _token:      ROUTES.csrfToken,
     };
 
+    const al = document.getElementById('modalAlerta');
+
     if (!body.titulo || !body.fecha) {
-        const al = document.getElementById('modalAlerta');
         al.textContent = 'El título y la fecha son obligatorios.';
+        al.classList.remove('hidden');
+        return;
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    if (!eventoActualId && body.fecha < today) {
+        al.textContent = 'No se pueden registrar eventos con fechas pasadas.';
+        al.classList.remove('hidden');
+        return;
+    }
+
+    if (body.hora_inicio && body.hora_fin && body.hora_fin <= body.hora_inicio) {
+        al.textContent = 'La hora de fin debe ser posterior a la hora de inicio.';
         al.classList.remove('hidden');
         return;
     }
@@ -362,14 +385,21 @@ async function guardarEvento() {
         headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': ROUTES.csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify(body),
     });
-    const data = await res.json();
 
-    if (data.ok) {
+    let data = {};
+    try {
+        data = await res.json();
+    } catch(e) {}
+
+    if (res.ok && data.ok) {
         cerrarModal('modalForm');
         location.reload();
     } else {
-        const al = document.getElementById('modalAlerta');
-        al.textContent = data.message || 'Error al guardar.';
+        let msg = data.message || 'Error al guardar el evento.';
+        if (data.errors) {
+            msg = Object.values(data.errors).flat().join(' ');
+        }
+        al.textContent = msg;
         al.classList.remove('hidden');
     }
 }

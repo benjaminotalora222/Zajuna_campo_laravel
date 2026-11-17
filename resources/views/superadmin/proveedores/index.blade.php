@@ -388,6 +388,9 @@
                     Nombre del proveedor o razón social <span style="color:#ef4444;">*</span>
                 </label>
                 <input type="text" name="nombre" id="inputNombre" value="{{ old('nombre') }}" placeholder="Ej. Distribuidora Andina S.A.S. o Camilo Millán" required
+                       pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ].*"
+                       title="El nombre del proveedor debe comenzar con una letra y no puede comenzar con números"
+                       oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '');"
                        class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition"
                        style="border-color:#e7e0cc; background:#fafafa;"
                        onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
@@ -444,6 +447,9 @@
                         <span class="text-xs font-normal text-gray-400">(opcional)</span>
                     </label>
                     <input type="text" name="user_name" id="inputUserName" value="{{ old('user_name') }}" placeholder="Ej. Carlos Pérez" maxlength="255"
+                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]*$"
+                           title="La persona de contacto debe comenzar con una letra y solo contener letras (no se permiten números)"
+                           oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-\.\'\(\)]/g, '');"
                            class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition"
                            style="border-color:#e7e0cc; background:#fafafa;"
                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"

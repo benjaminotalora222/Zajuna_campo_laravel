@@ -47,6 +47,17 @@ Route::get('/catalogo', function () {
     return redirect('/#catalogo');
 })->name('catalogo');
 
+Route::get('/cambiar-idioma/{locale}', function (string $locale) {
+    if (!in_array($locale, ['es', 'en'])) {
+        $locale = 'es';
+    }
+    session(['locale' => $locale]);
+    try {
+        \App\Models\ConfiguracionSistema::set('idioma', $locale);
+    } catch (\Throwable $e) {}
+    return back();
+})->name('idioma.cambiar');
+
 // Ruta legacy dashboard — redirige según rol
 Route::get('/dashboard', function () {
     $roleId = auth()->user()->role_id;

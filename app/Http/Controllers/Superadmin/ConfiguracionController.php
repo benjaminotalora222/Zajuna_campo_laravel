@@ -75,6 +75,11 @@ class ConfiguracionController extends Controller
             }
         }
 
+        if ($request->filled('idioma')) {
+            session(['locale' => $request->input('idioma')]);
+            app()->setLocale($request->input('idioma'));
+        }
+
         // Actualizar permisos individuales de usuarios operativos para ventas
         if ($request->has('operativos_ids')) {
             $operativosIds = $request->input('operativos_ids', []);

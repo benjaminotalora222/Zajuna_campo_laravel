@@ -55,7 +55,7 @@ class AprendizController extends Controller
 
         $data = $request->validate([
             // 1. NOMBRE COMPLETO *
-            'nombre_completo'           => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
+            'nombre_completo'           => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             // 2. TIPO DE DOCUMENTO *
             'tipo_documento'            => 'required|in:T.I,CC,OTRO',
             'tipo_documento_otro'       => 'nullable|string|max:100',
@@ -91,7 +91,7 @@ class AprendizController extends Controller
             'proyecto_id'               => 'nullable|exists:proyectoinvestigacion,id',
         ], [
             'nombre_completo.required'           => 'El nombre completo es obligatorio.',
-            'nombre_completo.regex'              => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
+            'nombre_completo.regex'              => 'El nombre completo no puede comenzar con números y solo debe contener letras.',
             'tipo_documento.required'            => 'Seleccione el tipo de documento.',
             'numero_documento.required'          => 'El número de documento es obligatorio.',
             'numero_documento.regex'             => 'El número de documento solo debe contener números.',

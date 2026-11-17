@@ -84,7 +84,7 @@ class CategoriaController extends Controller
         $messages = [
             'nombre.required' => 'El nombre de la categoría es obligatorio.',
             'nombre.min'      => 'El nombre debe tener al menos 3 caracteres.',
-            'nombre.regex'    => 'El nombre de la categoría solo puede contener letras y espacios (no se permiten números).',
+            'nombre.regex'    => 'El nombre de la categoría no puede comenzar con números y solo debe contener letras.',
             'nombre.unique'   => 'Ya existe una categoría con este nombre.',
             'descripcion.max' => 'La descripción no puede superar los 500 caracteres.',
             'imagen.image'    => 'El archivo debe ser una imagen válida (JPG, PNG, WEBP).',
@@ -93,7 +93,7 @@ class CategoriaController extends Controller
         ];
 
         $data = $request->validate([
-            'nombre'      => ['required', 'string', 'min:3', 'max:100', 'regex:/^[\pL\s\-]+$/u', 'unique:categoria,nombre'],
+            'nombre'      => ['required', 'string', 'min:3', 'max:100', 'regex:/^\p{L}[\p{L}\s\-]*$/u', 'unique:categoria,nombre'],
             'descripcion' => 'nullable|string|max:500',
             'icono'       => 'nullable|string|max:10',
             'imagen'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
@@ -120,7 +120,7 @@ class CategoriaController extends Controller
         $messages = [
             'nombre.required' => 'El nombre de la categoría es obligatorio.',
             'nombre.min'      => 'El nombre debe tener al menos 3 caracteres.',
-            'nombre.regex'    => 'El nombre de la categoría solo puede contener letras y espacios (no se permiten números).',
+            'nombre.regex'    => 'El nombre de la categoría no puede comenzar con números y solo debe contener letras.',
             'nombre.unique'   => 'Ya existe una categoría con este nombre.',
             'descripcion.max' => 'La descripción no puede superar los 500 caracteres.',
             'imagen.image'    => 'El archivo debe ser una imagen válida (JPG, PNG, WEBP).',
@@ -129,7 +129,7 @@ class CategoriaController extends Controller
         ];
 
         $data = $request->validate([
-            'nombre'      => ['required', 'string', 'min:3', 'max:100', 'regex:/^[\pL\s\-]+$/u', Rule::unique('categoria', 'nombre')->ignore($categoria->id)],
+            'nombre'      => ['required', 'string', 'min:3', 'max:100', 'regex:/^\p{L}[\p{L}\s\-]*$/u', Rule::unique('categoria', 'nombre')->ignore($categoria->id)],
             'descripcion' => 'nullable|string|max:500',
             'icono'       => 'nullable|string|max:10',
             'imagen'      => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',

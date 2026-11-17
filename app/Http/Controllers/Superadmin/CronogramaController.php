@@ -51,13 +51,22 @@ class CronogramaController extends Controller
         $this->soloSuperadmin();
 
         $data = $request->validate([
-            'titulo'      => 'required|string|max:255',
+            'titulo'      => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'descripcion' => 'nullable|string|max:1000',
             'tipo'        => 'required|in:visita_tecnica,capacitacion,reunion,show,transferencia,otro',
             'espacio'     => 'nullable|string|max:255',
-            'fecha'       => 'required|date',
+            'fecha'       => 'required|date|after_or_equal:today',
             'hora_inicio' => 'nullable|date_format:H:i',
-            'hora_fin'    => 'nullable|date_format:H:i',
+            'hora_fin'    => 'nullable|date_format:H:i|after:hora_inicio',
+        ], [
+            'titulo.required'      => 'El título del evento es obligatorio.',
+            'titulo.min'           => 'El título debe tener al menos 3 caracteres.',
+            'titulo.regex'         => 'El título del evento no puede comenzar con números.',
+            'fecha.required'       => 'La fecha del evento es obligatoria.',
+            'fecha.after_or_equal' => 'No se pueden registrar eventos con fechas pasadas.',
+            'hora_fin.after'       => 'La hora de fin debe ser posterior a la hora de inicio.',
+            'tipo.required'        => 'Debes seleccionar el tipo de evento.',
+            'tipo.in'              => 'El tipo de evento seleccionado no es válido.',
         ]);
 
         $data['creado_por'] = auth()->id();
@@ -97,13 +106,22 @@ class CronogramaController extends Controller
         $this->soloSuperadmin();
 
         $data = $request->validate([
-            'titulo'      => 'required|string|max:255',
+            'titulo'      => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}/u'],
             'descripcion' => 'nullable|string|max:1000',
             'tipo'        => 'required|in:visita_tecnica,capacitacion,reunion,show,transferencia,otro',
             'espacio'     => 'nullable|string|max:255',
-            'fecha'       => 'required|date',
+            'fecha'       => 'required|date|after_or_equal:today',
             'hora_inicio' => 'nullable|date_format:H:i',
-            'hora_fin'    => 'nullable|date_format:H:i',
+            'hora_fin'    => 'nullable|date_format:H:i|after:hora_inicio',
+        ], [
+            'titulo.required'      => 'El título del evento es obligatorio.',
+            'titulo.min'           => 'El título debe tener al menos 3 caracteres.',
+            'titulo.regex'         => 'El título del evento no puede comenzar con números.',
+            'fecha.required'       => 'La fecha del evento es obligatoria.',
+            'fecha.after_or_equal' => 'No se pueden registrar eventos con fechas pasadas.',
+            'hora_fin.after'       => 'La hora de fin debe ser posterior a la hora de inicio.',
+            'tipo.required'        => 'Debes seleccionar el tipo de evento.',
+            'tipo.in'              => 'El tipo de evento seleccionado no es válido.',
         ]);
 
         $evento->update($data);

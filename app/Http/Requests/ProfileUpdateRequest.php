@@ -17,7 +17,7 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^[\pL\s\-\.\'\(\)]+$/u'],
+            'name' => ['required', 'string', 'min:3', 'max:255', 'regex:/^\p{L}[\p{L}\s\-\.\'\(\)]*$/u'],
             'email' => [
                 'required',
                 'string',
@@ -34,7 +34,7 @@ class ProfileUpdateRequest extends FormRequest
         return [
             'name.required' => 'El nombre completo es obligatorio.',
             'name.min'      => 'El nombre debe tener al menos 3 caracteres.',
-            'name.regex'    => 'El nombre completo solo puede contener letras y espacios (no se permiten números).',
+            'name.regex'    => 'El nombre no puede comenzar con números y solo debe contener letras.',
         ];
     }
 }

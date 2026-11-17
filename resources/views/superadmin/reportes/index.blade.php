@@ -260,6 +260,7 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Desde</label>
                 <input type="date" name="fecha_inicio" id="inputFechaInicio"
                        value="{{ $fechaInicio ?? now()->startOfMonth()->toDateString() }}"
+                       max="{{ date('Y-m-d') }}"
                        onclick="this.showPicker && this.showPicker()"
                        title="Click para abrir el calendario"
                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none cursor-pointer transition focus:border-[#71277a]"
@@ -271,6 +272,7 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Hasta</label>
                 <input type="date" name="fecha_fin" id="inputFechaFin"
                        value="{{ $fechaFin ?? now()->toDateString() }}"
+                       max="{{ date('Y-m-d') }}"
                        onclick="this.showPicker && this.showPicker()"
                        title="Click para abrir el calendario"
                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none cursor-pointer transition focus:border-[#71277a]"
@@ -282,6 +284,7 @@ $nombresMesArr = [1=>'Enero',2=>'Febrero',3=>'Marzo',4=>'Abril',5=>'Mayo',6=>'Ju
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Fecha (Día)</label>
                 <input type="date" name="fecha" id="inputFechaDia"
                        value="{{ $fecha ?? now()->toDateString() }}"
+                       max="{{ date('Y-m-d') }}"
                        onclick="this.showPicker && this.showPicker()"
                        title="Click para abrir el calendario"
                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none cursor-pointer transition focus:border-[#71277a]"

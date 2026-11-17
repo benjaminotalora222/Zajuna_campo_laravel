@@ -131,7 +131,8 @@
             {{-- Fecha desde --}}
             <div class="min-w-[140px]">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Desde</label>
-                <input type="date" name="desde" value="{{ request('desde') }}"
+                <input type="date" name="desde" id="auditoriaDesde" value="{{ request('desde') }}"
+                       max="{{ date('Y-m-d') }}"
                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
                        style="border-color:#e7e0cc; background:#fafafa;">
             </div>
@@ -139,7 +140,8 @@
             {{-- Fecha hasta --}}
             <div class="min-w-[140px]">
                 <label class="block text-xs font-semibold mb-1.5" style="color:#5a5a4f;">Hasta</label>
-                <input type="date" name="hasta" value="{{ request('hasta') }}"
+                <input type="date" name="hasta" id="auditoriaHasta" value="{{ request('hasta') }}"
+                       max="{{ date('Y-m-d') }}"
                        class="w-full px-3 py-2.5 rounded-xl border text-sm outline-none"
                        style="border-color:#e7e0cc; background:#fafafa;">
             </div>

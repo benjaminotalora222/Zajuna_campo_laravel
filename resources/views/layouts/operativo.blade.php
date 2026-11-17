@@ -100,7 +100,7 @@
     </div>
 
     {{-- Role Pill --}}
-    <div class="sidebar-role-pill px-4 pt-1 pb-3">
+    <div class="sidebar-role-pill px-4 pt-1 pb-2">
         <div class="border-2 border-zmorado rounded-full py-1.5 px-3 flex items-center justify-center gap-2 bg-white shadow-xs">
             <span class="w-4 h-4 rounded-full bg-zmorado text-white flex items-center justify-center shrink-0">
                 <svg class="w-2.5 h-2.5 fill-current" viewBox="0 0 24 24">
@@ -108,6 +108,22 @@
                 </svg>
             </span>
             <span class="text-[10px] font-extrabold uppercase tracking-wider text-zmorado whitespace-nowrap">Panel Operativo</span>
+        </div>
+    </div>
+
+    {{-- Selector de Idioma --}}
+    <div class="sidebar-role-pill px-4 pb-3">
+        <div class="flex items-center justify-center gap-1 p-1 bg-gray-100 rounded-xl text-xs font-bold text-gray-600">
+            <a href="{{ route('idioma.cambiar', 'es') }}"
+               class="flex-1 py-1 text-center rounded-lg transition {{ app()->getLocale() === 'es' ? 'bg-white text-gray-900 shadow-xs' : 'hover:text-gray-900' }}"
+               title="Cambiar a Español">
+                ES
+            </a>
+            <a href="{{ route('idioma.cambiar', 'en') }}"
+               class="flex-1 py-1 text-center rounded-lg transition {{ app()->getLocale() === 'en' ? 'bg-white text-gray-900 shadow-xs' : 'hover:text-gray-900' }}"
+               title="Switch to English">
+                EN
+            </a>
         </div>
     </div>
 
@@ -323,6 +339,8 @@
     };
 })();
 </script>
+
+@include('partials.name-field-guards')
 
 </body>
 </html>

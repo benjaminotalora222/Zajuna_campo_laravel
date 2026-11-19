@@ -107,7 +107,15 @@ class CategoriaController extends Controller
             $data['imagen'] = $request->file('imagen')->store('categorias', 'public');
         }
 
-        Categoria::create($data);
+        $categoria = Categoria::create($data);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'ok' => true,
+                'categoria' => $categoria,
+                'message' => 'Categoría creada correctamente.'
+            ], 201);
+        }
 
         return redirect()->route('superadmin.categorias.index')
                          ->with('success', 'Categoría creada correctamente.');

@@ -30,6 +30,17 @@ class Lote extends Model
         return $this->hasMany(MovimientoInventario::class, 'lote_id');
     }
 
+    protected static function booted()
+    {
+        static::saved(function ($lote) {
+            $lote->producto?->sincronizarStock();
+        });
+
+        static::deleted(function ($lote) {
+            $lote->producto?->sincronizarStock();
+        });
+    }
+
     /**
      * Indica si el lote está próximo a vencer (dentro de 30 días).
      */

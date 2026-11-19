@@ -55,6 +55,25 @@ class Producto extends Model
     }
 
     /**
+     * Accesor para stockActual que asegura que siempre devuelva el stock real calculado de los lotes.
+     */
+    public function getStockActualAttribute(): int
+    {
+        return $this->stock_calculado;
+    }
+
+    /**
+     * Sincroniza la columna física stockActual en la tabla producto y actualiza la fecha de modificación.
+     */
+    public function sincronizarStock(): int
+    {
+        $total = (int) $this->lotes()->sum('cantidad_disponible');
+        $this->updateQuietly(['stockActual' => $total]);
+        $this->touch();
+        return $total;
+    }
+
+    /**
      * Lote más próximo a vencer con stock disponible.
      */
     public function getLoteProximoVencerAttribute(): ?Lote

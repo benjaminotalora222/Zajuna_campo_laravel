@@ -21,7 +21,7 @@ class ProductoController extends Controller
     {
         $this->soloSuperadmin();
 
-        $query = Producto::latest();
+        $query = Producto::with('lotes')->orderBy('updated_at', 'desc')->orderBy('id', 'desc');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -50,12 +50,13 @@ class ProductoController extends Controller
 
         $productos    = $query->paginate(10)->withQueryString();
 
-        // Combina categorías registradas + las ya usadas en productos
+        // Combina categorías por defecto + registradas + las ya usadas en productos
+        $categoriasDefaults    = collect(['Granos', 'Frutas', 'Verduras', 'Tubérculos', 'Lácteos', 'Carnes', 'Cereales', 'Insumos']);
         $categoriasRegistradas = Categoria::orderBy('nombre')->pluck('nombre');
         $categoriasEnUso       = Producto::whereNotNull('categoria')->distinct()->pluck('categoria');
-        $categorias            = $categoriasRegistradas->merge($categoriasEnUso)->unique()->sort()->values();
+        $categorias            = $categoriasDefaults->merge($categoriasRegistradas)->merge($categoriasEnUso)->unique()->sort()->values();
 
-        $proveedores = Proveedor::orderBy('nombre')->get(['id', 'nombre']);
+        $proveedores = Proveedor::orderBy('nombre')->get(['id', 'nombre', 'codigo']);
 
         $stats = [
             'total'   => Producto::count(),

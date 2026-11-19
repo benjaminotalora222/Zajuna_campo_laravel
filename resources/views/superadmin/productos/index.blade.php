@@ -200,18 +200,18 @@
                         </div>
                         <div class="text-right">
                             <p class="text-xs font-bold" style="color:{{ $stockColor }};">
-                                {{ $p->stockActual ?? 0 }} {{ $p->unidad ?? '' }}
+                                {{ number_format($p->stock_calculado, 0, ',', '.') }} {{ $p->unidad ?? '' }}
                             </p>
                             <p class="text-[10px]" style="color:#9a9a8a;">en stock</p>
                         </div>
                     </div>
 
                     {{-- Barra de stock --}}
-                    @if($p->stockMinimo && $p->stockActual !== null)
+                    @if($p->stockMinimo && $p->stock_calculado !== null)
                     <div class="mt-2 w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
                         @php
                             $maxRef = max($p->stockMinimo * 3, 1);
-                            $pct    = min(100, round(($p->stockActual / $maxRef) * 100));
+                            $pct    = min(100, round(($p->stock_calculado / $maxRef) * 100));
                         @endphp
                         <div class="h-full rounded-full transition-all"
                              style="width:{{ $pct }}%; background:{{ $stockColor }};"></div>
@@ -306,9 +306,22 @@
             </button>
         </div>
 
-        <form id="formProducto" method="POST" enctype="multipart/form-data" class="px-7 py-6">
+        <form id="formProducto" method="POST" action="{{ route('superadmin.productos.store') }}" enctype="multipart/form-data" class="px-7 py-6">
             @csrf
-            <input type="hidden" name="_method" id="formMethod" value="POST">
+            <input type="hidden" name="_method" id="formMethod" value="POST" disabled>
+
+            {{-- Banner informativo en modo edición --}}
+            <div id="bannerModoEdicion" class="hidden mb-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-amber-600 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    <span>Estás editando: <strong id="bannerEditNombre"></strong> (modificará este registro existente).</span>
+                </div>
+                <button type="button" onclick="abrirModalCrear()" class="text-xs font-bold text-purple-700 underline hover:text-purple-900 shrink-0 ml-2">
+                    ¿Crear nuevo en su lugar?
+                </button>
+            </div>
 
             {{-- Errores de validación --}}
             @if($errors->any())
@@ -409,56 +422,101 @@
                     <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo números enteros (unidades de alerta, máx. 9.999.999).</p>
                 </div>
 
-                {{-- Categoría --}}
-                <div>
-                    <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Categoría <span style="color:#ef4444;">*</span></label>
-                    <select id="selectCategoria"
-                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none mb-2"
-                            style="border-color:#e7e0cc; background:#fafafa;"
-                            onchange="onCatChange(this)">
-                        <option value="">Selecciona...</option>
-                        <option value="Granos">Granos</option>
-                        <option value="Frutas">Frutas</option>
-                        <option value="Verduras">Verduras</option>
-                        <option value="Tubérculos">Tubérculos</option>
-                        <option value="Lácteos">Lácteos</option>
-                        <option value="Carnes">Carnes</option>
-                        <option value="Cereales">Cereales</option>
-                        <option value="Insumos">Insumos</option>
-                        @foreach($categorias as $cat)
-                            @if(!in_array($cat, ['Granos','Frutas','Verduras','Tubérculos','Lácteos','Carnes','Cereales','Insumos']))
-                                <option value="{{ $cat }}">{{ $cat }}</option>
-                            @endif
+                {{-- Categoría con Autocomplete --}}
+                <div class="col-span-2 sm:col-span-1 relative">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-sm font-semibold" style="color:#1c2b16;">Categoría <span style="color:#ef4444;">*</span></label>
+                        <button type="button" onclick="abrirModalRapidoCategoria()"
+                                class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-lg border border-purple-200 text-purple-700 bg-purple-50 hover:bg-purple-100 transition shadow-2xs"
+                                title="Crear una nueva categoría sin salir de este formulario">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                            <span>+ Nueva categoría</span>
+                        </button>
+                    </div>
+                    <div class="relative">
+                        <input type="text" name="categoria" id="inputCategoria"
+                               placeholder="Escribe la categoría..." required maxlength="100"
+                               autocomplete="off"
+                               pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]*$"
+                               title="La categoría debe comenzar con una letra y solo contener letras (no se permiten números)"
+                               oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '');"
+                               class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
+                               style="border-color:#e7e0cc; background:#fafafa;"
+                               onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
+                               onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                        
+                        {{-- Icono buscador / sugerencias --}}
+                        <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </div>
+
+                        {{-- Menú de Autocomplete / Sugerencias desplegable --}}
+                        <div id="categoriaAutocompleteList"
+                             class="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl border shadow-xl z-50 max-h-48 overflow-y-auto hidden"
+                             style="border-color:#e7e0cc;">
+                        </div>
+                    </div>
+                    
+                    {{-- Sugerencias rápidas en chips --}}
+                    <div class="flex items-center gap-1.5 flex-wrap mt-2" id="sugerenciasCategoriasChips">
+                        <span class="text-[11px] text-gray-400 font-semibold">Sugerencias:</span>
+                        @foreach($categorias->take(4) as $sugCat)
+                            <button type="button" onclick="seleccionarCategoria('{{ $sugCat }}')"
+                                    class="text-[11px] font-bold px-2 py-0.5 rounded-lg border bg-white hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition"
+                                    style="border-color:#e7e0cc; color:#5a5a4f;">
+                                {{ $sugCat }}
+                            </button>
                         @endforeach
-                        <option value="__otro__">Otra (escribir)...</option>
-                    </select>
-                    {{-- Este input SIEMPRE está presente y tiene el valor real --}}
-                    <input type="text" name="categoria" id="inputCategoria"
-                           placeholder="Escribe o selecciona una categoría" required maxlength="100"
-                           pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]*$"
-                           title="La categoría debe comenzar con una letra y solo contener letras (no se permiten números)"
-                           oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '');"
-                           class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                           style="border-color:#e7e0cc; background:#fafafa;"
-                           onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
-                           onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
-                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo letras (no se permiten números).</p>
+                    </div>
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Solo letras (sin números). Escribe para autocompletar.</p>
                 </div>
 
-                {{-- Proveedor --}}
-                <div class="col-span-2">
+                {{-- Proveedor con Autocomplete --}}
+                <div class="col-span-2 relative">
                     <label class="block text-sm font-semibold mb-1.5" style="color:#1c2b16;">Proveedor <span style="color:#ef4444;">*</span></label>
-                    <select name="proveedor_id" id="inputProveedorId" required
-                            class="w-full px-4 py-3 rounded-xl border text-sm outline-none"
-                            style="border-color:#e7e0cc; background:#fafafa;"
-                            onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
-                            onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
-                        <option value="">Selecciona un proveedor...</option>
-                        @foreach($proveedores as $prov)
-                            <option value="{{ $prov->id }}">{{ $prov->codigo ? "[$prov->codigo] " : '' }}{{ $prov->nombre }}</option>
+                    <div class="relative">
+                        <input type="text" id="inputProveedorNombre"
+                               placeholder="Escribe el nombre del proveedor..." required maxlength="255"
+                               autocomplete="off"
+                               class="w-full px-4 py-3 rounded-xl border text-sm outline-none transition"
+                               style="border-color:#e7e0cc; background:#fafafa;"
+                               onfocus="this.style.borderColor='#39a900';this.style.boxShadow='0 0 0 3px rgba(57,169,0,0.1)'"
+                               onblur="this.style.borderColor='#e7e0cc';this.style.boxShadow='none'">
+                        
+                        <input type="hidden" name="proveedor_id" id="inputProveedorId" required value="{{ old('proveedor_id') }}">
+
+                        {{-- Icono buscador / sugerencias --}}
+                        <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                            </svg>
+                        </div>
+
+                        {{-- Menú de Autocomplete / Sugerencias desplegable --}}
+                        <div id="proveedorAutocompleteList"
+                             class="absolute left-0 right-0 top-full mt-1.5 bg-white rounded-xl border shadow-xl z-50 max-h-48 overflow-y-auto hidden"
+                             style="border-color:#e7e0cc;">
+                        </div>
+                    </div>
+
+                    {{-- Sugerencias rápidas en chips --}}
+                    @if($proveedores->count() > 0)
+                    <div class="flex items-center gap-1.5 flex-wrap mt-2">
+                        <span class="text-[11px] text-gray-400 font-semibold">Sugerencias:</span>
+                        @foreach($proveedores->take(4) as $prvChip)
+                            <button type="button" onclick="seleccionarProveedor({{ $prvChip->id }}, '{{ addslashes($prvChip->nombre) }}')"
+                                    class="text-[11px] font-bold px-2 py-0.5 rounded-lg border bg-white hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 transition"
+                                    style="border-color:#e7e0cc; color:#5a5a4f;">
+                                {{ $prvChip->nombre }}
+                            </button>
                         @endforeach
-                    </select>
-                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Selecciona el productor o proveedor asociado.</p>
+                    </div>
+                    @endif
+                    <p class="text-[11px] mt-1" style="color:#9a9a8a;">Escribe para buscar y autocompletar el productor o proveedor asociado.</p>
                 </div>
 
                 {{-- Código de barras --}}
@@ -565,7 +623,281 @@
     </div>
 </div>
 
+{{-- ══ MODAL RÁPIDO CREAR CATEGORÍA ══════════════════════════════ --}}
+<div id="modalRapidoCategoria" class="fixed inset-0 z-[60] hidden items-center justify-center p-4" style="background:rgba(0,0,0,0.65);" onclick="cerrarModalRapidoCategoria()">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200" onclick="event.stopPropagation()">
+        {{-- Header --}}
+        <div class="flex items-center justify-between px-6 py-4 border-b bg-gradient-to-r from-purple-50/60 to-white" style="border-color:#f3f0e8;">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-purple-100 text-purple-700 shadow-xs">
+                    <span class="text-lg">🏷️</span>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-base" style="color:#1c2b16;">Nueva Categoría</h3>
+                    <p class="text-xs text-gray-500">Se agregará al catálogo y se seleccionará de inmediato.</p>
+                </div>
+            </div>
+            <button type="button" onclick="cerrarModalRapidoCategoria()"
+                    class="w-8 h-8 rounded-lg flex items-center justify-center text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M18 6 6 18M6 6l12 12"/>
+                </svg>
+            </button>
+        </div>
+
+        {{-- Body --}}
+        <div class="p-6 space-y-4">
+            <div id="quickCatErrorWrap" class="hidden p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-600 font-semibold"></div>
+
+            {{-- Nombre --}}
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:#1c2b16;">
+                    Nombre de la Categoría <span class="text-red-500">*</span>
+                </label>
+                <input type="text" id="quickCatNombre" placeholder="Ej. Lácteos, Granos, Frutas..." required maxlength="100"
+                       pattern="^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]*$"
+                       title="Solo letras y espacios (no se permiten números)"
+                       onkeydown="if(event.key === 'Enter'){ event.preventDefault(); guardarCategoriaRapida(); }"
+                       oninput="if(/^[0-9]/.test(this.value)){ this.setCustomValidity('No puede comenzar con números'); this.reportValidity(); } else { this.setCustomValidity(''); } this.value = this.value.replace(/^[0-9]+/, '').replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '');"
+                       class="w-full px-4 py-2.5 rounded-xl border text-sm outline-none transition focus:border-purple-600 focus:ring-2 focus:ring-purple-100"
+                       style="border-color:#e7e0cc; background:#fafafa;">
+                <p class="text-[11px] mt-1 text-gray-400">Solo letras y espacios (mín. 3 letras, sin números).</p>
+            </div>
+
+            {{-- Icono rápido --}}
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:#1c2b16;">
+                    Ícono / Emoji
+                </label>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="quickCatIcono" value="📦" maxlength="10"
+                           class="w-14 px-2 py-2 rounded-xl border text-center text-xl outline-none"
+                           style="border-color:#e7e0cc; background:#fafafa;">
+                    <div class="flex items-center gap-1.5 flex-wrap flex-1">
+                        @foreach(['📦','🍎','🥦','🥛','🥩','🌾','🧴','☕'] as $emo)
+                            <button type="button" onclick="document.getElementById('quickCatIcono').value = '{{ $emo }}'"
+                                    class="w-8 h-8 rounded-lg border text-sm hover:bg-gray-100 transition flex items-center justify-center bg-white"
+                                    style="border-color:#e7e0cc;">
+                                {{ $emo }}
+                            </button>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            {{-- Descripción opcional --}}
+            <div>
+                <label class="block text-xs font-bold uppercase tracking-wider mb-1.5" style="color:#1c2b16;">
+                    Descripción <span class="text-gray-400 font-normal">(opcional)</span>
+                </label>
+                <textarea id="quickCatDescripcion" rows="2" maxlength="500" placeholder="Breve descripción de la categoría..."
+                          class="w-full px-4 py-2 rounded-xl border text-sm outline-none resize-none transition focus:border-purple-600 focus:ring-2 focus:ring-purple-100"
+                          style="border-color:#e7e0cc; background:#fafafa;"></textarea>
+            </div>
+        </div>
+
+        {{-- Footer --}}
+        <div class="flex items-center justify-end gap-3 px-6 py-4 border-t bg-gray-50/60" style="border-color:#f3f0e8;">
+            <button type="button" onclick="cerrarModalRapidoCategoria()"
+                    class="px-4 py-2 rounded-xl border text-xs font-bold text-gray-600 hover:bg-white transition"
+                    style="border-color:#e7e0cc;">
+                Cancelar
+            </button>
+            <button type="button" id="btnGuardarQuickCat" onclick="guardarCategoriaRapida()"
+                    class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold text-white shadow-sm transition hover:opacity-90"
+                    style="background:#71277a;">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M5 13l4 4L19 7"/>
+                </svg>
+                <span>Guardar Categoría</span>
+            </button>
+        </div>
+    </div>
+</div>
+
 <script>
+// ══ CONTROL MODAL RÁPIDO CATEGORÍA ══════════════════════════════
+function mostrarErrorQuickCat(msg) {
+    const errorBox = document.getElementById('quickCatErrorWrap');
+    if (errorBox) {
+        errorBox.textContent = msg;
+        errorBox.classList.remove('hidden');
+    }
+}
+
+function limpiarErrorQuickCat() {
+    const errorBox = document.getElementById('quickCatErrorWrap');
+    if (errorBox) {
+        errorBox.textContent = '';
+        errorBox.classList.add('hidden');
+    }
+}
+
+window.abrirModalRapidoCategoria = function() {
+    limpiarErrorQuickCat();
+    const modal = document.getElementById('modalRapidoCategoria');
+    const inputCat = document.getElementById('inputCategoria');
+    const quickNombre = document.getElementById('quickCatNombre');
+    const quickIcono = document.getElementById('quickCatIcono');
+    const quickDesc = document.getElementById('quickCatDescripcion');
+
+    if (inputCat && inputCat.value.trim()) {
+        quickNombre.value = inputCat.value.trim();
+    } else {
+        quickNombre.value = '';
+    }
+    quickIcono.value = '📦';
+    quickDesc.value = '';
+
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    setTimeout(() => {
+        quickNombre.focus();
+        quickNombre.select();
+    }, 80);
+};
+
+window.cerrarModalRapidoCategoria = function() {
+    limpiarErrorQuickCat();
+    const modal = document.getElementById('modalRapidoCategoria');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    const inputCat = document.getElementById('inputCategoria');
+    if (inputCat) inputCat.focus();
+};
+
+window.guardarCategoriaRapida = function() {
+    limpiarErrorQuickCat();
+    const quickNombre = document.getElementById('quickCatNombre');
+    const quickIcono = document.getElementById('quickCatIcono');
+    const quickDesc = document.getElementById('quickCatDescripcion');
+    const btnGuardar = document.getElementById('btnGuardarQuickCat');
+
+    const nombre = quickNombre.value.trim();
+    const icono = quickIcono.value.trim() || '📦';
+    const descripcion = quickDesc.value.trim();
+
+    if (!nombre) {
+        mostrarErrorQuickCat('El nombre de la categoría es obligatorio.');
+        quickNombre.focus();
+        return;
+    }
+    if (/^[0-9]/.test(nombre)) {
+        mostrarErrorQuickCat('El nombre no puede comenzar con números.');
+        quickNombre.focus();
+        return;
+    }
+    if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ][a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]*$/.test(nombre)) {
+        mostrarErrorQuickCat('Solo se permiten letras y espacios (sin números ni símbolos especiales).');
+        quickNombre.focus();
+        return;
+    }
+    if (nombre.length < 3) {
+        mostrarErrorQuickCat('El nombre debe tener al menos 3 caracteres.');
+        quickNombre.focus();
+        return;
+    }
+
+    // Verificar si ya existe en las categorías cargadas
+    const yaExiste = categoriasDisponibles.some(c => c.toLowerCase() === nombre.toLowerCase());
+    if (yaExiste) {
+        mostrarErrorQuickCat('Ya existe una categoría registrada con este nombre.');
+        quickNombre.focus();
+        return;
+    }
+
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+        || document.querySelector('input[name="_token"]')?.value;
+
+    const originalHtml = btnGuardar.innerHTML;
+    btnGuardar.disabled = true;
+    btnGuardar.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg> Guardando...`;
+
+    fetch('{{ route("superadmin.categorias.store") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: JSON.stringify({
+            nombre: nombre,
+            icono: icono,
+            descripcion: descripcion,
+            activo: true
+        })
+    })
+    .then(async res => {
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+            let errorMsg = data.message || 'Error al guardar la categoría.';
+            if (data.errors) {
+                const firstErr = Object.values(data.errors)[0];
+                if (Array.isArray(firstErr)) errorMsg = firstErr[0];
+            }
+            throw new Error(errorMsg);
+        }
+        return data;
+    })
+    .then(data => {
+        const catNombre = (data.categoria && data.categoria.nombre) ? data.categoria.nombre : nombre;
+
+        // Añadir a las disponibles
+        if (!categoriasDisponibles.includes(catNombre)) {
+            categoriasDisponibles.unshift(catNombre);
+        }
+
+        // Establecer en el input del producto
+        const inputCat = document.getElementById('inputCategoria');
+        if (inputCat) {
+            inputCat.value = catNombre;
+            inputCat.setCustomValidity('');
+            inputCat.classList.remove('border-red-500');
+        }
+
+        // Añadir chip visual si existe contenedor
+        const chipsContainer = document.getElementById('sugerenciasCategoriasChips');
+        if (chipsContainer) {
+            const chipBtn = document.createElement('button');
+            chipBtn.type = 'button';
+            chipBtn.className = 'text-[11px] font-bold px-2 py-0.5 rounded-lg border bg-purple-50 text-purple-700 border-purple-200 transition hover:bg-purple-100';
+            chipBtn.textContent = catNombre;
+            chipBtn.onclick = () => window.seleccionarCategoria(catNombre);
+            if (chipsContainer.children.length > 1) {
+                chipsContainer.insertBefore(chipBtn, chipsContainer.children[1]);
+            } else {
+                chipsContainer.appendChild(chipBtn);
+            }
+        }
+
+        cerrarModalRapidoCategoria();
+
+        // Notificación de éxito
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Categoría creada!',
+                text: `"${catNombre}" se guardó y se seleccionó de inmediato.`,
+                timer: 2200,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+    })
+    .catch(err => {
+        mostrarErrorQuickCat(err.message || 'Error de conexión al registrar la categoría.');
+    })
+    .finally(() => {
+        btnGuardar.disabled = false;
+        btnGuardar.innerHTML = originalHtml;
+    });
+};
+
 function abrirModal(id) {
     const m = document.getElementById(id);
     m.classList.remove('hidden'); m.classList.add('flex');
@@ -574,6 +906,17 @@ function abrirModal(id) {
 function cerrarModal(id) {
     document.getElementById(id).classList.add('hidden');
     document.getElementById(id).classList.remove('flex');
+    if (id === 'modalForm') {
+        const form = document.getElementById('formProducto');
+        if (form) form.action = '{{ route("superadmin.productos.store") }}';
+        const methodInput = document.getElementById('formMethod');
+        if (methodInput) {
+            methodInput.value = 'POST';
+            methodInput.disabled = true;
+        }
+        const bannerEdit = document.getElementById('bannerModoEdicion');
+        if (bannerEdit) bannerEdit.classList.add('hidden');
+    }
     document.body.style.overflow = '';
 }
 ['modalForm','modalEliminar'].forEach(id => {
@@ -669,8 +1012,8 @@ document.getElementById('formProducto').addEventListener('submit', function (e) 
     // Validación Proveedor
     if (!proveedorId) {
         e.preventDefault();
-        mostrarErrorModal('Debes seleccionar un proveedor.');
-        document.getElementById('inputProveedorId').focus();
+        mostrarErrorModal('Debes seleccionar un proveedor de las sugerencias.');
+        document.getElementById('inputProveedorNombre').focus();
         return false;
     }
 
@@ -747,31 +1090,37 @@ function resetForm() {
     document.getElementById('inputImagen').value = '';
     document.getElementById('imagenPreviewWrap').classList.add('hidden');
     document.getElementById('imagenLabel').textContent = 'Selecciona una imagen (JPG, PNG, WEBP — máx. 2MB)';
-    document.getElementById('selectCategoria').value = '';
     document.getElementById('inputCategoria').value = '';
-}
-
-function onCatChange(sel) {
-    const inputCat = document.getElementById('inputCategoria');
-    if (sel.value && sel.value !== '__otro__') {
-        inputCat.value = sel.value;
-    } else if (sel.value === '__otro__') {
-        inputCat.value = '';
-        inputCat.focus();
-    }
+    document.getElementById('inputProveedorId').value = '';
+    document.getElementById('inputProveedorNombre').value = '';
+    const menuCat = document.getElementById('categoriaAutocompleteList');
+    if (menuCat) menuCat.classList.add('hidden');
+    const menuPrv = document.getElementById('proveedorAutocompleteList');
+    if (menuPrv) menuPrv.classList.add('hidden');
 }
 
 function abrirModalCrear() {
     limpiarErrorModal();
     document.getElementById('modalFormTitle').textContent = 'Nuevo Producto';
+    const bannerEdit = document.getElementById('bannerModoEdicion');
+    if (bannerEdit) bannerEdit.classList.add('hidden');
+
     const btn = document.getElementById('btnGuardar');
     btn.textContent = 'Crear producto';
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.style.cursor = 'pointer';
 
-    document.getElementById('formProducto').action = '{{ route("superadmin.productos.store") }}';
-    document.getElementById('formMethod').value = 'POST';
+    const form = document.getElementById('formProducto');
+    form.action = '{{ route("superadmin.productos.store") }}';
+
+    // Deshabilitar _method para garantizar petición POST nativa (store)
+    const methodInput = document.getElementById('formMethod');
+    if (methodInput) {
+        methodInput.value = 'POST';
+        methodInput.disabled = true;
+    }
+
     document.getElementById('inputNombre').value = '';
     document.getElementById('inputDescripcion').value = '';
     document.getElementById('inputPrecio').value = '';
@@ -782,6 +1131,7 @@ function abrirModalCrear() {
     document.getElementById('inputIva').value = '0';
     document.getElementById('inputActivo').checked = true;
     document.getElementById('inputProveedorId').value = '';
+    document.getElementById('inputProveedorNombre').value = '';
     resetForm();
     abrirModal('modalForm');
 }
@@ -789,14 +1139,29 @@ function abrirModalCrear() {
 function abrirModalEditar(p) {
     limpiarErrorModal();
     document.getElementById('modalFormTitle').textContent = 'Editar Producto';
+
+    const bannerEdit = document.getElementById('bannerModoEdicion');
+    if (bannerEdit) {
+        bannerEdit.classList.remove('hidden');
+        const bNom = document.getElementById('bannerEditNombre');
+        if (bNom) bNom.textContent = p.nombre || 'Sin nombre';
+    }
+
     const btn = document.getElementById('btnGuardar');
     btn.textContent = 'Guardar cambios';
     btn.disabled = false;
     btn.style.opacity = '1';
     btn.style.cursor = 'pointer';
 
-    document.getElementById('formProducto').action = '/superadmin/productos/' + p.id;
-    document.getElementById('formMethod').value = 'PUT';
+    const form = document.getElementById('formProducto');
+    form.action = '/superadmin/productos/' + p.id;
+
+    // Habilitar _method como PUT para actualización
+    const methodInput = document.getElementById('formMethod');
+    if (methodInput) {
+        methodInput.disabled = false;
+        methodInput.value = 'PUT';
+    }
     document.getElementById('inputNombre').value         = p.nombre || '';
     document.getElementById('inputDescripcion').value    = p.descripcion || '';
     document.getElementById('inputPrecio').value         = p.precio || '';
@@ -809,14 +1174,8 @@ function abrirModalEditar(p) {
     document.getElementById('inputActivo').checked       = p.activo == 1 || p.activo === true;
     document.getElementById('inputCategoria').value      = p.categoria || '';
     document.getElementById('inputProveedorId').value    = p.proveedor_id || '';
-
-    // Sincronizar select con la categoría
-    const sel = document.getElementById('selectCategoria');
-    let found = false;
-    for (let opt of sel.options) {
-        if (opt.value === p.categoria) { sel.value = p.categoria; found = true; break; }
-    }
-    if (!found) sel.value = p.categoria ? '__otro__' : '';
+    const prv = proveedoresDisponibles.find(x => x.id == p.proveedor_id);
+    document.getElementById('inputProveedorNombre').value = prv ? prv.nombre : '';
 
     // Imagen existente
     if (p.imagen) {
@@ -849,18 +1208,263 @@ function abrirModalEliminar(id, nombre) {
         document.getElementById('inputDiasPerecedero').value = @json(old('diasPerecederoMax', ''));
         document.getElementById('inputIva').value = @json(old('iva', '0'));
         document.getElementById('inputCategoria').value = @json(old('categoria', ''));
-        document.getElementById('inputProveedorId').value = @json(old('proveedor_id', ''));
-        const catVal = @json(old('categoria', ''));
-        const sel = document.getElementById('selectCategoria');
-        if (sel && catVal) {
-            let found = false;
-            for (let opt of sel.options) {
-                if (opt.value === catVal) { sel.value = catVal; found = true; break; }
-            }
-            if (!found) sel.value = '__otro__';
-        }
+        const oldPrvId = @json(old('proveedor_id', ''));
+        document.getElementById('inputProveedorId').value = oldPrvId;
+        const prvError = proveedoresDisponibles.find(x => x.id == oldPrvId);
+        if (prvError) document.getElementById('inputProveedorNombre').value = prvError.nombre;
     });
 @endif
+
+// ── Autocomplete interactivo de categorías ──
+let categoriasDisponibles = @json($categorias);
+
+function initCategoriaAutocomplete() {
+    const inputCat = document.getElementById('inputCategoria');
+    const menuCat  = document.getElementById('categoriaAutocompleteList');
+    if (!inputCat || !menuCat) return;
+
+    let highlightedIndex = -1;
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderSugerencias(filtro = '') {
+        const query = filtro.trim().toLowerCase();
+        const matches = query === ''
+            ? categoriasDisponibles.slice(0, 8)
+            : categoriasDisponibles.filter(c => c.toLowerCase().includes(query)).slice(0, 10);
+
+        highlightedIndex = -1;
+
+        if (matches.length === 0) {
+            menuCat.innerHTML = `
+                <div class="px-4 py-2.5 text-xs text-gray-500 italic bg-gray-50">
+                    No hay sugerencias exactas. Puedes escribir y registrar una nueva categoría.
+                </div>`;
+            menuCat.classList.remove('hidden');
+            return;
+        }
+
+        menuCat.innerHTML = matches.map((cat, idx) => `
+            <div class="categoria-suggestion-item px-4 py-2.5 text-sm cursor-pointer transition flex items-center justify-between hover:bg-emerald-50 hover:text-emerald-800 ${idx === 0 ? 'bg-gray-50/70' : ''}"
+                 data-val="${escapeHtml(cat)}"
+                 onmousedown="seleccionarCategoria('${escapeHtml(cat)}')">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span class="font-semibold text-gray-800">${escapeHtml(cat)}</span>
+                </div>
+                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Sugerencia</span>
+            </div>
+        `).join('');
+
+        menuCat.classList.remove('hidden');
+    }
+
+    inputCat.addEventListener('focus', function() {
+        renderSugerencias(this.value);
+    });
+
+    inputCat.addEventListener('input', function() {
+        renderSugerencias(this.value);
+    });
+
+    inputCat.addEventListener('keydown', function(e) {
+        if (menuCat.classList.contains('hidden')) return;
+
+        const items = menuCat.querySelectorAll('.categoria-suggestion-item');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightedIndex = (highlightedIndex + 1) % items.length;
+            updateHighlight(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightedIndex = (highlightedIndex - 1 + items.length) % items.length;
+            updateHighlight(items);
+        } else if (e.key === 'Enter') {
+            if (highlightedIndex >= 0 && items[highlightedIndex]) {
+                e.preventDefault();
+                const val = items[highlightedIndex].getAttribute('data-val');
+                seleccionarCategoria(val);
+            }
+        } else if (e.key === 'Escape') {
+            menuCat.classList.add('hidden');
+        }
+    });
+
+    function updateHighlight(items) {
+        items.forEach((item, idx) => {
+            if (idx === highlightedIndex) {
+                item.classList.add('bg-emerald-100', 'text-emerald-900');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('bg-emerald-100', 'text-emerald-900');
+            }
+        });
+    }
+
+    inputCat.addEventListener('blur', function() {
+        setTimeout(() => {
+            menuCat.classList.add('hidden');
+        }, 220);
+    });
+
+    window.seleccionarCategoria = function(cat) {
+        inputCat.value = cat;
+        menuCat.classList.add('hidden');
+        inputCat.setCustomValidity('');
+        inputCat.classList.remove('border-red-500');
+        inputCat.focus();
+    };
+}
+
+// ── Autocomplete interactivo de proveedores ──
+const proveedoresDisponibles = @json($proveedores);
+
+function initProveedorAutocomplete() {
+    const inputNombre = document.getElementById('inputProveedorNombre');
+    const inputId     = document.getElementById('inputProveedorId');
+    const menuPrv     = document.getElementById('proveedorAutocompleteList');
+    if (!inputNombre || !inputId || !menuPrv) return;
+
+    let highlightedIndex = -1;
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function renderSugerencias(filtro = '') {
+        const query = filtro.trim().toLowerCase();
+        const matches = query === ''
+            ? proveedoresDisponibles.slice(0, 8)
+            : proveedoresDisponibles.filter(p => {
+                const n = (p.nombre || '').toLowerCase();
+                const c = (p.codigo || '').toLowerCase();
+                return n.includes(query) || c.includes(query);
+            }).slice(0, 10);
+
+        highlightedIndex = -1;
+
+        if (matches.length === 0) {
+            menuPrv.innerHTML = `
+                <div class="px-4 py-2.5 text-xs text-gray-500 italic bg-gray-50">
+                    No se encontró ningún proveedor con ese nombre o código.
+                </div>`;
+            menuPrv.classList.remove('hidden');
+            return;
+        }
+
+        menuPrv.innerHTML = matches.map((p, idx) => `
+            <div class="proveedor-suggestion-item px-4 py-2.5 text-sm cursor-pointer transition flex items-center justify-between hover:bg-emerald-50 hover:text-emerald-800 ${idx === 0 ? 'bg-gray-50/70' : ''}"
+                 data-id="${p.id}"
+                 data-nombre="${escapeHtml(p.nombre)}"
+                 onmousedown="seleccionarProveedor(${p.id}, '${escapeHtml(p.nombre)}')">
+                <div class="flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                    <span class="font-semibold text-gray-800">${escapeHtml(p.nombre)}</span>
+                </div>
+                ${p.codigo ? `<span class="text-[11px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-500 font-bold">${escapeHtml(p.codigo)}</span>` : '<span class="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Proveedor</span>'}
+            </div>
+        `).join('');
+
+        menuPrv.classList.remove('hidden');
+    }
+
+    inputNombre.addEventListener('focus', function() {
+        renderSugerencias(this.value);
+    });
+
+    inputNombre.addEventListener('input', function() {
+        const query = this.value.trim().toLowerCase();
+        const exactMatch = proveedoresDisponibles.find(p => p.nombre.toLowerCase() === query);
+        if (exactMatch) {
+            inputId.value = exactMatch.id;
+        } else {
+            inputId.value = '';
+        }
+        renderSugerencias(this.value);
+    });
+
+    inputNombre.addEventListener('keydown', function(e) {
+        if (menuPrv.classList.contains('hidden')) return;
+
+        const items = menuPrv.querySelectorAll('.proveedor-suggestion-item');
+        if (!items.length) return;
+
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightedIndex = (highlightedIndex + 1) % items.length;
+            updateHighlight(items);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightedIndex = (highlightedIndex - 1 + items.length) % items.length;
+            updateHighlight(items);
+        } else if (e.key === 'Enter') {
+            if (highlightedIndex >= 0 && items[highlightedIndex]) {
+                e.preventDefault();
+                const id = items[highlightedIndex].getAttribute('data-id');
+                const nombre = items[highlightedIndex].getAttribute('data-nombre');
+                seleccionarProveedor(id, nombre);
+            }
+        } else if (e.key === 'Escape') {
+            menuPrv.classList.add('hidden');
+        }
+    });
+
+    function updateHighlight(items) {
+        items.forEach((item, idx) => {
+            if (idx === highlightedIndex) {
+                item.classList.add('bg-emerald-100', 'text-emerald-900');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('bg-emerald-100', 'text-emerald-900');
+            }
+        });
+    }
+
+    inputNombre.addEventListener('blur', function() {
+        setTimeout(() => {
+            menuPrv.classList.add('hidden');
+            if (!inputNombre.value.trim()) {
+                inputId.value = '';
+            } else if (!inputId.value) {
+                const exact = proveedoresDisponibles.find(p => p.nombre.toLowerCase() === inputNombre.value.trim().toLowerCase());
+                if (exact) {
+                    inputId.value = exact.id;
+                    inputNombre.value = exact.nombre;
+                }
+            }
+        }, 220);
+    });
+
+    window.seleccionarProveedor = function(id, nombre) {
+        inputId.value = id;
+        inputNombre.value = nombre;
+        menuPrv.classList.add('hidden');
+        inputNombre.setCustomValidity('');
+        inputNombre.classList.remove('border-red-500');
+        inputNombre.focus();
+    };
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    initCategoriaAutocomplete();
+    initProveedorAutocomplete();
+});
 </script>
 
 </x-superadmin-layout>
